@@ -1,0 +1,48 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - revive
+    - gocritic
+    - gosec
+    - depguard
+  # misspell tidak dipakai: komentar boleh berbahasa Indonesia (lihat CLAUDE.md).
+  settings:
+    depguard:
+      rules:
+        # Lapisan domain harus murni: hanya stdlib, tanpa driver, transport, maupun platform.
+        domain-purity:
+          files:
+            - "**/internal/modules/*/domain/**"
+          deny:
+            - pkg: github.com/jackc/pgx
+              desc: domain must not depend on database drivers
+            - pkg: connectrpc.com/connect
+              desc: domain must not depend on transport
+            - pkg: net/http
+              desc: domain must not depend on transport
+            - pkg: database/sql
+              desc: domain must not depend on database access
+            - pkg: github.com/indr622/workflow-engine/apps/engine/internal/platform
+              desc: domain must not depend on platform packages
+            - pkg: github.com/indr622/workflow-engine/libs/go/api
+              desc: domain must not depend on generated API types
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+  exclusions:
+    generated: strict
+    paths:
+      - libs/go/api/gen
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
