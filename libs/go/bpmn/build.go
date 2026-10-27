@@ -81,12 +81,15 @@ func (b *builder) processID() string {
 func (b *builder) registerID(n *xmltree.Node, processID string) string {
 	id := strings.TrimSpace(n.AttrOr("", "id", ""))
 	at := noteAt{id: id, processID: processID, pos: posOf(n), detail: n.Local}
-	switch {
-	case id == "":
+	if id == "" {
 		b.defs.notes.missingIDs = append(b.defs.notes.missingIDs, at)
-	case !isNCName(id):
+		return id
+	}
+	// Id tidak valid dan id ganda dilaporkan terpisah: keduanya bisa terjadi bersamaan.
+	if !isNCName(id) {
 		b.defs.notes.invalidIDs = append(b.defs.notes.invalidIDs, at)
-	case b.seen[id]:
+	}
+	if b.seen[id] {
 		b.defs.notes.duplicateIDs = append(b.defs.notes.duplicateIDs, at)
 	}
 	b.seen[id] = true

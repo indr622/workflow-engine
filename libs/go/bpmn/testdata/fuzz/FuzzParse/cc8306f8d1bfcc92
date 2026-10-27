@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("<bpmn:definitions xmlns:bpmn=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"><bpmn:process id=\"0\"><bpmn:startEvent id=\"start\"></bpmn:startEvent><bpmn:serviceTask id=\"task\"></bpmn:serviceTask><bpmn:sequenceFlow id=\"0\"sourceRef=\"start\"targetRef=\"task\"/><bpmn:sequenceFlow id=\"0\"A00000000=\"0000\"/><bpmn:boundaryEvent id=\"0000\"></bpmn:boundaryEvent>0000000000000000000000000000000000000000000</bpmn:process></bpmn:definitions>")
