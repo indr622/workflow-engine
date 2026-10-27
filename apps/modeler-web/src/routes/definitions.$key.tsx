@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@workflow/ui';
 import { BpmnCanvas } from '@workflow/bpmn-viewer';
@@ -12,6 +13,8 @@ export const Route = createFileRoute('/definitions/$key')({
 function DefinitionPage() {
   const { key } = Route.useParams();
   const { data, isPending, isError, error } = useProcessDefinition(key);
+  const [hasLayout, setHasLayout] = useState(true);
+  const onImported = useCallback((info: { hasLayout: boolean }) => setHasLayout(info.hasLayout), []);
 
   if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (isError) return <p className="text-sm text-destructive">{error.message}</p>;
@@ -33,8 +36,15 @@ function DefinitionPage() {
           </Button>
         </CardAction>
       </CardHeader>
-      <CardContent className="h-[520px]">
-        <BpmnCanvas mode="viewer" xml={bpmnXml} />
+      <CardContent className="space-y-2">
+        {!hasLayout && (
+          <p className="text-sm text-muted-foreground">
+            This resource has no diagram layout (BPMNDI), so there is nothing to draw. The process is still executable.
+          </p>
+        )}
+        <div className="h-[520px]">
+          <BpmnCanvas mode="viewer" xml={bpmnXml} onImported={onImported} />
+        </div>
       </CardContent>
     </Card>
   );

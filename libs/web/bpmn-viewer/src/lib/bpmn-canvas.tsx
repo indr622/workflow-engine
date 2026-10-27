@@ -50,6 +50,8 @@ export interface BpmnCanvasProps {
   mode?: 'modeler' | 'viewer';
   className?: string;
   onError?: (error: Error) => void;
+  /** Dipanggil setelah import; hasLayout=false bila XML tidak punya diagram interchange (BPMNDI). */
+  onImported?: (info: { hasLayout: boolean; warnings: number }) => void;
   ref?: Ref<BpmnCanvasHandle>;
 }
 
@@ -59,7 +61,14 @@ type Instance = InstanceType<typeof BpmnModeler> | InstanceType<typeof BpmnViewe
  * BpmnCanvas membungkus bpmn-js untuk React.
  * BPMN XML adalah satu-satunya format diagram yang dikenal engine.
  */
-export function BpmnCanvas({ xml = EMPTY_DIAGRAM, mode = 'modeler', className, onError, ref }: BpmnCanvasProps) {
+export function BpmnCanvas({
+  xml = EMPTY_DIAGRAM,
+  mode = 'modeler',
+  className,
+  onError,
+  onImported,
+  ref,
+}: BpmnCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<Instance | null>(null);
   const markersRef = useRef<Record<MarkerClass, string[]>>({ 'issue-error': [], 'issue-warning': [] });
@@ -71,13 +80,20 @@ export function BpmnCanvas({ xml = EMPTY_DIAGRAM, mode = 'modeler', className, o
     const Ctor = mode === 'modeler' ? BpmnModeler : BpmnViewer;
     const instance = new Ctor({ container });
     instanceRef.current = instance;
-    instance.importXML(xml).catch((e: unknown) => onError?.(e instanceof Error ? e : new Error(String(e))));
+    instance
+      .importXML(xml)
+      .then(({ warnings }) => {
+        // Tanpa BPMNDI, registry hanya berisi root plane: tidak ada shape yang bisa digambar.
+        const registry = instance.get('elementRegistry') as { getAll(): unknown[] };
+        onImported?.({ hasLayout: registry.getAll().length > 1, warnings: warnings.length });
+      })
+      .catch((e: unknown) => onError?.(e instanceof Error ? e : new Error(String(e))));
 
     return () => {
       instance.destroy();
       instanceRef.current = null;
     };
-  }, [xml, mode, onError]);
+  }, [xml, mode, onError, onImported]);
 
   useImperativeHandle(
     ref,

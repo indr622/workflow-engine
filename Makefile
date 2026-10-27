@@ -37,6 +37,7 @@ GOLANGCI_LINT_VERSION := v2.15.0
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools up down logs dev gen lint test build typecheck check test-integration \
+        test-race fuzz bench parity \
         migrate-up migrate-down migrate-status migrate-new docker-build docker-push \
         deploy-local deploy-local-down clean
 
@@ -88,6 +89,18 @@ check: ## Lint, test, typecheck, dan build untuk proyek yang terdampak (dipakai 
 
 test-integration: ## Test integrasi Go terhadap Postgres di DATABASE_URL
 	go test -count=1 -tags=integration ./apps/engine/...
+
+test-race: ## Test Go dengan race detector (butuh cgo; dijalankan CI di Linux)
+	go test -race -count=1 ./libs/go/... ./apps/engine/...
+
+fuzz: ## Fuzz parser BPMN (FUZZTIME=10m untuk sesi panjang)
+	$(NX) run bpmn-go:fuzz
+
+bench: ## Benchmark parser BPMN
+	$(NX) run bpmn-go:bench
+
+parity: ## Bandingkan keputusan validasi dengan Camunda 8.8 (LIVE=1 untuk deploy ulang ke Camunda)
+	@if [ "$(LIVE)" = "1" ]; then go run ./tools/scripts/parity -live; else go run ./tools/scripts/parity; fi
 
 migrate-up: ## Jalankan migrasi ke DATABASE_URL
 	goose -dir $(MIGRATIONS) postgres "$(DATABASE_URL)" up

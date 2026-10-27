@@ -82,6 +82,7 @@ jobs:
         with:
           go-version-file: go.mod
       - run: make test-integration
+      - run: make test-race
 
   docker:
     name: Docker images
