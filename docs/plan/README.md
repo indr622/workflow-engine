@@ -4,12 +4,12 @@ Engine workflow BPMN 2.0 yang dibangun dari nol dengan fitur-fitur setara Camund
 Inti ditulis di Go sebagai modular monolith dengan Clean Architecture per modul; UI di React
 (shadcn/ui, Zustand, TanStack, bpmn-js untuk BPMN, React Flow untuk graf lain) dengan Clean
 Architecture per fitur; monorepo Nx; deploy lewat Docker.
-Setiap fase punya dokumen sendiri di folder ini. Hanya Fase 0 yang sudah dirinci.
+Setiap fase punya dokumen sendiri di folder ini. Fase 0 dan Fase 1 sudah dirinci.
 
 | Fase | Nama | Keluaran utama | Dokumen |
 |---|---|---|---|
-| 0 | Persiapan environment (🟡 dijeda, sebagian selesai) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
-| 1 | Parser dan model BPMN | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | _belum ditulis_ |
+| 0 | Persiapan environment (✅ selesai 2026-10-28) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
+| 1 | Parser dan model BPMN | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | [01-fase-1-parser-model-bpmn.md](01-fase-1-parser-model-bpmn.md) (draft) |
 | 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | _belum ditulis_ |
 | 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | _belum ditulis_ |
 | 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | _belum ditulis_ |
