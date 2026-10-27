@@ -2,7 +2,7 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Draft rencana — belum dieksekusi
+**Status:** Sedang dieksekusi sejak 2026-10-28 di branch `feat/phase-1-bpmn-deployment`
 **Tanggal:** 2026-10-28
 
 ---
@@ -749,6 +749,20 @@ diperluas dengan `sqlc generate`.
 | Golden file sering berubah karena format dump | Review PR berisik | Dump JSON kanonik terurut, hanya field semantik (tanpa posisi kecuali di file khusus) |
 
 ## 9. Pertanyaan terbuka
+
+### 9.1 Keputusan (2026-10-28)
+
+User meminta rekomendasi dokumen dipakai. Keputusan berikut berlaku untuk Fase 1:
+
+| # | Pertanyaan | Keputusan | Alasan |
+|---|---|---|---|
+| 1 | Allowlist kernel di `archtest` | **Tidak di Fase 1.** `deployment/domain` tetap bebas BPMN; diputuskan ulang di awal Fase 2 | Sesuai 3.3; Fase 1 tidak membutuhkannya |
+| 2 | Versi Camunda 8 acuan | **Camunda 8.8** (image `camunda/zeebe:8.8.44`), REST `POST /v2/deployments` | Versi terbaru dari opsi yang disebut; REST v2 sudah stabil di 8.8 |
+| 3 | Dry-run | **RPC `ValidateResource`** di `DeploymentService`, memakai use case yang sama tanpa menyimpan. WASM tidak dipakai | Biaya kecil, satu sumber aturan validasi, tanpa toolchain tambahan |
+| 4 | DMN dan form | **Ditolak** dengan `UNSUPPORTED_RESOURCE_TYPE` | Sesuai alur 5.2; DMN di Fase 7, form di Fase 6 |
+| 5 | Granularitas dedup | **Per proses terhadap versi terbaru**, berdasarkan checksum resource; dikonfirmasi lewat uji paritas live | Sesuai keputusan teknis bagian 3 |
+
+### 9.2 Pertanyaan awal
 
 1. **Allowlist kernel di `archtest`**: bolehkah lapisan `domain` meng-import `libs/go/bpmn` (dan
    nanti `libs/go/feel`)? Fase 1 tidak membutuhkannya, Fase 2 hampir pasti membutuhkannya.
