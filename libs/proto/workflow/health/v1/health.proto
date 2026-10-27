@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package workflow.health.v1;
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/health/v1;healthv1";
+
+// HealthService melaporkan kesehatan engine dan dependensinya.
+service HealthService {
+  // Check mengembalikan status agregat engine beserta status tiap dependensi.
+  rpc Check(CheckRequest) returns (CheckResponse) {}
+}
+
+message CheckRequest {}
+
+message CheckResponse {
+  ServingStatus status = 1;
+  repeated DependencyStatus dependencies = 2;
+  string version = 3;
+}
+
+message DependencyStatus {
+  string name = 1;
+  ServingStatus status = 2;
+  string message = 3;
+}
+
+enum ServingStatus {
+  SERVING_STATUS_UNSPECIFIED = 0;
+  SERVING_STATUS_SERVING = 1;
+  SERVING_STATUS_NOT_SERVING = 2;
+}

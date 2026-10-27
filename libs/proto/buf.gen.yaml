@@ -1,0 +1,13 @@
+version: v2
+clean: true
+plugins:
+  - local: protoc-gen-go
+    out: ../go/api/gen
+    opt: paths=source_relative
+  - local: protoc-gen-connect-go
+    out: ../go/api/gen
+    opt: paths=source_relative
+  - local: ["node", "../../node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es"]
+    out: ../web/api-client/src/gen
+    opt: target=ts
+    include_imports: false
