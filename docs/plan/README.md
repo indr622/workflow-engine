@@ -1,4 +1,4 @@
-# Roadmap Workflow Engine [02-fase-2-engine-inti.md](02-fase-2-engine-inti.md) (draft, menunggu review) | [03-fase-3-persistensi-pemulihan.md](03-fase-3-persistensi-pemulihan.md) (draft, menunggu review) | [04-fase-4-api-job-worker.md](04-fase-4-api-job-worker.md) (draft, menunggu review) | [05-fase-5-timer-message-boundary-subprocess.md](05-fase-5-timer-message-boundary-subprocess.md) (draft, menunggu review) | [06-fase-6-ui-modeler-operate-tasklist.md](06-fase-6-ui-modeler-operate-tasklist.md) (draft, menunggu review) | [07-fase-7-feel-dmn.md](07-fase-7-feel-dmn.md) (draft, menunggu review) | [08-fase-8-observability-keamanan-deploy.md](08-fase-8-observability-keamanan-deploy.md) (draft, menunggu review) |
+# Roadmap Workflow Engine
 
 Engine workflow BPMN 2.0 yang dibangun dari nol dengan fitur-fitur setara Camunda 8.
 Inti ditulis di Go sebagai modular monolith dengan Clean Architecture per modul; UI di React
@@ -11,13 +11,13 @@ sampai 8 berstatus draft dan menunggu review sebelum implementasi.
 |---|---|---|---|
 | 0 | Persiapan environment (✅ selesai 2026-10-28) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
 | 1 | Parser dan model BPMN (✅ selesai 2026-10-28, menunggu review) | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | [01-fase-1-parser-model-bpmn.md](01-fase-1-parser-model-bpmn.md) |
-| 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | _belum ditulis_ |
-| 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | _belum ditulis_ |
-| 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | _belum ditulis_ |
-| 5 | Timer, message, boundary event, sub-process | Scheduler timer, korelasi message, error dan escalation event | _belum ditulis_ |
-| 6 | UI: Modeler, Operate, Tasklist | React: modeler bpmn-js dengan properties panel, monitoring instance (viewer bpmn-js + pohon instance React Flow), user task inbox | _belum ditulis_ |
-| 7 | FEEL dan DMN | Evaluator FEEL untuk kondisi dan input/output mapping; DMN decision table (opsional) | _belum ditulis_ |
-| 8 | Observability, keamanan, hardening deploy | OpenTelemetry, auth (OIDC), multi-tenant dasar, compose prod dengan reverse proxy/TLS, backup DB, zero-downtime restart | _belum ditulis_ |
+| 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | [02-fase-2-engine-inti.md](02-fase-2-engine-inti.md) (draft, menunggu review) |
+| 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | [03-fase-3-persistensi-pemulihan.md](03-fase-3-persistensi-pemulihan.md) (draft, menunggu review) |
+| 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | [04-fase-4-api-job-worker.md](04-fase-4-api-job-worker.md) (draft, menunggu review) |
+| 5 | Timer, message, boundary event, sub-process | Scheduler timer, korelasi message, error dan escalation event | [05-fase-5-timer-message-boundary-subprocess.md](05-fase-5-timer-message-boundary-subprocess.md) (draft, menunggu review) |
+| 6 | UI: Modeler, Operate, Tasklist | React: modeler bpmn-js dengan properties panel, monitoring instance (viewer bpmn-js + pohon instance React Flow), user task inbox | [06-fase-6-ui-modeler-operate-tasklist.md](06-fase-6-ui-modeler-operate-tasklist.md) (draft, menunggu review) |
+| 7 | FEEL dan DMN | Evaluator FEEL untuk kondisi dan input/output mapping; DMN decision table (opsional) | [07-fase-7-feel-dmn.md](07-fase-7-feel-dmn.md) (draft, menunggu review) |
+| 8 | Observability, keamanan, hardening deploy | OpenTelemetry, auth (OIDC), multi-tenant dasar, compose prod dengan reverse proxy/TLS, backup DB, zero-downtime restart | [08-fase-8-observability-keamanan-deploy.md](08-fase-8-observability-keamanan-deploy.md) (draft, menunggu review) |
 
 Catatan review rencana Fase 2 sampai 8 (ditulis paralel pada 2026-10-28):
 
