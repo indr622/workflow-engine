@@ -24,12 +24,16 @@
           },
           {
             "id": "inEnd",
-            "incoming": ["g1"],
+            "incoming": [
+              "g1"
+            ],
             "type": "endEvent"
           },
           {
             "id": "inStart",
-            "outgoing": ["g1"],
+            "outgoing": [
+              "g1"
+            ],
             "type": "startEvent"
           }
         ],
@@ -39,5 +43,7 @@
       }
     ]
   },
-  "warnings": ["PROCESS_NOT_EXECUTABLE@external"]
+  "warnings": [
+    "PROCESS_NOT_EXECUTABLE@external"
+  ]
 }

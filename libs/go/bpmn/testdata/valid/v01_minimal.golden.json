@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "type": "endEvent"
           },
           {
@@ -18,7 +20,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

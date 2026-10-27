@@ -13,7 +13,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -36,27 +38,45 @@
           },
           {
             "id": "hEnd",
-            "incoming": ["s2"],
+            "incoming": [
+              "s2"
+            ],
             "scope": "handle",
             "type": "endEvent"
           },
           {
             "id": "hStart",
-            "outgoing": ["s1"],
+            "outgoing": [
+              "s1"
+            ],
             "scope": "handle",
             "type": "startEvent"
           },
           {
-            "boundaryEvents": ["onLate"],
+            "boundaryEvents": [
+              "onLate"
+            ],
             "id": "handle",
-            "incoming": ["f1"],
-            "inner": ["hEnd", "hStart", "raise", "s1", "s2"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "inner": [
+              "hEnd",
+              "hStart",
+              "raise",
+              "s1",
+              "s2"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "type": "subProcess"
           },
           {
             "id": "lateEnd",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -67,7 +87,9 @@
               "ref": "escLate"
             },
             "id": "onLate",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "boundaryEvent"
           },
           {
@@ -76,8 +98,12 @@
               "ref": "escLate"
             },
             "id": "raise",
-            "incoming": ["s1"],
-            "outgoing": ["s2"],
+            "incoming": [
+              "s1"
+            ],
+            "outgoing": [
+              "s2"
+            ],
             "scope": "handle",
             "type": "intermediateThrowEvent"
           },
@@ -97,7 +123,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

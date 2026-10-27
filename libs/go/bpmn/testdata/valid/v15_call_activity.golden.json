@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -24,7 +26,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
@@ -34,9 +38,13 @@
               "propagateAllParentVariables": true
             },
             "id": "task",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "Run child",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "type": "callActivity"
           }
         ],

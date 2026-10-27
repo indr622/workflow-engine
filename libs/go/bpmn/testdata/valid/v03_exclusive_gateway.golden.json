@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
@@ -49,9 +51,13 @@
           },
           {
             "id": "high",
-            "incoming": ["fHigh"],
+            "incoming": [
+              "fHigh"
+            ],
             "name": "high",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "review"
@@ -60,9 +66,13 @@
           },
           {
             "id": "low",
-            "incoming": ["fLow"],
+            "incoming": [
+              "fLow"
+            ],
             "name": "low",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "auto-approve"
@@ -71,20 +81,32 @@
           },
           {
             "id": "merge",
-            "incoming": ["f3", "f4"],
-            "outgoing": ["f5"],
+            "incoming": [
+              "f3",
+              "f4"
+            ],
+            "outgoing": [
+              "f5"
+            ],
             "type": "exclusiveGateway"
           },
           {
             "default": "fLow",
             "id": "split",
-            "incoming": ["f1"],
-            "outgoing": ["fHigh", "fLow"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "fHigh",
+              "fLow"
+            ],
             "type": "exclusiveGateway"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

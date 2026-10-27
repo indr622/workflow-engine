@@ -18,18 +18,26 @@
               "ref": "msgAnswer"
             },
             "id": "answer",
-            "incoming": ["f3"],
-            "outgoing": ["f5"],
+            "incoming": [
+              "f3"
+            ],
+            "outgoing": [
+              "f5"
+            ],
             "type": "intermediateCatchEvent"
           },
           {
             "id": "endAnswer",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
             "id": "endTimeout",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
@@ -64,13 +72,20 @@
           },
           {
             "id": "race",
-            "incoming": ["f1"],
-            "outgoing": ["f2", "f3"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2",
+              "f3"
+            ],
             "type": "eventBasedGateway"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
@@ -82,8 +97,12 @@
               }
             },
             "id": "timeout",
-            "incoming": ["f2"],
-            "outgoing": ["f4"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f4"
+            ],
             "type": "intermediateCatchEvent"
           }
         ],

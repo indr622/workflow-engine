@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f6"],
+            "incoming": [
+              "f6"
+            ],
             "type": "endEvent"
           },
           {
@@ -48,15 +50,24 @@
           },
           {
             "id": "fork",
-            "incoming": ["f1"],
-            "outgoing": ["f2", "f3"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2",
+              "f3"
+            ],
             "type": "parallelGateway"
           },
           {
             "id": "invoice",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "name": "invoice",
-            "outgoing": ["f5"],
+            "outgoing": [
+              "f5"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "create-invoice"
@@ -65,15 +76,24 @@
           },
           {
             "id": "join",
-            "incoming": ["f4", "f5"],
-            "outgoing": ["f6"],
+            "incoming": [
+              "f4",
+              "f5"
+            ],
+            "outgoing": [
+              "f6"
+            ],
             "type": "parallelGateway"
           },
           {
             "id": "reserve",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "name": "reserve",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "reserve-stock"
@@ -82,7 +102,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

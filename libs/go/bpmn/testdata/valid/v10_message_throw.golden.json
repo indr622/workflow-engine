@@ -10,7 +10,9 @@
               "kind": "message"
             },
             "id": "end",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "publish-done"
@@ -40,8 +42,12 @@
               "kind": "message"
             },
             "id": "notifyCustomer",
-            "incoming": ["f1"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "notify"
@@ -50,8 +56,12 @@
           },
           {
             "id": "sendInvoice",
-            "incoming": ["f2"],
-            "outgoing": ["f3"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f3"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "send-invoice"
@@ -60,7 +70,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

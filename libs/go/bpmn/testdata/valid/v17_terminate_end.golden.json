@@ -7,9 +7,13 @@
         "elements": [
           {
             "id": "a",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "name": "a",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "a"
@@ -18,9 +22,13 @@
           },
           {
             "id": "b",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "name": "b",
-            "outgoing": ["f5"],
+            "outgoing": [
+              "f5"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "b"
@@ -29,7 +37,9 @@
           },
           {
             "id": "end",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
@@ -64,8 +74,13 @@
           },
           {
             "id": "fork",
-            "incoming": ["f1"],
-            "outgoing": ["f2", "f3"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2",
+              "f3"
+            ],
             "type": "parallelGateway"
           },
           {
@@ -73,12 +88,16 @@
               "kind": "terminate"
             },
             "id": "kill",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

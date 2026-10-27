@@ -13,12 +13,16 @@
         "elements": [
           {
             "id": "c_end",
-            "incoming": ["cf2"],
+            "incoming": [
+              "cf2"
+            ],
             "type": "endEvent"
           },
           {
             "id": "c_start",
-            "outgoing": ["cf1"],
+            "outgoing": [
+              "cf1"
+            ],
             "type": "startEvent"
           },
           {
@@ -35,9 +39,13 @@
           },
           {
             "id": "customerTask",
-            "incoming": ["cf1"],
+            "incoming": [
+              "cf1"
+            ],
             "name": "customerTask",
-            "outgoing": ["cf2"],
+            "outgoing": [
+              "cf2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "place-order"
@@ -65,9 +73,13 @@
           },
           {
             "id": "ship",
-            "incoming": ["sf1"],
+            "incoming": [
+              "sf1"
+            ],
             "name": "ship",
-            "outgoing": ["sf2"],
+            "outgoing": [
+              "sf2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "ship"
@@ -76,7 +88,9 @@
           },
           {
             "id": "shopEnd",
-            "incoming": ["sf2"],
+            "incoming": [
+              "sf2"
+            ],
             "type": "endEvent"
           },
           {
@@ -85,7 +99,9 @@
               "ref": "msgOrder"
             },
             "id": "shopStart",
-            "outgoing": ["sf1"],
+            "outgoing": [
+              "sf1"
+            ],
             "type": "startEvent"
           }
         ],

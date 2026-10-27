@@ -11,19 +11,29 @@
               "resultVariable": "discount"
             },
             "id": "decide",
-            "incoming": ["f3"],
-            "outgoing": ["f4"],
+            "incoming": [
+              "f3"
+            ],
+            "outgoing": [
+              "f4"
+            ],
             "type": "businessRuleTask"
           },
           {
             "id": "end",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
             "id": "externalRules",
-            "incoming": ["f4"],
-            "outgoing": ["f5"],
+            "incoming": [
+              "f4"
+            ],
+            "outgoing": [
+              "f5"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "rules-engine"
@@ -62,8 +72,12 @@
           },
           {
             "id": "legacyScript",
-            "incoming": ["f2"],
-            "outgoing": ["f3"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f3"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "script-worker"
@@ -72,13 +86,19 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
             "id": "sum",
-            "incoming": ["f1"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "script": {
               "expression": "feel:=a + b",
               "resultVariable": "total"

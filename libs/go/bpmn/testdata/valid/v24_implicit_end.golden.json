@@ -13,7 +13,9 @@
           },
           {
             "id": "last",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "last",
             "taskDefinition": {
               "retries": "3",
@@ -23,7 +25,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],
@@ -33,5 +37,7 @@
       }
     ]
   },
-  "warnings": ["IMPLICIT_END@last"]
+  "warnings": [
+    "IMPLICIT_END@last"
+  ]
 }

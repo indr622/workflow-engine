@@ -27,11 +27,17 @@
       {
         "elements": [
           {
-            "boundaryEvents": ["cancelled"],
+            "boundaryEvents": [
+              "cancelled"
+            ],
             "id": "awaitPayment",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "messageRef": "msgPaid",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "type": "receiveTask"
           },
           {
@@ -40,8 +46,12 @@
               "ref": "msgShipped"
             },
             "id": "awaitShipment",
-            "incoming": ["f2"],
-            "outgoing": ["f4"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f4"
+            ],
             "type": "intermediateCatchEvent"
           },
           {
@@ -52,17 +62,23 @@
               "ref": "msgCancel"
             },
             "id": "cancelled",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "boundaryEvent"
           },
           {
             "id": "end",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
             "id": "endCancelled",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -95,7 +111,9 @@
               "ref": "msgPlaced"
             },
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -24,13 +26,19 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
             "id": "task",
-            "incoming": ["f1"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "legacy-work"
@@ -44,5 +52,7 @@
       }
     ]
   },
-  "warnings": ["CAMUNDA7_EXTENSION_IGNORED@task"]
+  "warnings": [
+    "CAMUNDA7_EXTENSION_IGNORED@task"
+  ]
 }

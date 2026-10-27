@@ -7,9 +7,13 @@
         "elements": [
           {
             "id": "deep",
-            "incoming": ["i1"],
+            "incoming": [
+              "i1"
+            ],
             "name": "deep",
-            "outgoing": ["i2"],
+            "outgoing": [
+              "i2"
+            ],
             "scope": "inner",
             "taskDefinition": {
               "retries": "3",
@@ -19,7 +23,9 @@
           },
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -50,21 +56,35 @@
           },
           {
             "id": "iEnd",
-            "incoming": ["i2"],
+            "incoming": [
+              "i2"
+            ],
             "scope": "inner",
             "type": "endEvent"
           },
           {
             "id": "iStart",
-            "outgoing": ["i1"],
+            "outgoing": [
+              "i1"
+            ],
             "scope": "inner",
             "type": "startEvent"
           },
           {
             "id": "inner",
-            "incoming": ["o1"],
-            "inner": ["deep", "i1", "i2", "iEnd", "iStart"],
-            "outgoing": ["o2"],
+            "incoming": [
+              "o1"
+            ],
+            "inner": [
+              "deep",
+              "i1",
+              "i2",
+              "iEnd",
+              "iStart"
+            ],
+            "outgoing": [
+              "o2"
+            ],
             "scope": "outer",
             "type": "subProcess"
           },
@@ -84,26 +104,42 @@
           },
           {
             "id": "oEnd",
-            "incoming": ["o2"],
+            "incoming": [
+              "o2"
+            ],
             "scope": "outer",
             "type": "endEvent"
           },
           {
             "id": "oStart",
-            "outgoing": ["o1"],
+            "outgoing": [
+              "o1"
+            ],
             "scope": "outer",
             "type": "startEvent"
           },
           {
             "id": "outer",
-            "incoming": ["f1"],
-            "inner": ["inner", "o1", "o2", "oEnd", "oStart"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "inner": [
+              "inner",
+              "o1",
+              "o2",
+              "oEnd",
+              "oStart"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "type": "subProcess"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

@@ -7,9 +7,13 @@
         "elements": [
           {
             "id": "email",
-            "incoming": ["fEmail"],
+            "incoming": [
+              "fEmail"
+            ],
             "name": "email",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "send-email"
@@ -18,7 +22,9 @@
           },
           {
             "id": "end",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
@@ -73,15 +79,25 @@
           },
           {
             "id": "join",
-            "incoming": ["f2", "f3", "f4"],
-            "outgoing": ["f5"],
+            "incoming": [
+              "f2",
+              "f3",
+              "f4"
+            ],
+            "outgoing": [
+              "f5"
+            ],
             "type": "inclusiveGateway"
           },
           {
             "id": "letter",
-            "incoming": ["fDefault"],
+            "incoming": [
+              "fDefault"
+            ],
             "name": "letter",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "send-letter"
@@ -90,9 +106,13 @@
           },
           {
             "id": "sms",
-            "incoming": ["fSms"],
+            "incoming": [
+              "fSms"
+            ],
             "name": "sms",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "send-sms"
@@ -102,13 +122,21 @@
           {
             "default": "fDefault",
             "id": "split",
-            "incoming": ["f1"],
-            "outgoing": ["fEmail", "fSms", "fDefault"],
+            "incoming": [
+              "f1"
+            ],
+            "outgoing": [
+              "fEmail",
+              "fSms",
+              "fDefault"
+            ],
             "type": "inclusiveGateway"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

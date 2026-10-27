@@ -17,7 +17,9 @@
               }
             ],
             "id": "charge",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "ioMapping": {
               "inputs": [
                 {
@@ -33,7 +35,9 @@
               ]
             },
             "name": "Charge card",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "properties": {
               "team": "billing"
             },
@@ -45,7 +49,9 @@
           },
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -62,7 +68,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

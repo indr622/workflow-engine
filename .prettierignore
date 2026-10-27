@@ -10,3 +10,5 @@ libs/web/api-client/src/gen
 **/routeTree.gen.ts
 # Dokumen ditulis manual; tabel dan baris panjang dipertahankan apa adanya.
 *.md
+# Golden dan korpus test dibandingkan byte-per-byte oleh Go.
+**/testdata/**

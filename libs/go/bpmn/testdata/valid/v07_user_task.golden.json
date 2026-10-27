@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
@@ -24,14 +26,20 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
             "id": "task",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "Approve order",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "type": "userTask",
             "userTask": {
               "assignee": "feel:=initiator",

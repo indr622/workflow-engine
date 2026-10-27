@@ -11,13 +11,19 @@
               "ref": "sigDone"
             },
             "id": "broadcast",
-            "incoming": ["f2"],
-            "outgoing": ["f3"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f3"
+            ],
             "type": "intermediateThrowEvent"
           },
           {
             "id": "end",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -52,7 +58,9 @@
               "ref": "sigStop"
             },
             "id": "onStop",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "type": "boundaryEvent"
           },
           {
@@ -61,7 +69,9 @@
               "ref": "sigGo"
             },
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
@@ -70,15 +80,23 @@
               "ref": "sigStopped"
             },
             "id": "stopped",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
-            "boundaryEvents": ["onStop"],
+            "boundaryEvents": [
+              "onStop"
+            ],
             "id": "work",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "work",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "work"

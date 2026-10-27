@@ -13,9 +13,13 @@
         "elements": [
           {
             "id": "charge",
-            "incoming": ["s1"],
+            "incoming": [
+              "s1"
+            ],
             "name": "charge",
-            "outgoing": ["s2"],
+            "outgoing": [
+              "s2"
+            ],
             "scope": "pay",
             "taskDefinition": {
               "retries": "3",
@@ -25,12 +29,16 @@
           },
           {
             "id": "end",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "type": "endEvent"
           },
           {
             "id": "endFailed",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
@@ -60,8 +68,13 @@
           {
             "default": "s3",
             "id": "ok",
-            "incoming": ["s2"],
-            "outgoing": ["s3", "s4"],
+            "incoming": [
+              "s2"
+            ],
+            "outgoing": [
+              "s3",
+              "s4"
+            ],
             "scope": "pay",
             "type": "exclusiveGateway"
           },
@@ -73,20 +86,40 @@
               "ref": "errPayment"
             },
             "id": "onPaymentError",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "boundaryEvent"
           },
           {
-            "boundaryEvents": ["onPaymentError"],
+            "boundaryEvents": [
+              "onPaymentError"
+            ],
             "id": "pay",
-            "incoming": ["f1"],
-            "inner": ["charge", "ok", "payEnd", "payFailed", "payStart", "s1", "s2", "s3", "s4"],
-            "outgoing": ["f2"],
+            "incoming": [
+              "f1"
+            ],
+            "inner": [
+              "charge",
+              "ok",
+              "payEnd",
+              "payFailed",
+              "payStart",
+              "s1",
+              "s2",
+              "s3",
+              "s4"
+            ],
+            "outgoing": [
+              "f2"
+            ],
             "type": "subProcess"
           },
           {
             "id": "payEnd",
-            "incoming": ["s3"],
+            "incoming": [
+              "s3"
+            ],
             "scope": "pay",
             "type": "endEvent"
           },
@@ -96,21 +129,29 @@
               "ref": "errPayment"
             },
             "id": "payFailed",
-            "incoming": ["s4"],
+            "incoming": [
+              "s4"
+            ],
             "scope": "pay",
             "type": "endEvent"
           },
           {
             "id": "payStart",
-            "outgoing": ["s1"],
+            "outgoing": [
+              "s1"
+            ],
             "scope": "pay",
             "type": "startEvent"
           },
           {
             "id": "refund",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "name": "refund",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "refund"
@@ -148,7 +189,9 @@
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

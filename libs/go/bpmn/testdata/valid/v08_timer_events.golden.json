@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f5"],
+            "incoming": [
+              "f5"
+            ],
             "type": "endEvent"
           },
           {
@@ -42,7 +44,9 @@
           },
           {
             "id": "reminded",
-            "incoming": ["f4"],
+            "incoming": [
+              "f4"
+            ],
             "type": "endEvent"
           },
           {
@@ -56,7 +60,9 @@
               }
             },
             "id": "reminder",
-            "outgoing": ["f4"],
+            "outgoing": [
+              "f4"
+            ],
             "type": "boundaryEvent"
           },
           {
@@ -68,12 +74,16 @@
               }
             },
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           },
           {
             "id": "timedOut",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -87,7 +97,9 @@
               }
             },
             "id": "timeout",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "boundaryEvent"
           },
           {
@@ -99,16 +111,27 @@
               }
             },
             "id": "waitUntil",
-            "incoming": ["f2"],
-            "outgoing": ["f5"],
+            "incoming": [
+              "f2"
+            ],
+            "outgoing": [
+              "f5"
+            ],
             "type": "intermediateCatchEvent"
           },
           {
-            "boundaryEvents": ["timeout", "reminder"],
+            "boundaryEvents": [
+              "timeout",
+              "reminder"
+            ],
             "id": "work",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "work",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "long-job"

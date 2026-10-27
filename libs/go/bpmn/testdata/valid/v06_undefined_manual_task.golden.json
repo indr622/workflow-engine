@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "end",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -30,21 +32,31 @@
           },
           {
             "id": "pack",
-            "incoming": ["f2"],
+            "incoming": [
+              "f2"
+            ],
             "name": "Pack box",
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "manualTask"
           },
           {
             "id": "prepare",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "name": "Prepare",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "type": "task"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],

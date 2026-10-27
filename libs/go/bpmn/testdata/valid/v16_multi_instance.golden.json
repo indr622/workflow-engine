@@ -7,7 +7,9 @@
         "elements": [
           {
             "id": "each",
-            "incoming": ["f1"],
+            "incoming": [
+              "f1"
+            ],
             "multiInstance": {
               "inputCollection": "feel:=items",
               "inputElement": "item",
@@ -16,7 +18,9 @@
               "sequential": false
             },
             "name": "each",
-            "outgoing": ["f2"],
+            "outgoing": [
+              "f2"
+            ],
             "taskDefinition": {
               "retries": "3",
               "type": "process-item"
@@ -25,7 +29,9 @@
           },
           {
             "id": "end",
-            "incoming": ["f3"],
+            "incoming": [
+              "f3"
+            ],
             "type": "endEvent"
           },
           {
@@ -55,32 +61,46 @@
           },
           {
             "id": "sEnd",
-            "incoming": ["s1"],
+            "incoming": [
+              "s1"
+            ],
             "scope": "seq",
             "type": "endEvent"
           },
           {
             "id": "sStart",
-            "outgoing": ["s1"],
+            "outgoing": [
+              "s1"
+            ],
             "scope": "seq",
             "type": "startEvent"
           },
           {
             "id": "seq",
-            "incoming": ["f2"],
-            "inner": ["s1", "sEnd", "sStart"],
+            "incoming": [
+              "f2"
+            ],
+            "inner": [
+              "s1",
+              "sEnd",
+              "sStart"
+            ],
             "multiInstance": {
               "completionCondition": "feel:=approved",
               "inputCollection": "feel:=approvers",
               "inputElement": "approver",
               "sequential": true
             },
-            "outgoing": ["f3"],
+            "outgoing": [
+              "f3"
+            ],
             "type": "subProcess"
           },
           {
             "id": "start",
-            "outgoing": ["f1"],
+            "outgoing": [
+              "f1"
+            ],
             "type": "startEvent"
           }
         ],
