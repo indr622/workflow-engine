@@ -19,7 +19,10 @@
     "breaking": {
       "executor": "nx:run-commands",
       "cache": false,
-      "options": { "command": "buf breaking --against \"../../.git#branch=main,subdir=libs/proto\"", "cwd": "libs/proto" }
+      "options": {
+        "command": "buf breaking --against \"../../.git#branch=main,subdir=libs/proto\"",
+        "cwd": "libs/proto"
+      }
     }
   }
 }

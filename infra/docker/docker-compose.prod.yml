@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 3s
       retries: 20
@@ -22,9 +22,9 @@ services:
     image: ${REGISTRY:-ghcr.io/indr622/workflow-engine}/engine:${VERSION:-latest}
     restart: unless-stopped
     environment:
-      ENGINE_HTTP_ADDR: ":8080"
+      ENGINE_HTTP_ADDR: ':8080'
       DATABASE_URL: postgres://${POSTGRES_USER:-workflow}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-workflow}?sslmode=disable
-      ENGINE_MIGRATE: "true"
+      ENGINE_MIGRATE: 'true'
       ENGINE_LOG_LEVEL: ${ENGINE_LOG_LEVEL:-info}
       ENGINE_CORS_ORIGINS: ${ENGINE_CORS_ORIGINS:-}
     depends_on:
@@ -35,7 +35,7 @@ services:
     image: ${REGISTRY:-ghcr.io/indr622/workflow-engine}/web:${VERSION:-latest}
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-8088}:80"
+      - '${WEB_PORT:-8088}:80'
     depends_on:
       engine:
         condition: service_healthy

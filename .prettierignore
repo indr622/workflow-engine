@@ -1,6 +1,12 @@
-# Add files here to ignore them from prettier formatting
 /dist
 /coverage
+/tmp
 /.nx/cache
 /.nx/workspace-data
 pnpm-lock.yaml
+# Kode hasil generate
+libs/go/api/gen
+libs/web/api-client/src/gen
+**/routeTree.gen.ts
+# Dokumen ditulis manual; tabel dan baris panjang dipertahankan apa adanya.
+*.md

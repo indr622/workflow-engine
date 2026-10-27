@@ -39,7 +39,6 @@
     "@vitest/ui": "~5.0.1",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
-    "eslint-plugin-boundaries": "^7.3.0",
     "eslint-plugin-import": "2.31.0",
     "eslint-plugin-jsx-a11y": "6.10.1",
     "eslint-plugin-react": "^7.35.0",
@@ -78,5 +77,13 @@
     "tslib": "^2.3.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
+  },
+  "lint-staged": {
+    "*.go": [
+      "gofmt -w"
+    ],
+    "*.{ts,tsx,js,mjs,cjs,json,css,html,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

@@ -5,8 +5,7 @@ import { ProcessMapPanel } from '../features/process-map';
 
 export const Route = createFileRoute('/')({
   // Prefetch status engine; kegagalan tidak memblok halaman, ditampilkan oleh HealthCard.
-  loader: ({ context }) =>
-    context.queryClient.prefetchQuery(healthReportQuery(context.dependencies.healthRepository)),
+  loader: ({ context }) => context.queryClient.prefetchQuery(healthReportQuery(context.dependencies.healthRepository)),
   component: DashboardPage,
 });
 
