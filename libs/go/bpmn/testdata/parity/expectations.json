@@ -1,0 +1,674 @@
+{
+  "reference": "camunda/zeebe:8.8.44",
+  "updatedAt": "2026-10-27T19:01:13Z",
+  "entries": [
+    {
+      "file": "invalid/i01_no_executable_process.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i01_no_executable_process.bpmn': - Element: definitions\n    - ERROR: Must contain at least one executable process"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "NO_EXECUTABLE_PROCESS"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i02_duplicate_id.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i02_duplicate_id.bpmn': Error: URI=null Line=7: cvc-id.2: There are multiple occurrences of ID value 'task'."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "DUPLICATE_ID"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i03_task_definition_missing.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i03_task_definition_missing.bpmn': - Element: task\n    - ERROR: Must have exactly one 'zeebe:taskDefinition' extension element"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "TASK_DEFINITION_MISSING"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i04_task_definition_invalid.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i04_task_definition_invalid.bpmn': - Element: task > extensionElements > taskDefinition\n    - ERROR: Expected expression but not found."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "TASK_DEFINITION_RETRIES_INVALID",
+          "TASK_DEFINITION_TYPE_EMPTY"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i05_gateway_flow_missing_condition.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i05_gateway_flow_missing_condition.bpmn': - Element: f3\n    - ERROR: Must have a condition or be default flow"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "GATEWAY_FLOW_MISSING_CONDITION"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i06_default_flow_invalid.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i06_default_flow_invalid.bpmn': - Element: g1\n    - ERROR: Default flow must start at gateway"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "DEFAULT_FLOW_HAS_CONDITION",
+          "GATEWAY_DEFAULT_FLOW_INVALID"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i07_parallel_gateway_condition.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i07_parallel_gateway_condition.bpmn': - Element: fork\n    - ERROR: Conditional sequence flows are only supported at exclusive or inclusive gateway"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "PARALLEL_GATEWAY_FLOW_HAS_CONDITION"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i08_start_incoming_end_outgoing.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i08_start_incoming_end_outgoing.bpmn': - Element: end\n    - ERROR: End events must not have outgoing sequence flows to other elements."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "END_EVENT_HAS_OUTGOING",
+          "START_EVENT_HAS_INCOMING"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i09_flow_ref_not_found.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i09_flow_ref_not_found.bpmn': Error: URI=null Line=10: cvc-id.1: There is no ID/IDREF binding for IDREF 'phantom'."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "FLOW_SOURCE_NOT_FOUND",
+          "FLOW_TARGET_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i10_timer_invalid.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i10_timer_invalid.bpmn': - Element: wait\n    - ERROR: Invalid timer duration expression (Invalid duration format '15 minutes' for expression '15 minutes'.)"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "TIMER_DEFINITION_INVALID"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i11_message_refs.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i11_message_refs.bpmn': - Element: msgNoName\n    - ERROR: Name must be present and not empty\n- Element: msgNoKey\n    - ERROR: Must have exactly one zeebe:subscription extension element\n- Element: m1\n    - ERROR: Must reference a message"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "MESSAGE_CORRELATION_KEY_MISSING",
+          "MESSAGE_NAME_MISSING",
+          "MESSAGE_REF_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i12_error_end_invalid.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i12_error_end_invalid.bpmn': - Element: e2\n    - ERROR: ErrorCode must be present and not empty\n- Element: e1\n    - ERROR: Must reference an error"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "ERROR_CODE_MISSING",
+          "ERROR_REF_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i13_boundary_host_missing.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i13_boundary_host_missing.bpmn': - Element: lost\n    - ERROR: Must be attached to an activity"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "BOUNDARY_ATTACHED_TO_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i14_subprocess_no_start.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i14_subprocess_no_start.bpmn': - Element: task\n    - ERROR: Must have exactly one start event"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "NO_START_EVENT"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i15_multiple_none_start.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i15_multiple_none_start.bpmn': - Element: two-starts\n    - ERROR: Multiple none start events are not allowed"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "MULTIPLE_NONE_START_EVENTS"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i16_unsupported_elements.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i16_unsupported_elements.bpmn': - Element: exotic\n    - ERROR: Can't find an catch link event for the throw link event with the name 'jump'.\n- Element: complex\n    - ERROR: Elements of type 'ComplexGateway' are currently not supported. Please refer to the documentation for a list of supported elements: https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-coverage/"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "UNSUPPORTED_ELEMENT"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i17_multi_instance_invalid.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i17_multi_instance_invalid.bpmn': - Element: task > multiInstanceLoopCharacteristics > extensionElements > loopCharacteristics\n    - ERROR: Expected expression but not found."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "MULTI_INSTANCE_INPUT_COLLECTION_MISSING",
+          "MULTI_INSTANCE_OUTPUT_INCOMPLETE"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i18_user_task_form_conflict.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i18_user_task_form_conflict.bpmn': - Element: task > extensionElements > formDefinition\n    - ERROR: Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "USER_TASK_FORM_CONFLICT"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i19_called_element_missing.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i19_called_element_missing.bpmn': - Element: task\n    - ERROR: Must have exactly one 'zeebe:calledElement' extension element"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "CALLED_ELEMENT_MISSING"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i20_event_subprocess_none_start.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i20_event_subprocess_none_start.bpmn': - Element: esp\n    - ERROR: Start events in event subprocesses must be one of: message, timer, error, signal or escalation"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "EVENT_SUBPROCESS_INVALID_START"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i21_not_bpmn.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i21_not_bpmn.bpmn': Error: URI=null Line=3: cvc-elt.1.a: Cannot find the declaration of element 'html'."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "NOT_BPMN"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i22_malformed_xml.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i22_malformed_xml.bpmn': Error: URI=null Line=3: cvc-complex-type.4: Attribute 'targetNamespace' must appear on element 'bpmn:definitions'."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "XML_MALFORMED"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i23_condition_on_task_flow.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i23_condition_on_task_flow.bpmn': - Element: task\n    - ERROR: Conditional sequence flows are only supported at exclusive or inclusive gateway"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "CONDITION_ON_NON_GATEWAY_FLOW"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i24_event_gateway_invalid_target.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i24_event_gateway_invalid_target.bpmn': - Element: race\n    - ERROR: Event-based gateway must not have an outgoing sequence flow to other elements than message/timer/signal intermediate catch events."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "EVENT_GATEWAY_INVALID_TARGET"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i25_flow_crosses_scope.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "FLOW_CROSSES_SCOPE"
+        ]
+      },
+      "deviation": "Camunda 8.8.44 accepts a sequence flow that leaves an embedded sub-process without validation; BPMN 2.0 forbids it and the engine would not know which scope owns the token, so we reject it with FLOW_CROSSES_SCOPE (verified live 2026-10-28)."
+    },
+    {
+      "file": "invalid/i26_timer_cycle_on_intermediate.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i26_timer_cycle_on_intermediate.bpmn': - Element: wait\n    - ERROR: Intermediate timer catch event must have either a time duration or a time date."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "TIMER_CYCLE_NOT_ALLOWED"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i27_io_mapping_target_empty.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i27_io_mapping_target_empty.bpmn': - Element: task > extensionElements > ioMapping > input\n    - ERROR: Expected path expression but not found."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "IO_MAPPING_TARGET_EMPTY"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i28_duplicate_error_boundary.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i28_duplicate_error_boundary.bpmn': - Element: task\n    - ERROR: Multiple error catch events with the same error code 'FAIL' are not supported on the same scope."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "BOUNDARY_DUPLICATE_ERROR_CATCH"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i29_escalation_signal_refs.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i29_escalation_signal_refs.bpmn': - Element: x\n    - ERROR: Must reference an escalation\n- Element: s\n    - ERROR: Must reference a signal"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "ESCALATION_REF_NOT_FOUND",
+          "SIGNAL_REF_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i30_multiple_event_definitions.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i30_multiple_event_definitions.bpmn': - Element: both\n    - ERROR: Must have exactly one event definition"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "MULTIPLE_EVENT_DEFINITIONS"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i31_invalid_id.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i31_invalid_id.bpmn': Error: URI=null Line=6: cvc-datatype-valid.1.2.1: '1end' is not a valid value for 'NCName'."
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "INVALID_ID"
+        ]
+      }
+    },
+    {
+      "file": "invalid/i32_boundary_incoming.bpmn",
+      "camunda": {
+        "accepted": false,
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i32_boundary_incoming.bpmn': - Element: b\n    - ERROR: Cannot have incoming sequence flows"
+      },
+      "ours": {
+        "accepted": false,
+        "codes": [
+          "BOUNDARY_EVENT_HAS_INCOMING"
+        ]
+      }
+    },
+    {
+      "file": "valid/v01_minimal.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v02_service_task.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v03_exclusive_gateway.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v04_parallel_gateway.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v05_inclusive_gateway.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v06_undefined_manual_task.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v07_user_task.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v08_timer_events.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v09_message_events.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v10_message_throw.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v11_error_events.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v12_escalation.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v13_embedded_subprocess.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v14_event_subprocess.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v15_call_activity.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v16_multi_instance.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v17_terminate_end.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v18_signal_events.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v19_event_based_gateway.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v20_script_business_rule.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v21_collaboration_two_pools.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v22_bpmn2_prefix.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v23_large_process.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v24_implicit_end.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v25_non_executable_pool.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v26_camunda7_extension.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v27_unreachable_element.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    }
+  ]
+}

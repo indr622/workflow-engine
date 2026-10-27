@@ -31,6 +31,29 @@ services:
       postgres:
         condition: service_healthy
 
+  # Camunda 8.8 referensi untuk uji paritas (make up PROFILES=camunda). Bukan bagian runtime.
+  zeebe:
+    image: camunda/zeebe:8.8.44
+    profiles: ['camunda']
+    environment:
+      ZEEBE_BROKER_GATEWAY_ENABLE: 'true'
+      # Tanpa penyimpanan sekunder (Elasticsearch); cukup broker + REST untuk uji deploy.
+      CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: 'none'
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: 'true'
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: 'false'
+      ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK: '0.98'
+      ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK: '0.99'
+      JAVA_TOOL_OPTIONS: '-Xms512m -Xmx1g'
+    ports:
+      - '127.0.0.1:${ZEEBE_GRPC_PORT:-26500}:26500'
+      - '127.0.0.1:${ZEEBE_REST_PORT:-8089}:8080'
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:9600/actuator/health/status >/dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     profiles: ['observability']
