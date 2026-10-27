@@ -1,0 +1,9 @@
+{
+  "name": "flow-canvas",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/web/flow-canvas/src",
+  "projectType": "library",
+  "tags": ["type:ui", "scope:shared"],
+  "// targets": "to see all targets run: nx show project flow-canvas --web",
+  "targets": {}
+}

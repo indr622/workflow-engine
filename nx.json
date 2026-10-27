@@ -11,7 +11,9 @@
       "!{projectRoot}/**/?(*.)+(spec|test).[jt]s?(x)?(.snap)",
       "!{projectRoot}/**/*_test.go",
       "!{projectRoot}/tsconfig.spec.json",
-      "!{projectRoot}/eslint.config.mjs"
+      "!{projectRoot}/eslint.config.mjs",
+      "!{projectRoot}/.eslintrc.json",
+      "!{projectRoot}/src/test-setup.[jt]s"
     ],
     "sharedGlobals": [
       "{workspaceRoot}/tsconfig.base.json"
@@ -55,6 +57,14 @@
   },
   "plugins": [
     {
+      "plugin": "@nx/js/typescript",
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
+    },
+    {
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
@@ -79,15 +89,19 @@
   "generators": {
     "@nx/react": {
       "application": {
-        "bundler": "vite",
+        "babel": true,
         "style": "css",
         "linter": "eslint",
+        "bundler": "vite",
         "unitTestRunner": "vitest"
       },
       "library": {
         "style": "css",
         "linter": "eslint",
         "unitTestRunner": "vitest"
+      },
+      "component": {
+        "style": "css"
       }
     }
   },

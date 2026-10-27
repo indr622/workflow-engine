@@ -32,3 +32,5 @@ Thumbs.db
 # Vite / TanStack Router
 *.local
 vite.config.*.timestamp*
+vitest.config.*.timestamp*
+.vitest

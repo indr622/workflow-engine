@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "libs/web/ui/src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@workflow/ui/components",
+    "ui": "@workflow/ui/components/ui",
+    "utils": "@workflow/ui/lib/utils",
+    "lib": "@workflow/ui/lib",
+    "hooks": "@workflow/ui/hooks"
+  }
+}

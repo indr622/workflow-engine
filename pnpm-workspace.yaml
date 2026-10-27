@@ -3,3 +3,5 @@ packages:
   - libs/web/*
 allowBuilds:
   nx: true
+  "@swc/core": true
+  esbuild: true
