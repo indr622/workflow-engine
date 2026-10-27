@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "golang.go",
+    "nrwl.angular-console",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "bufbuild.vscode-buf",
+    "bpmn-io.vs-code-bpmn-io",
+    "editorconfig.editorconfig"
+  ]
+}
