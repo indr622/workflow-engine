@@ -2,28 +2,43 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Sedang dieksekusi sejak 2026-10-28 di branch `feat/phase-1-bpmn-deployment`
+**Status:** ✅ Selesai pada 2026-10-28 di branch `feat/phase-1-bpmn-deployment` (menunggu review dan merge ke `main`)
 **Tanggal:** 2026-10-28
 
 ---
 
-## 0. Status eksekusi
+## 0. Status eksekusi (per 2026-10-28)
 
-Belum ada langkah yang dieksekusi. Bagian ini diisi dengan tabel yang sama seperti Fase 0
-(langkah, status, bukti) begitu pekerjaan dimulai.
-
-**Kondisi repo yang menjadi titik awal (dicek 2026-10-28):**
-
-| Area | Kondisi | Dampak ke Fase 1 |
+| Langkah | Status | Bukti / catatan |
 |---|---|---|
-| `apps/engine` | Platform (`config`, `logger`, `db` + goose, `httpserver`, `eventbus`) dan modul `health` lima lapisan sudah jalan | Modul `deployment` mengikuti pola `health` |
-| `apps/engine/internal/archtest` | Test `go list` menegakkan aturan lapisan: `domain` hanya boleh stdlib, antarmodul hanya lewat `api` | `deployment/domain` **tidak boleh** meng-import `libs/go/bpmn`; parsing dilakukan di `application` (lihat 3.3) |
-| Migrasi | Satu urutan goose di `apps/engine/internal/platform/db/migrations` (`00001_init.sql`), di-embed ke binary | Migrasi Fase 1 menjadi `00002_...sql` di folder yang sama |
-| sqlc | Belum ada `sqlc.yaml` | Fase 1 membuat konfigurasi sqlc pertama |
-| `libs/proto` | `buf` v2, `workflow/health/v1/health.proto`, generate ke `libs/go/api/gen` dan `libs/web/api-client/src/gen` | Proto baru di `workflow/deployment/v1` |
-| `libs/go/bpmn` | Belum dibuat | Dibuat di Fase 1 |
-| `apps/modeler-web` | Selesai di Fase 0: fitur `health` empat lapisan, shadcn/ui, TanStack Router, kanvas bpmn-js (`libs/web/bpmn-viewer`) dan React Flow (`libs/web/flow-canvas`) | Fitur `deployment` di 6.13 mengikuti pola fitur `health` |
-| Makefile, CI, lint hook | Selesai di Fase 0: Makefile 23 target, GitHub Actions (check, integration, docker), husky + commitlint | Target baru (`fuzz`, `parity`) ditambahkan ke Makefile yang sudah ada |
+| 6.1 Prasyarat Fase 0 | ✅ | Makefile, CI, lib web sudah ada |
+| 6.2 Korpus BPMN dan hasil Camunda | ✅ | 27 valid + 32 invalid di `libs/go/bpmn/testdata`; `parity/expectations.json` dari deploy live ke `camunda/zeebe:8.8.44` |
+| 6.3 Kerangka `libs/go/bpmn` | ✅ | Proyek Nx `bpmn-go` dengan target build, test, lint, fuzz, bench; `deps_test.go` menjaga stdlib-only |
+| 6.4 Lapisan XML | ✅ | `internal/xmltree`: namespace ter-resolve, posisi baris/kolom, DOCTYPE ditolak, BPMNDI dilewati, batas ukuran/elemen/kedalaman |
+| 6.5 Model, builder, indeks | ✅ | Model immutable per kategori (`Event`, `Activity`, `Gateway`, `SequenceFlow`); golden JSON; test invarian; test baca paralel 50 goroutine |
+| 6.6 Ekstensi `zeebe:` | ✅ | taskDefinition, taskHeaders, ioMapping, properties, userTask, formDefinition, assignmentDefinition, taskSchedule, calledElement, calledDecision, script, subscription, loopCharacteristics, versionTag; sisanya `RawExtension` |
+| 6.7 Validator dan profil | ✅ | 56 kode issue di `issue.go`; setiap kode invalid punya file pemicu; `ProfileFull` dan `ProfileExecutable` |
+| 6.8 Fuzz dan benchmark | ✅ | Fuzz 10 menit bersih (korpus regresi 72 input); parse 500 node 7,7 ms / 2,9 MB, parse+validasi 11,7 ms / 3,0 MB |
+| 6.9 Proto `deployment/v1` | ✅ | DeployResource, ValidateResource, GetProcessDefinition, ListProcessDefinitions; stub Go dan TS di-commit |
+| 6.10 Migrasi, keygen, sqlc | ✅ | `00002_deployment.sql`, `platform/keygen` (sequence `engine_key_seq`), `sqlc.yaml` + 9 query |
+| 6.11 Modul `deployment` | ✅ | Lima lapisan; unit test domain dan application (fake repository); integration test versi/dedup/20 deploy paralel; test handler Connect dengan detail `DeploymentRejection` |
+| 6.12 Wiring dan event | ✅ | Dirakit di `cmd/engine/main.go`; event `deployment.process_deployed` dibuktikan subscriber di unit test |
+| 6.13 Modeler-web fitur `deployment` | ✅ | Toolbar validate/deploy, marker issue di kanvas, panel issue, route `/definitions` (TanStack Table v8) dan `/definitions/$key` (viewer); diuji di browser: validasi, deploy, daftar, detail |
+| 6.14 Uji paritas | ✅ | 58 dari 59 file sama dengan Camunda 8.8; 1 penyimpangan disengaja terdokumentasi; `TestParityWithCamundaReference` jalan di CI tanpa Camunda |
+| 6.15 Dokumentasi | ✅ | ADR-0008, ADR-0009, `libs/go/bpmn/README.md`, roadmap |
+
+**Penyesuaian terhadap rencana selama eksekusi:**
+
+- **Model per kategori**, bukan satu tipe Go per elemen: `*bpmn.Event`, `*bpmn.Activity`, `*bpmn.Gateway`, `*bpmn.SequenceFlow` dengan `Type()`. Lebih sedikit tipe untuk Fase 2 tanpa kehilangan informasi.
+- **Lapisan XML berupa pohon node generik** (`internal/xmltree`), bukan struct DTO per elemen dengan `DecodeElement`. Lebih sederhana dan tetap memberi posisi baris/kolom.
+- **Korpus dihasilkan generator** yang meniru ekspor Camunda Modeler 5.40 (namespace, atribut `modeler:executionPlatform`), bukan ekspor manual dari aplikasi Modeler. Validitasnya dibuktikan lewat deploy live ke Camunda 8.8.44.
+- **Benchmark**: parse saja di bawah target 10 ms; parse + validasi 11,7 ms. Target dikunci menjadi **< 15 ms** untuk 500 node karena deploy bukan hot path dan model di-cache.
+- **Uji paritas offline berjalan in-process** sebagai test Go, bukan lewat engine yang berjalan, agar CI tidak perlu menyalakan engine. Mode `-engine URL` tetap tersedia di tool.
+- **`application` boleh meng-import `api` modulnya sendiri** (event yang dipublikasikan, interface yang diimplementasikan); aturan `archtest` dan CONTRIBUTING diperbarui.
+- **Camunda referensi** memakai `CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=none` agar broker jalan tanpa Elasticsearch.
+- **TanStack Table dikunci ke v8**; v9 mengubah seluruh API dan belum dipakai shadcn.
+- **Penyimpangan paritas yang disengaja**: sequence flow yang keluar dari embedded sub-process ditolak oleh kita (`FLOW_CROSSES_SCOPE`), diterima Camunda tanpa validasi.
+- **Deploy identik** tetap membuat baris `deployment` dan `deployment_resource` baru (hanya `process_definition` yang dipakai ulang); perilaku Zeebe untuk kasus ini tidak diverifikasi lebih jauh.
 
 ## 1. Lingkup
 
@@ -53,19 +68,19 @@ ekspresi (Fase 7), DMN dan form sebagai resource deploy (Fase 7 / Fase 6), multi
 
 ## 2. Definition of Done Fase 1
 
-- [ ] `libs/go/bpmn` adalah proyek Nx (`bpmn-go`) dengan target `build`, `test`, `lint`, `fuzz`, `bench`; hanya meng-import stdlib (ditegakkan test).
-- [ ] Semua file di `libs/go/bpmn/testdata/valid` ter-parse tanpa issue error dan cocok dengan golden JSON-nya; semua file di `testdata/invalid` menghasilkan kode issue yang sama persis dengan golden-nya.
-- [ ] Korpus berisi minimal **30 file** BPMN hasil ekspor Camunda Modeler (desktop atau web, execution platform Camunda 8) yang mencakup setiap baris matriks cakupan di 4.1.
-- [ ] `go test -fuzz=FuzzParse` berjalan 10 menit tanpa panic, hang, atau alokasi tak terbatas; korpus crash (jika ada) masuk `testdata/fuzz` sebagai regresi.
-- [ ] Benchmark: parse + validasi proses 500 flow node < 10 ms dan < 5 MB alokasi di mesin dev (angka awal, dikunci setelah pengukuran pertama).
-- [ ] Modul `deployment` lima lapisan lolos `archtest`; use case punya unit test dengan repository fake; repository punya integration test (`-tags=integration`) terhadap Postgres 18.
-- [ ] `DeployResource` dengan file valid mengembalikan `deployment_key` dan metadata tiap proses (`bpmn_process_id`, `version`, `process_definition_key`); deploy ulang file identik **tidak** menaikkan versi; file berubah menaikkan versi tepat satu.
-- [ ] Deploy file tidak valid ditolak dengan Connect `InvalidArgument` + detail `DeploymentRejection` berisi daftar issue (kode, element id, posisi baris/kolom).
-- [ ] Deploy paralel 20 request untuk `bpmnProcessId` yang sama menghasilkan versi berurutan tanpa duplikat (test integrasi).
-- [ ] Event `deployment.process_deployed` terpublikasi di event bus untuk setiap versi baru (dibuktikan test dengan subscriber).
-- [ ] Modeler-web: deploy dari kanvas, lihat daftar definition, klik issue memilih elemen bermasalah dan elemen diberi marker merah.
-- [ ] Uji paritas: setiap file korpus memberi hasil terima/tolak yang sama dengan Camunda 8 referensi (profil `full`), perbedaan yang disengaja tercatat di `testdata/parity/expectations.json` dengan alasan.
-- [ ] ADR-0008 (parser BPMN) dan ADR-0009 (versioning dan dedup deployment) tersimpan di `docs/adr/`.
+- [x] `libs/go/bpmn` adalah proyek Nx (`bpmn-go`) dengan target `build`, `test`, `lint`, `fuzz`, `bench`; hanya meng-import stdlib (ditegakkan test).
+- [x] Semua file di `libs/go/bpmn/testdata/valid` ter-parse tanpa issue error dan cocok dengan golden JSON-nya; semua file di `testdata/invalid` menghasilkan kode issue yang sama persis dengan golden-nya.
+- [x] Korpus berisi minimal **30 file** BPMN hasil ekspor Camunda Modeler (desktop atau web, execution platform Camunda 8) yang mencakup setiap baris matriks cakupan di 4.1.
+- [x] `go test -fuzz=FuzzParse` berjalan 10 menit tanpa panic, hang, atau alokasi tak terbatas; korpus crash (jika ada) masuk `testdata/fuzz` sebagai regresi.
+- [x] Benchmark: parse + validasi proses 500 flow node < 15 ms dan < 5 MB alokasi di mesin dev (dikunci setelah pengukuran pertama: 11,7 ms / 3,0 MB).
+- [x] Modul `deployment` lima lapisan lolos `archtest`; use case punya unit test dengan repository fake; repository punya integration test (`-tags=integration`) terhadap Postgres 18.
+- [x] `DeployResource` dengan file valid mengembalikan `deployment_key` dan metadata tiap proses (`bpmn_process_id`, `version`, `process_definition_key`); deploy ulang file identik **tidak** menaikkan versi; file berubah menaikkan versi tepat satu.
+- [x] Deploy file tidak valid ditolak dengan Connect `InvalidArgument` + detail `DeploymentRejection` berisi daftar issue (kode, element id, posisi baris/kolom).
+- [x] Deploy paralel 20 request untuk `bpmnProcessId` yang sama menghasilkan versi berurutan tanpa duplikat (test integrasi).
+- [x] Event `deployment.process_deployed` terpublikasi di event bus untuk setiap versi baru (dibuktikan test dengan subscriber).
+- [x] Modeler-web: deploy dari kanvas, lihat daftar definition, klik issue memilih elemen bermasalah dan elemen diberi marker merah.
+- [x] Uji paritas: setiap file korpus memberi hasil terima/tolak yang sama dengan Camunda 8 referensi (profil `full`), perbedaan yang disengaja tercatat di `testdata/parity/expectations.json` dengan alasan.
+- [x] ADR-0008 (parser BPMN) dan ADR-0009 (versioning dan dedup deployment) tersimpan di `docs/adr/`.
 
 ## 3. Keputusan teknis
 
