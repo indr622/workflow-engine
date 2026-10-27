@@ -1,0 +1,10 @@
+/* Marker issue validasi di kanvas bpmn-js. Kelas ditambahkan lewat BpmnCanvasHandle.setMarkers. */
+.bpmn-canvas .issue-error .djs-visual > :nth-child(1) {
+  stroke: oklch(0.577 0.245 27.325) !important;
+  stroke-width: 3px !important;
+}
+
+.bpmn-canvas .issue-warning .djs-visual > :nth-child(1) {
+  stroke: oklch(0.769 0.188 70.08) !important;
+  stroke-width: 3px !important;
+}

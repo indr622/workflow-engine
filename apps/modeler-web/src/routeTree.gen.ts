@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DefinitionsIndexRouteImport } from './routes/definitions.index'
+import { Route as DefinitionsKeyRouteImport } from './routes/definitions.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DefinitionsIndexRoute = DefinitionsIndexRouteImport.update({
+  id: '/definitions/',
+  path: '/definitions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DefinitionsKeyRoute = DefinitionsKeyRouteImport.update({
+  id: '/definitions/$key',
+  path: '/definitions/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/definitions/$key': typeof DefinitionsKeyRoute
+  '/definitions/': typeof DefinitionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/definitions/$key': typeof DefinitionsKeyRoute
+  '/definitions': typeof DefinitionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/definitions/$key': typeof DefinitionsKeyRoute
+  '/definitions/': typeof DefinitionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/definitions/$key' | '/definitions/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/definitions/$key' | '/definitions'
+  id: '__root__' | '/' | '/definitions/$key' | '/definitions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DefinitionsKeyRoute: typeof DefinitionsKeyRoute
+  DefinitionsIndexRoute: typeof DefinitionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/definitions/': {
+      id: '/definitions/'
+      path: '/definitions'
+      fullPath: '/definitions/'
+      preLoaderRoute: typeof DefinitionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/definitions/$key': {
+      id: '/definitions/$key'
+      path: '/definitions/$key'
+      fullPath: '/definitions/$key'
+      preLoaderRoute: typeof DefinitionsKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DefinitionsKeyRoute: DefinitionsKeyRoute,
+  DefinitionsIndexRoute: DefinitionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

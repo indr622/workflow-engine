@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
+import { DeploymentRepositoryProvider } from '../features/deployment';
 import { HealthRepositoryProvider } from '../features/health';
 import { createDependencies } from './dependencies';
 import { createAppRouter } from './router';
@@ -14,7 +15,9 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <HealthRepositoryProvider repository={dependencies.healthRepository}>
-        <RouterProvider router={router} />
+        <DeploymentRepositoryProvider repository={dependencies.deploymentRepository}>
+          <RouterProvider router={router} />
+        </DeploymentRepositoryProvider>
       </HealthRepositoryProvider>
     </QueryClientProvider>
   );

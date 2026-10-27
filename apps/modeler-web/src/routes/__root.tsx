@@ -15,7 +15,10 @@ function RootLayout() {
           <span className="font-semibold">Workflow Engine</span>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <Link to="/" className="[&.active]:font-medium [&.active]:text-foreground">
-              Dashboard
+              Modeler
+            </Link>
+            <Link to="/definitions" className="[&.active]:font-medium [&.active]:text-foreground">
+              Definitions
             </Link>
           </nav>
         </div>
