@@ -13,6 +13,10 @@ import (
 	"syscall"
 	"time"
 
+	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
+	deploymentapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
+	deploymentinfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/infrastructure"
+	deploymentifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/interfaces"
 	healthapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/health/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/infrastructure"
@@ -83,14 +87,21 @@ func run() error {
 		}
 	}
 
-	// Event bus dibagi semua modul; belum ada subscriber di Fase 0.
-	_ = eventbus.NewInMemory()
+	// Event bus in-process dibagi semua modul.
+	bus := eventbus.NewInMemory()
 
 	mux := http.NewServeMux()
 
 	// Modul health.
 	checkHealth := application.NewCheckHealth(version, 3*time.Second, infrastructure.NewPostgresProbe(pool))
 	interfaces.NewHandler(checkHealth).Register(mux)
+
+	// Modul deployment.
+	deploymentRepo := deploymentinfra.NewPostgresRepository(pool)
+	processCache := deploymentapp.NewProcessCache(deploymentRepo, 256)
+	deployResource := deploymentapp.NewDeployResource(deploymentRepo, bus, processCache, nil, log)
+	deploymentifc.NewHandler(deployResource, deploymentapp.NewQueries(deploymentRepo)).Register(mux)
+	var _ deploymentapi.ProcessDefinitions = processCache // dipakai modul execution di Fase 2
 
 	srv := httpserver.New(cfg.HTTPAddr, httpserver.CORS(cfg.CORSOrigins, mux), log)
 	return srv.Run(ctx, cfg.ShutdownTimeout)

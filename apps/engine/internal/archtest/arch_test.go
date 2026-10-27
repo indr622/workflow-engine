@@ -21,10 +21,12 @@ var layerPattern = regexp.MustCompile(`^` + regexp.QuoteMeta(modulePrefix) + `([
 
 // allowedSameModule: lapisan mana yang boleh diimpor oleh lapisan lain di modul yang sama.
 var allowedSameModule = map[string][]string{
-	"api":            {},
-	"domain":         {},
-	"application":    {"domain"},
-	"infrastructure": {"domain", "application"},
+	"api":    {},
+	"domain": {},
+	// application boleh memakai api modulnya sendiri: tipe event yang dipublikasikan dan
+	// interface publik yang diimplementasikannya tinggal di sana.
+	"application":    {"domain", "api"},
+	"infrastructure": {"domain", "application", "api"},
 	"interfaces":     {"domain", "application", "api"},
 }
 
@@ -133,6 +135,8 @@ func TestCheckImportRules(t *testing.T) {
 		{"domain uses stdlib", pkgLayer{"job", "domain"}, "time", true},
 		{"domain uses driver", pkgLayer{"job", "domain"}, "github.com/jackc/pgx/v5", false},
 		{"application uses own domain", pkgLayer{"job", "application"}, p + "job/domain", true},
+		{"application uses own api", pkgLayer{"job", "application"}, p + "job/api", true},
+		{"domain uses own api", pkgLayer{"job", "domain"}, p + "job/api", false},
 		{"application uses own infrastructure", pkgLayer{"job", "application"}, p + "job/infrastructure", false},
 		{"interfaces uses own application", pkgLayer{"job", "interfaces"}, p + "job/application", true},
 		{"cross module api", pkgLayer{"job", "application"}, p + "health/api", true},

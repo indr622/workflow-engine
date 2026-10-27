@@ -45,10 +45,13 @@ Setiap modul di `apps/engine/internal/modules/<modul>` punya lima paket:
 | Paket | Isi | Boleh meng-import |
 |---|---|---|
 | `domain` | Entity, aturan bisnis, port repository | Hanya stdlib |
-| `application` | Use case | `domain` |
-| `infrastructure` | Adapter keluar: Postgres, event bus | `domain`, `application` |
+| `application` | Use case | `domain`, `api` (event yang dipublikasikan, interface yang diimplementasikan) |
+| `infrastructure` | Adapter keluar: Postgres, event bus | `domain`, `application`, `api` |
 | `interfaces` | Adapter masuk: handler Connect dan HTTP | `domain`, `application`, `api` |
-| `api` | Kontrak publik untuk modul lain | Tidak ada |
+| `api` | Kontrak publik untuk modul lain | Tidak ada paket modul lain; boleh kernel `libs/go/*` |
+
+Contoh rujukan dua modul: `health` (paling kecil) dan `deployment` (dengan repository Postgres,
+sqlc, cache, dan event).
 
 Modul lain hanya boleh meng-import paket `api`. Aturan ini ditegakkan oleh depguard dan test
 `apps/engine/internal/archtest`. Modul baru dirakit di `apps/engine/cmd/engine/main.go`.

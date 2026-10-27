@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package workflow.deployment.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1;deploymentv1";
+
+// DeploymentService menerima resource BPMN dan mengelola process definition berversi.
+service DeploymentService {
+  // DeployResource memvalidasi lalu menyimpan satu atau lebih resource BPMN secara atomik.
+  // Ditolak dengan INVALID_ARGUMENT dan detail DeploymentRejection bila ada issue error.
+  rpc DeployResource(DeployResourceRequest) returns (DeployResourceResponse) {}
+  // ValidateResource menjalankan validasi yang sama tanpa menyimpan (dry run untuk modeler).
+  rpc ValidateResource(ValidateResourceRequest) returns (ValidateResourceResponse) {}
+  // GetProcessDefinition mengembalikan metadata dan XML asli satu process definition.
+  rpc GetProcessDefinition(GetProcessDefinitionRequest) returns (GetProcessDefinitionResponse) {}
+  // ListProcessDefinitions mengembalikan daftar definition dengan keyset pagination.
+  rpc ListProcessDefinitions(ListProcessDefinitionsRequest) returns (ListProcessDefinitionsResponse) {}
+}
+
+message Resource {
+  // Nama file, misalnya "order-process.bpmn". Fase 1 hanya menerima ekstensi .bpmn.
+  string name = 1;
+  bytes content = 2;
+}
+
+message DeployResourceRequest {
+  repeated Resource resources = 1;
+}
+
+message DeployResourceResponse {
+  int64 deployment_key = 1;
+  repeated ProcessDefinition process_definitions = 2;
+  repeated ValidationIssue warnings = 3;
+}
+
+// Profile menentukan elemen mana yang diterima validasi.
+enum Profile {
+  PROFILE_UNSPECIFIED = 0;
+  // Hanya elemen yang bisa dieksekusi engine; sama dengan yang dipakai DeployResource.
+  PROFILE_EXECUTABLE = 1;
+  // Semua elemen yang dikenali parser; untuk lint modeler dan uji paritas.
+  PROFILE_FULL = 2;
+}
+
+message ValidateResourceRequest {
+  repeated Resource resources = 1;
+  Profile profile = 2;
+}
+
+message ValidateResourceResponse {
+  // Semua issue, error maupun warning. valid = tidak ada issue error.
+  bool valid = 1;
+  repeated ValidationIssue issues = 2;
+  repeated ProcessSummary processes = 3;
+}
+
+message ProcessSummary {
+  string resource_name = 1;
+  string bpmn_process_id = 2;
+  string name = 3;
+  string version_tag = 4;
+  int32 element_count = 5;
+}
+
+message ProcessDefinition {
+  int64 process_definition_key = 1;
+  string bpmn_process_id = 2;
+  int32 version = 3;
+  string version_tag = 4;
+  string name = 5;
+  string resource_name = 6;
+  int64 deployment_key = 7;
+  google.protobuf.Timestamp created_at = 8;
+  // duplicate = true bila deploy ini tidak membuat versi baru karena resource identik.
+  bool duplicate = 9;
+}
+
+message GetProcessDefinitionRequest {
+  int64 process_definition_key = 1;
+}
+
+message GetProcessDefinitionResponse {
+  ProcessDefinition process_definition = 1;
+  // Resource asli byte-per-byte, termasuk diagram interchange.
+  string bpmn_xml = 2;
+}
+
+message ListProcessDefinitionsRequest {
+  // Filter opsional.
+  string bpmn_process_id = 1;
+  bool latest_only = 2;
+  // Default 50, maksimum 500.
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListProcessDefinitionsResponse {
+  repeated ProcessDefinition process_definitions = 1;
+  string next_page_token = 2;
+}
+
+// DeploymentRejection dilampirkan sebagai detail error INVALID_ARGUMENT saat deploy ditolak.
+message DeploymentRejection {
+  repeated ValidationIssue issues = 1;
+}
+
+message ValidationIssue {
+  string code = 1;
+  Severity severity = 2;
+  string message = 3;
+  string resource_name = 4;
+  string bpmn_process_id = 5;
+  string element_id = 6;
+  int32 line = 7;
+  int32 column = 8;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_ERROR = 1;
+  SEVERITY_WARNING = 2;
+}
