@@ -8,7 +8,7 @@ Setiap fase punya dokumen sendiri di folder ini. Hanya Fase 0 yang sudah dirinci
 
 | Fase | Nama | Keluaran utama | Dokumen |
 |---|---|---|---|
-| 0 | Persiapan environment | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
+| 0 | Persiapan environment (🟡 dijeda, sebagian selesai) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
 | 1 | Parser dan model BPMN | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | _belum ditulis_ |
 | 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | _belum ditulis_ |
 | 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | _belum ditulis_ |

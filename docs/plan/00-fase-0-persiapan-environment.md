@@ -2,10 +2,38 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Draft rencana — belum dieksekusi
-**Tanggal:** 2026-10-27
+**Status:** Dieksekusi sebagian — **dijeda** pada 2026-10-28 atas permintaan user
+**Tanggal:** 2026-10-27 (rencana), 2026-10-28 (eksekusi)
 
 ---
+
+## 0. Status eksekusi (per 2026-10-28)
+
+| Langkah | Status | Bukti / catatan |
+|---|---|---|
+| 5.1 Tooling lokal | ✅ Selesai | buf 1.75.0, protoc-gen-go 1.36.12, protoc-gen-connect-go 1.21.1, goose 3.29.0, sqlc 1.31.1, goimports terpasang |
+| 5.2 Git | ✅ Selesai | `.gitattributes` (LF), `.editorconfig`, `.gitignore`; branch `main` di GitHub `indr622/workflow-engine`; `core.autocrlf=false` diset di level repo |
+| 5.3 Workspace Nx | ✅ Selesai | Nx 24.0.1 + pnpm 12; target Go via `nx:run-commands`; `nx run-many -t build test -p engine api-go` lolos |
+| 5.4 Struktur folder | 🟡 Sebagian | `apps/engine`, `libs/proto`, `libs/go/api`, `infra/docker` sudah ada; `operate-web`, `tasklist-web`, `worker-example`, `libs/go/{bpmn,feel,sdk}` belum dibuat |
+| 5.5 Engine Go | ✅ Selesai | Platform (config, logger, db+goose, httpserver, eventbus) + modul `health` lima lapisan; uji langsung: `/healthz` dan RPC `HealthService/Check` mengembalikan serving, migrasi versi 1 jalan |
+| 5.5 Modeler-web | 🟡 Sedang dikerjakan, belum di-commit | App di-generate (React 19, Vite 8, Vitest 5); lib `core`, `api-client`, `ui`, `flow-canvas`, `bpmn-viewer` di-generate; `core` dan `api-client` sudah berisi kode; shadcn/ui, fitur `health`, TanStack Router, kanvas bpmn-js dan React Flow belum ditulis |
+| 5.6 Docker | 🟡 Sebagian | `docker-compose.yml` dev dengan Postgres 18 sudah jalan; Dockerfile engine/web dan `docker-compose.prod.yml` belum |
+| 5.7 Proto | ✅ Selesai | `health/v1/health.proto`, buf lint lolos, stub Go dan TS ter-generate |
+| 5.8 Lint dan hook | ⏳ Belum | Paket husky, lint-staged, commitlint, prettier, eslint-plugin-boundaries sudah terpasang; konfigurasi belum |
+| 5.9 CI | ⏳ Belum | |
+| 5.10 Docs dan ADR | ⏳ Belum | |
+| 5.11 Makefile dan DX | ⏳ Belum | |
+
+**Penyesuaian terhadap rencana selama eksekusi:**
+
+- **Nx 24** (bukan 21), versi terbaru saat eksekusi.
+- **Go di Nx memakai `nx:run-commands`**, bukan plugin `@nx-go/nx-go`. Ini jalur cadangan di bagian risiko, dipilih agar tidak bergantung pada kompatibilitas plugin komunitas.
+- **TypeScript dikunci ke 6.0**, karena typescript-eslint belum mendukung TypeScript 7.
+- **Daemon Nx dimatikan** (`useDaemonProcess: false`) karena macet di Windows mesin ini.
+- **Postgres dev memakai port host 5433**, karena 5432 sudah dipakai Postgres proyek lain. Bisa diubah lewat `POSTGRES_PORT`.
+- **Module Go**: `github.com/indr622/workflow-engine`.
+
+**Lanjutkan dari:** isi `libs/web/ui` (shadcn), `flow-canvas`, `bpmn-viewer`, lalu fitur `health` di modeler-web, kemudian 5.6 sampai 5.11.
 
 ## 1. Lingkup
 
