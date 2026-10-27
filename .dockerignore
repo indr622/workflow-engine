@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.idea
+.nx
+.husky
+node_modules
+**/node_modules
+dist
+tmp
+coverage
+**/*.exe
+.env
+.env.*
+!.env.example
+docs
