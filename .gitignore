@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+tmp/
+out-tsc/
+coverage/
+bin/
+*.exe
+*.test
+*.out
+
+# Nx
+.nx/cache
+.nx/workspace-data
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editors and OS
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Vite / TanStack Router
+*.local
+vite.config.*.timestamp*

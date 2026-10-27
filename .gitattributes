@@ -1,0 +1,9 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.exe binary
+libs/go/api/gen/** linguist-generated=true
+libs/web/api-client/src/gen/** linguist-generated=true
