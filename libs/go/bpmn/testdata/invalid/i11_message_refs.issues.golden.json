@@ -1,0 +1,29 @@
+[
+  {
+    "code": "MESSAGE_REF_NOT_FOUND",
+    "severity": "error",
+    "processId": "bad-messages",
+    "elementId": "noRef",
+    "line": 6,
+    "column": 5,
+    "message": "messageRef \"ghost\" does not reference a message"
+  },
+  {
+    "code": "MESSAGE_NAME_MISSING",
+    "severity": "error",
+    "processId": "bad-messages",
+    "elementId": "noName",
+    "line": 7,
+    "column": 5,
+    "message": "message \"msgNoName\" has no name"
+  },
+  {
+    "code": "MESSAGE_CORRELATION_KEY_MISSING",
+    "severity": "error",
+    "processId": "bad-messages",
+    "elementId": "noKey",
+    "line": 8,
+    "column": 5,
+    "message": "message \"msgNoKey\" needs a zeebe:subscription correlationKey"
+  }
+]

@@ -1,0 +1,117 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v13",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "deep",
+            "incoming": ["i1"],
+            "name": "deep",
+            "outgoing": ["i2"],
+            "scope": "inner",
+            "taskDefinition": {
+              "retries": "3",
+              "type": "deep-work"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "outer",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "outer",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "i1",
+            "scope": "inner",
+            "source": "iStart",
+            "target": "deep",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "i2",
+            "scope": "inner",
+            "source": "deep",
+            "target": "iEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "iEnd",
+            "incoming": ["i2"],
+            "scope": "inner",
+            "type": "endEvent"
+          },
+          {
+            "id": "iStart",
+            "outgoing": ["i1"],
+            "scope": "inner",
+            "type": "startEvent"
+          },
+          {
+            "id": "inner",
+            "incoming": ["o1"],
+            "inner": ["deep", "i1", "i2", "iEnd", "iStart"],
+            "outgoing": ["o2"],
+            "scope": "outer",
+            "type": "subProcess"
+          },
+          {
+            "id": "o1",
+            "scope": "outer",
+            "source": "oStart",
+            "target": "inner",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "o2",
+            "scope": "outer",
+            "source": "inner",
+            "target": "oEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "oEnd",
+            "incoming": ["o2"],
+            "scope": "outer",
+            "type": "endEvent"
+          },
+          {
+            "id": "oStart",
+            "outgoing": ["o1"],
+            "scope": "outer",
+            "type": "startEvent"
+          },
+          {
+            "id": "outer",
+            "incoming": ["f1"],
+            "inner": ["inner", "o1", "o2", "oEnd", "oStart"],
+            "outgoing": ["f2"],
+            "type": "subProcess"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "nested",
+        "name": "nested"
+      }
+    ]
+  },
+  "warnings": []
+}

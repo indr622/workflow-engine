@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v11" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="errors" name="errors" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:subProcess id="pay"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing>
+      <bpmn:startEvent id="payStart"><bpmn:outgoing>s1</bpmn:outgoing></bpmn:startEvent>
+      <bpmn:serviceTask id="charge" name="charge"><bpmn:extensionElements><zeebe:taskDefinition type="charge" retries="3" /></bpmn:extensionElements><bpmn:incoming>s1</bpmn:incoming><bpmn:outgoing>s2</bpmn:outgoing></bpmn:serviceTask>
+      <bpmn:exclusiveGateway id="ok" default="s3"><bpmn:incoming>s2</bpmn:incoming><bpmn:outgoing>s3</bpmn:outgoing><bpmn:outgoing>s4</bpmn:outgoing></bpmn:exclusiveGateway>
+      <bpmn:endEvent id="payEnd"><bpmn:incoming>s3</bpmn:incoming></bpmn:endEvent>
+      <bpmn:endEvent id="payFailed"><bpmn:incoming>s4</bpmn:incoming><bpmn:errorEventDefinition id="e1" errorRef="errPayment" /></bpmn:endEvent>
+      <bpmn:sequenceFlow id="s1" sourceRef="payStart" targetRef="charge" />
+      <bpmn:sequenceFlow id="s2" sourceRef="charge" targetRef="ok" />
+      <bpmn:sequenceFlow id="s3" sourceRef="ok" targetRef="payEnd" />
+      <bpmn:sequenceFlow id="s4" sourceRef="ok" targetRef="payFailed"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=declined</bpmn:conditionExpression></bpmn:sequenceFlow>
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="onPaymentError" attachedToRef="pay"><bpmn:outgoing>f3</bpmn:outgoing><bpmn:errorEventDefinition id="e2" errorRef="errPayment" /></bpmn:boundaryEvent>
+    <bpmn:serviceTask id="refund" name="refund"><bpmn:extensionElements><zeebe:taskDefinition type="refund" retries="3" /></bpmn:extensionElements><bpmn:incoming>f3</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="endFailed"><bpmn:incoming>f4</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="pay" />
+    <bpmn:sequenceFlow id="f2" sourceRef="pay" targetRef="end" />
+    <bpmn:sequenceFlow id="f3" sourceRef="onPaymentError" targetRef="refund" />
+    <bpmn:sequenceFlow id="f4" sourceRef="refund" targetRef="endFailed" />
+  </bpmn:process>
+  <bpmn:error id="errPayment" name="Payment failed" errorCode="PAYMENT_FAILED" />
+</bpmn:definitions>

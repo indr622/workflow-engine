@@ -1,0 +1,11 @@
+[
+  {
+    "code": "TASK_DEFINITION_MISSING",
+    "severity": "error",
+    "processId": "missing-td",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "serviceTask needs zeebe:taskDefinition"
+  }
+]

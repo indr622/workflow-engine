@@ -1,0 +1,98 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v03",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "split",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "high",
+            "target": "merge",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "low",
+            "target": "merge",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "merge",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "condition": "feel:=amount \u003e 1000",
+            "id": "fHigh",
+            "source": "split",
+            "target": "high",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "fLow",
+            "source": "split",
+            "target": "low",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "high",
+            "incoming": ["fHigh"],
+            "name": "high",
+            "outgoing": ["f3"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "review"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "low",
+            "incoming": ["fLow"],
+            "name": "low",
+            "outgoing": ["f4"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "auto-approve"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "merge",
+            "incoming": ["f3", "f4"],
+            "outgoing": ["f5"],
+            "type": "exclusiveGateway"
+          },
+          {
+            "default": "fLow",
+            "id": "split",
+            "incoming": ["f1"],
+            "outgoing": ["fHigh", "fLow"],
+            "type": "exclusiveGateway"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "exclusive",
+        "name": "exclusive"
+      }
+    ]
+  },
+  "warnings": []
+}

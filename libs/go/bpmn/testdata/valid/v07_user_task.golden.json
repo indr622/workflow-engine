@@ -1,0 +1,52 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v07",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "task",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "task",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "id": "task",
+            "incoming": ["f1"],
+            "name": "Approve order",
+            "outgoing": ["f2"],
+            "type": "userTask",
+            "userTask": {
+              "assignee": "feel:=initiator",
+              "candidateGroups": "sales, managers",
+              "dueDate": "feel:=now() + duration(\"P1D\")",
+              "formId": "approval-form",
+              "zeebeUserTask": true
+            }
+          }
+        ],
+        "executable": true,
+        "id": "approval",
+        "name": "approval"
+      }
+    ]
+  },
+  "warnings": []
+}

@@ -1,0 +1,11 @@
+[
+  {
+    "code": "CALLED_ELEMENT_MISSING",
+    "severity": "error",
+    "processId": "no-callee",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "call activity needs zeebe:calledElement with a processId"
+  }
+]

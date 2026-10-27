@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v05" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="inclusive" name="inclusive" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:inclusiveGateway id="split" default="fDefault"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>fEmail</bpmn:outgoing><bpmn:outgoing>fSms</bpmn:outgoing><bpmn:outgoing>fDefault</bpmn:outgoing></bpmn:inclusiveGateway>
+    <bpmn:serviceTask id="email" name="email"><bpmn:extensionElements><zeebe:taskDefinition type="send-email" retries="3" /></bpmn:extensionElements><bpmn:incoming>fEmail</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="sms" name="sms"><bpmn:extensionElements><zeebe:taskDefinition type="send-sms" retries="3" /></bpmn:extensionElements><bpmn:incoming>fSms</bpmn:incoming><bpmn:outgoing>f3</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="letter" name="letter"><bpmn:extensionElements><zeebe:taskDefinition type="send-letter" retries="3" /></bpmn:extensionElements><bpmn:incoming>fDefault</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:inclusiveGateway id="join"><bpmn:incoming>f2</bpmn:incoming><bpmn:incoming>f3</bpmn:incoming><bpmn:incoming>f4</bpmn:incoming><bpmn:outgoing>f5</bpmn:outgoing></bpmn:inclusiveGateway>
+    <bpmn:endEvent id="end"><bpmn:incoming>f5</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="split" />
+    <bpmn:sequenceFlow id="fEmail" sourceRef="split" targetRef="email"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=contains(channels, "email")</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="fSms" sourceRef="split" targetRef="sms"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=contains(channels, "sms")</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="fDefault" sourceRef="split" targetRef="letter" />
+    <bpmn:sequenceFlow id="f2" sourceRef="email" targetRef="join" />
+    <bpmn:sequenceFlow id="f3" sourceRef="sms" targetRef="join" />
+    <bpmn:sequenceFlow id="f4" sourceRef="letter" targetRef="join" />
+    <bpmn:sequenceFlow id="f5" sourceRef="join" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

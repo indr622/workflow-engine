@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v03" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="exclusive" name="exclusive" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:exclusiveGateway id="split" default="fLow"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>fHigh</bpmn:outgoing><bpmn:outgoing>fLow</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="high" name="high"><bpmn:extensionElements><zeebe:taskDefinition type="review" retries="3" /></bpmn:extensionElements><bpmn:incoming>fHigh</bpmn:incoming><bpmn:outgoing>f3</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:serviceTask id="low" name="low"><bpmn:extensionElements><zeebe:taskDefinition type="auto-approve" retries="3" /></bpmn:extensionElements><bpmn:incoming>fLow</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="merge"><bpmn:incoming>f3</bpmn:incoming><bpmn:incoming>f4</bpmn:incoming><bpmn:outgoing>f5</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:endEvent id="end"><bpmn:incoming>f5</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="split" />
+    <bpmn:sequenceFlow id="fHigh" sourceRef="split" targetRef="high"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=amount &gt; 1000</bpmn:conditionExpression></bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="fLow" sourceRef="split" targetRef="low" />
+    <bpmn:sequenceFlow id="f3" sourceRef="high" targetRef="merge" />
+    <bpmn:sequenceFlow id="f4" sourceRef="low" targetRef="merge" />
+    <bpmn:sequenceFlow id="f5" sourceRef="merge" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

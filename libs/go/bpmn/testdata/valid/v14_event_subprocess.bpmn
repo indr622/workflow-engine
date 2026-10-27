@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v14" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="event-subprocess" name="event-subprocess" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="task" name="task"><bpmn:extensionElements><zeebe:taskDefinition type="work" retries="3" /></bpmn:extensionElements><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="task" />
+    <bpmn:sequenceFlow id="f2" sourceRef="task" targetRef="end" />
+    <bpmn:subProcess id="onTimeout" triggeredByEvent="true">
+      <bpmn:startEvent id="tStart"><bpmn:outgoing>t1</bpmn:outgoing><bpmn:timerEventDefinition id="tt"><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT1H</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:startEvent>
+      <bpmn:endEvent id="tEnd"><bpmn:incoming>t1</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="t1" sourceRef="tStart" targetRef="tEnd" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="onUpdate" triggeredByEvent="true">
+      <bpmn:startEvent id="uStart" isInterrupting="false"><bpmn:outgoing>u1</bpmn:outgoing><bpmn:messageEventDefinition id="um" messageRef="msgUpdate" /></bpmn:startEvent>
+      <bpmn:endEvent id="uEnd"><bpmn:incoming>u1</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="u1" sourceRef="uStart" targetRef="uEnd" />
+    </bpmn:subProcess>
+    <bpmn:subProcess id="onError" triggeredByEvent="true">
+      <bpmn:startEvent id="eStart"><bpmn:outgoing>e1</bpmn:outgoing><bpmn:errorEventDefinition id="ee" /></bpmn:startEvent>
+      <bpmn:endEvent id="eEnd"><bpmn:incoming>e1</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="e1" sourceRef="eStart" targetRef="eEnd" />
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmn:message id="msgUpdate" name="OrderUpdated"><bpmn:extensionElements><zeebe:subscription correlationKey="=orderId" /></bpmn:extensionElements></bpmn:message>
+</bpmn:definitions>

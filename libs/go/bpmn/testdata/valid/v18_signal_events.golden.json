@@ -1,0 +1,110 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v18",
+    "processes": [
+      {
+        "elements": [
+          {
+            "definition": {
+              "kind": "signal",
+              "ref": "sigDone"
+            },
+            "id": "broadcast",
+            "incoming": ["f2"],
+            "outgoing": ["f3"],
+            "type": "intermediateThrowEvent"
+          },
+          {
+            "id": "end",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "work",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "work",
+            "target": "broadcast",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "broadcast",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "onStop",
+            "target": "stopped",
+            "type": "sequenceFlow"
+          },
+          {
+            "attachedTo": "work",
+            "cancelActivity": true,
+            "definition": {
+              "kind": "signal",
+              "ref": "sigStop"
+            },
+            "id": "onStop",
+            "outgoing": ["f4"],
+            "type": "boundaryEvent"
+          },
+          {
+            "definition": {
+              "kind": "signal",
+              "ref": "sigGo"
+            },
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "definition": {
+              "kind": "signal",
+              "ref": "sigStopped"
+            },
+            "id": "stopped",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "boundaryEvents": ["onStop"],
+            "id": "work",
+            "incoming": ["f1"],
+            "name": "work",
+            "outgoing": ["f2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "work"
+            },
+            "type": "serviceTask"
+          }
+        ],
+        "executable": true,
+        "id": "signals",
+        "name": "signals"
+      }
+    ],
+    "signals": {
+      "sigDone": {
+        "name": "Done"
+      },
+      "sigGo": {
+        "name": "Go"
+      },
+      "sigStop": {
+        "name": "Stop"
+      },
+      "sigStopped": {
+        "name": "Stopped"
+      }
+    }
+  },
+  "warnings": []
+}

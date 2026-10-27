@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v20" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="rules" name="rules" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:scriptTask id="sum"><bpmn:extensionElements><zeebe:script expression="=a + b" resultVariable="total" /></bpmn:extensionElements><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:scriptTask>
+    <bpmn:scriptTask id="legacyScript"><bpmn:extensionElements><zeebe:taskDefinition type="script-worker" retries="3" /></bpmn:extensionElements><bpmn:incoming>f2</bpmn:incoming><bpmn:outgoing>f3</bpmn:outgoing></bpmn:scriptTask>
+    <bpmn:businessRuleTask id="decide"><bpmn:extensionElements><zeebe:calledDecision decisionId="discount" resultVariable="discount" /></bpmn:extensionElements><bpmn:incoming>f3</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing></bpmn:businessRuleTask>
+    <bpmn:businessRuleTask id="externalRules"><bpmn:extensionElements><zeebe:taskDefinition type="rules-engine" retries="3" /></bpmn:extensionElements><bpmn:incoming>f4</bpmn:incoming><bpmn:outgoing>f5</bpmn:outgoing></bpmn:businessRuleTask>
+    <bpmn:endEvent id="end"><bpmn:incoming>f5</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sum" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sum" targetRef="legacyScript" />
+    <bpmn:sequenceFlow id="f3" sourceRef="legacyScript" targetRef="decide" />
+    <bpmn:sequenceFlow id="f4" sourceRef="decide" targetRef="externalRules" />
+    <bpmn:sequenceFlow id="f5" sourceRef="externalRules" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

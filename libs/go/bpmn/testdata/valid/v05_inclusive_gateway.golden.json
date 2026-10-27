@@ -1,0 +1,122 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v05",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "email",
+            "incoming": ["fEmail"],
+            "name": "email",
+            "outgoing": ["f2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "send-email"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "split",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "email",
+            "target": "join",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "sms",
+            "target": "join",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "letter",
+            "target": "join",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "join",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "fDefault",
+            "source": "split",
+            "target": "letter",
+            "type": "sequenceFlow"
+          },
+          {
+            "condition": "feel:=contains(channels, \"email\")",
+            "id": "fEmail",
+            "source": "split",
+            "target": "email",
+            "type": "sequenceFlow"
+          },
+          {
+            "condition": "feel:=contains(channels, \"sms\")",
+            "id": "fSms",
+            "source": "split",
+            "target": "sms",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "join",
+            "incoming": ["f2", "f3", "f4"],
+            "outgoing": ["f5"],
+            "type": "inclusiveGateway"
+          },
+          {
+            "id": "letter",
+            "incoming": ["fDefault"],
+            "name": "letter",
+            "outgoing": ["f4"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "send-letter"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "sms",
+            "incoming": ["fSms"],
+            "name": "sms",
+            "outgoing": ["f3"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "send-sms"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "default": "fDefault",
+            "id": "split",
+            "incoming": ["f1"],
+            "outgoing": ["fEmail", "fSms", "fDefault"],
+            "type": "inclusiveGateway"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "inclusive",
+        "name": "inclusive"
+      }
+    ]
+  },
+  "warnings": []
+}

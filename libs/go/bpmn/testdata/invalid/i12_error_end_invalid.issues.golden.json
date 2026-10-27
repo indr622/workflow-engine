@@ -1,0 +1,20 @@
+[
+  {
+    "code": "ERROR_REF_NOT_FOUND",
+    "severity": "error",
+    "processId": "bad-error",
+    "elementId": "noRef",
+    "line": 7,
+    "column": 5,
+    "message": "error end event must reference an error (errorRef \"\")"
+  },
+  {
+    "code": "ERROR_CODE_MISSING",
+    "severity": "error",
+    "processId": "bad-error",
+    "elementId": "noCode",
+    "line": 8,
+    "column": 5,
+    "message": "error \"errNoCode\" has no errorCode"
+  }
+]

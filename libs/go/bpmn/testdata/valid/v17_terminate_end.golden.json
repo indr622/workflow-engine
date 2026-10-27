@@ -1,0 +1,92 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v17",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "a",
+            "incoming": ["f2"],
+            "name": "a",
+            "outgoing": ["f4"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "a"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "b",
+            "incoming": ["f3"],
+            "name": "b",
+            "outgoing": ["f5"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "b"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "fork",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "fork",
+            "target": "a",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "fork",
+            "target": "b",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "a",
+            "target": "kill",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "b",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "fork",
+            "incoming": ["f1"],
+            "outgoing": ["f2", "f3"],
+            "type": "parallelGateway"
+          },
+          {
+            "definition": {
+              "kind": "terminate"
+            },
+            "id": "kill",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "terminate",
+        "name": "terminate"
+      }
+    ]
+  },
+  "warnings": []
+}

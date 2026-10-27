@@ -1,0 +1,29 @@
+[
+  {
+    "code": "DUPLICATE_ID",
+    "severity": "error",
+    "processId": "dup",
+    "elementId": "task",
+    "line": 7,
+    "column": 5,
+    "message": "id \"task\" is used more than once"
+  },
+  {
+    "code": "ELEMENT_UNREACHABLE",
+    "severity": "warning",
+    "processId": "dup",
+    "elementId": "task",
+    "line": 7,
+    "column": 5,
+    "message": "serviceTask cannot be reached from any start event"
+  },
+  {
+    "code": "IMPLICIT_END",
+    "severity": "warning",
+    "processId": "dup",
+    "elementId": "task",
+    "line": 7,
+    "column": 5,
+    "message": "serviceTask has no outgoing flow and ends its path implicitly"
+  }
+]

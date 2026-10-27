@@ -1,0 +1,43 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v25",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "extTask",
+            "type": "task"
+          }
+        ],
+        "executable": false,
+        "id": "external",
+        "name": "external"
+      },
+      {
+        "elements": [
+          {
+            "id": "g1",
+            "source": "inStart",
+            "target": "inEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "inEnd",
+            "incoming": ["g1"],
+            "type": "endEvent"
+          },
+          {
+            "id": "inStart",
+            "outgoing": ["g1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "internal",
+        "name": "internal"
+      }
+    ]
+  },
+  "warnings": ["PROCESS_NOT_EXECUTABLE@external"]
+}

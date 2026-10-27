@@ -1,0 +1,11 @@
+[
+  {
+    "code": "CONDITION_ON_NON_GATEWAY_FLOW",
+    "severity": "error",
+    "processId": "task-cond",
+    "elementId": "f2",
+    "line": 9,
+    "column": 5,
+    "message": "conditional flows are only supported on exclusive and inclusive gateways"
+  }
+]

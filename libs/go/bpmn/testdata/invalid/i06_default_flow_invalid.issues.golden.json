@@ -1,0 +1,20 @@
+[
+  {
+    "code": "GATEWAY_DEFAULT_FLOW_INVALID",
+    "severity": "error",
+    "processId": "bad-default",
+    "elementId": "g1",
+    "line": 6,
+    "column": 5,
+    "message": "default flow \"f1\" is not an outgoing flow of this gateway"
+  },
+  {
+    "code": "DEFAULT_FLOW_HAS_CONDITION",
+    "severity": "error",
+    "processId": "bad-default",
+    "elementId": "f5",
+    "line": 15,
+    "column": 5,
+    "message": "default flow must not have a condition"
+  }
+]

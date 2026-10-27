@@ -1,0 +1,11 @@
+[
+  {
+    "code": "INVALID_ID",
+    "severity": "error",
+    "processId": "bad-id",
+    "elementId": "1end",
+    "line": 6,
+    "column": 5,
+    "message": "id \"1end\" is not a valid XML NCName"
+  }
+]

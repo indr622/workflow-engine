@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_i12" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!-- expect: ERROR_REF_NOT_FOUND, ERROR_CODE_MISSING -->
+  <bpmn:process id="bad-error" name="bad-error" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:exclusiveGateway id="split" default="f2"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing><bpmn:outgoing>f3</bpmn:outgoing></bpmn:exclusiveGateway>
+    <bpmn:endEvent id="noRef"><bpmn:incoming>f2</bpmn:incoming><bpmn:errorEventDefinition id="e1" /></bpmn:endEvent>
+    <bpmn:endEvent id="noCode"><bpmn:incoming>f3</bpmn:incoming><bpmn:errorEventDefinition id="e2" errorRef="errNoCode" /></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="split" />
+    <bpmn:sequenceFlow id="f2" sourceRef="split" targetRef="noRef" />
+    <bpmn:sequenceFlow id="f3" sourceRef="split" targetRef="noCode"><bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=x</bpmn:conditionExpression></bpmn:sequenceFlow>
+  </bpmn:process>
+  <bpmn:error id="errNoCode" name="No code" />
+</bpmn:definitions>

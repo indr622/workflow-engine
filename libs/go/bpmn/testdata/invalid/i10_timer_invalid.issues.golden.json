@@ -1,0 +1,11 @@
+[
+  {
+    "code": "TIMER_DEFINITION_INVALID",
+    "severity": "error",
+    "processId": "bad-timer",
+    "elementId": "wait",
+    "line": 6,
+    "column": 5,
+    "message": "timer duration \"15 minutes\" is not a valid ISO 8601 value"
+  }
+]

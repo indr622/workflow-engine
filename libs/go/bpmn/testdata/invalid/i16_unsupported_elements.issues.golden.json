@@ -1,0 +1,38 @@
+[
+  {
+    "code": "UNSUPPORTED_ELEMENT",
+    "severity": "error",
+    "processId": "exotic",
+    "elementId": "complex",
+    "line": 6,
+    "column": 5,
+    "message": "complexGateway is not supported"
+  },
+  {
+    "code": "ELEMENT_UNREACHABLE",
+    "severity": "warning",
+    "processId": "exotic",
+    "elementId": "link",
+    "line": 7,
+    "column": 5,
+    "message": "intermediateThrowEvent cannot be reached from any start event"
+  },
+  {
+    "code": "IMPLICIT_END",
+    "severity": "warning",
+    "processId": "exotic",
+    "elementId": "link",
+    "line": 7,
+    "column": 5,
+    "message": "intermediateThrowEvent has no outgoing flow and ends its path implicitly"
+  },
+  {
+    "code": "UNSUPPORTED_ELEMENT",
+    "severity": "error",
+    "processId": "exotic",
+    "elementId": "link",
+    "line": 7,
+    "column": 77,
+    "message": "linkEventDefinition is not supported"
+  }
+]

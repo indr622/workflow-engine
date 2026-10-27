@@ -1,0 +1,11 @@
+[
+  {
+    "code": "MULTIPLE_NONE_START_EVENTS",
+    "severity": "error",
+    "processId": "two-starts",
+    "elementId": "s2",
+    "line": 6,
+    "column": 5,
+    "message": "scope has more than one none start event"
+  }
+]

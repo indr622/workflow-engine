@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_i24" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!-- expect: EVENT_GATEWAY_INVALID_TARGET -->
+  <bpmn:process id="bad-race" name="bad-race" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:eventBasedGateway id="race"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing><bpmn:outgoing>f3</bpmn:outgoing></bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="timeout"><bpmn:incoming>f2</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing><bpmn:timerEventDefinition id="t"><bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT5M</bpmn:timeDuration></bpmn:timerEventDefinition></bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="notAnEvent" name="notAnEvent"><bpmn:extensionElements><zeebe:taskDefinition type="work" retries="3" /></bpmn:extensionElements><bpmn:incoming>f3</bpmn:incoming><bpmn:outgoing>f5</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="e1"><bpmn:incoming>f4</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="e2"><bpmn:incoming>f5</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="race" />
+    <bpmn:sequenceFlow id="f2" sourceRef="race" targetRef="timeout" />
+    <bpmn:sequenceFlow id="f3" sourceRef="race" targetRef="notAnEvent" />
+    <bpmn:sequenceFlow id="f4" sourceRef="timeout" targetRef="e1" />
+    <bpmn:sequenceFlow id="f5" sourceRef="notAnEvent" targetRef="e2" />
+  </bpmn:process>
+</bpmn:definitions>

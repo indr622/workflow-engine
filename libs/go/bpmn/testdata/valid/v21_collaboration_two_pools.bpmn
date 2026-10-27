@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v21" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:collaboration id="collab">
+    <bpmn:participant id="pCustomer" name="Customer" processRef="customer" />
+    <bpmn:participant id="pShop" name="Shop" processRef="shop" />
+    <bpmn:messageFlow id="mf1" sourceRef="customerTask" targetRef="shopStart" />
+  </bpmn:collaboration>
+  <bpmn:process id="customer" name="customer" isExecutable="true">
+    <bpmn:startEvent id="c_start"><bpmn:outgoing>cf1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="customerTask" name="customerTask"><bpmn:extensionElements><zeebe:taskDefinition type="place-order" retries="3" /></bpmn:extensionElements><bpmn:incoming>cf1</bpmn:incoming><bpmn:outgoing>cf2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="c_end"><bpmn:incoming>cf2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="cf1" sourceRef="c_start" targetRef="customerTask" />
+    <bpmn:sequenceFlow id="cf2" sourceRef="customerTask" targetRef="c_end" />
+  </bpmn:process>
+  <bpmn:process id="shop" name="shop" isExecutable="true">
+    <bpmn:startEvent id="shopStart"><bpmn:outgoing>sf1</bpmn:outgoing><bpmn:messageEventDefinition id="sm" messageRef="msgOrder" /></bpmn:startEvent>
+    <bpmn:serviceTask id="ship" name="ship"><bpmn:extensionElements><zeebe:taskDefinition type="ship" retries="3" /></bpmn:extensionElements><bpmn:incoming>sf1</bpmn:incoming><bpmn:outgoing>sf2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="shopEnd"><bpmn:incoming>sf2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="sf1" sourceRef="shopStart" targetRef="ship" />
+    <bpmn:sequenceFlow id="sf2" sourceRef="ship" targetRef="shopEnd" />
+  </bpmn:process>
+  <bpmn:message id="msgOrder" name="Order" />
+</bpmn:definitions>

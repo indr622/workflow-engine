@@ -1,0 +1,11 @@
+[
+  {
+    "code": "NO_START_EVENT",
+    "severity": "error",
+    "processId": "empty-sub",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "embedded sub-process has no start event"
+  }
+]

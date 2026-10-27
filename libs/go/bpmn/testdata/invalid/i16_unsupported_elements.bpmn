@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_i16" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!-- expect: UNSUPPORTED_ELEMENT -->
+  <bpmn:process id="exotic" name="exotic" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:complexGateway id="complex"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:complexGateway>
+    <bpmn:intermediateThrowEvent id="link"><bpmn:incoming>f2</bpmn:incoming><bpmn:linkEventDefinition id="l" name="jump" /></bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="complex" />
+    <bpmn:sequenceFlow id="f2" sourceRef="complex" targetRef="link" />
+  </bpmn:process>
+</bpmn:definitions>

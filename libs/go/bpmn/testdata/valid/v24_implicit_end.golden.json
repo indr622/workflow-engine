@@ -1,0 +1,37 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v24",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "last",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "last",
+            "incoming": ["f1"],
+            "name": "last",
+            "taskDefinition": {
+              "retries": "3",
+              "type": "last"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "implicit",
+        "name": "implicit"
+      }
+    ]
+  },
+  "warnings": ["IMPLICIT_END@last"]
+}

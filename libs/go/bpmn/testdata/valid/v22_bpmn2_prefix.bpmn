@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_v22" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn2:process id="prefixed" isExecutable="true">
+    <bpmn2:startEvent id="start"><bpmn2:outgoing>f1</bpmn2:outgoing></bpmn2:startEvent>
+    <bpmn2:serviceTask id="task"><bpmn2:extensionElements><zeebe:taskDefinition type="work" /></bpmn2:extensionElements><bpmn2:incoming>f1</bpmn2:incoming><bpmn2:outgoing>f2</bpmn2:outgoing></bpmn2:serviceTask>
+    <bpmn2:endEvent id="end"><bpmn2:incoming>f2</bpmn2:incoming></bpmn2:endEvent>
+    <bpmn2:sequenceFlow id="f1" sourceRef="start" targetRef="task" />
+    <bpmn2:sequenceFlow id="f2" sourceRef="task" targetRef="end" />
+  </bpmn2:process>
+</bpmn2:definitions>

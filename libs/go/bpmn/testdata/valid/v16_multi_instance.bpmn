@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v16" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="multi" name="multi" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="each" name="each"><bpmn:extensionElements><zeebe:taskDefinition type="process-item" retries="3" /></bpmn:extensionElements><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing><bpmn:multiInstanceLoopCharacteristics><bpmn:extensionElements><zeebe:loopCharacteristics inputCollection="=items" inputElement="item" outputCollection="results" outputElement="=result" /></bpmn:extensionElements></bpmn:multiInstanceLoopCharacteristics></bpmn:serviceTask>
+    <bpmn:subProcess id="seq"><bpmn:incoming>f2</bpmn:incoming><bpmn:outgoing>f3</bpmn:outgoing><bpmn:multiInstanceLoopCharacteristics isSequential="true"><bpmn:extensionElements><zeebe:loopCharacteristics inputCollection="=approvers" inputElement="approver" /></bpmn:extensionElements><bpmn:completionCondition xsi:type="bpmn:tFormalExpression">=approved</bpmn:completionCondition></bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="sStart"><bpmn:outgoing>s1</bpmn:outgoing></bpmn:startEvent>
+      <bpmn:endEvent id="sEnd"><bpmn:incoming>s1</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="s1" sourceRef="sStart" targetRef="sEnd" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="end"><bpmn:incoming>f3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="each" />
+    <bpmn:sequenceFlow id="f2" sourceRef="each" targetRef="seq" />
+    <bpmn:sequenceFlow id="f3" sourceRef="seq" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

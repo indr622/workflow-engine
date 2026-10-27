@@ -1,0 +1,162 @@
+{
+  "model": {
+    "errors": {
+      "errPayment": {
+        "errorCode": "PAYMENT_FAILED",
+        "name": "Payment failed"
+      }
+    },
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v11",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "charge",
+            "incoming": ["s1"],
+            "name": "charge",
+            "outgoing": ["s2"],
+            "scope": "pay",
+            "taskDefinition": {
+              "retries": "3",
+              "type": "charge"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "endFailed",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "pay",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "pay",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "onPaymentError",
+            "target": "refund",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "refund",
+            "target": "endFailed",
+            "type": "sequenceFlow"
+          },
+          {
+            "default": "s3",
+            "id": "ok",
+            "incoming": ["s2"],
+            "outgoing": ["s3", "s4"],
+            "scope": "pay",
+            "type": "exclusiveGateway"
+          },
+          {
+            "attachedTo": "pay",
+            "cancelActivity": true,
+            "definition": {
+              "kind": "error",
+              "ref": "errPayment"
+            },
+            "id": "onPaymentError",
+            "outgoing": ["f3"],
+            "type": "boundaryEvent"
+          },
+          {
+            "boundaryEvents": ["onPaymentError"],
+            "id": "pay",
+            "incoming": ["f1"],
+            "inner": ["charge", "ok", "payEnd", "payFailed", "payStart", "s1", "s2", "s3", "s4"],
+            "outgoing": ["f2"],
+            "type": "subProcess"
+          },
+          {
+            "id": "payEnd",
+            "incoming": ["s3"],
+            "scope": "pay",
+            "type": "endEvent"
+          },
+          {
+            "definition": {
+              "kind": "error",
+              "ref": "errPayment"
+            },
+            "id": "payFailed",
+            "incoming": ["s4"],
+            "scope": "pay",
+            "type": "endEvent"
+          },
+          {
+            "id": "payStart",
+            "outgoing": ["s1"],
+            "scope": "pay",
+            "type": "startEvent"
+          },
+          {
+            "id": "refund",
+            "incoming": ["f3"],
+            "name": "refund",
+            "outgoing": ["f4"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "refund"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "s1",
+            "scope": "pay",
+            "source": "payStart",
+            "target": "charge",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "s2",
+            "scope": "pay",
+            "source": "charge",
+            "target": "ok",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "s3",
+            "scope": "pay",
+            "source": "ok",
+            "target": "payEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "condition": "feel:=declined",
+            "id": "s4",
+            "scope": "pay",
+            "source": "ok",
+            "target": "payFailed",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "errors",
+        "name": "errors"
+      }
+    ]
+  },
+  "warnings": []
+}

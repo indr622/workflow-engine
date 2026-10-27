@@ -1,0 +1,32 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v01",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f1"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "minimal",
+        "name": "minimal"
+      }
+    ]
+  },
+  "warnings": []
+}

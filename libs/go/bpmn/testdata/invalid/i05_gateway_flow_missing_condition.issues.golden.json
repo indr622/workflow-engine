@@ -1,0 +1,11 @@
+[
+  {
+    "code": "GATEWAY_FLOW_MISSING_CONDITION",
+    "severity": "error",
+    "processId": "xor-no-cond",
+    "elementId": "f3",
+    "line": 11,
+    "column": 5,
+    "message": "flow leaving a diverging exclusiveGateway needs a condition or must be the default flow"
+  }
+]

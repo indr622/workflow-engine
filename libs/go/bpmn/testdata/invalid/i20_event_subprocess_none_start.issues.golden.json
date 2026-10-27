@@ -1,0 +1,11 @@
+[
+  {
+    "code": "EVENT_SUBPROCESS_INVALID_START",
+    "severity": "error",
+    "processId": "esp-none",
+    "elementId": "esp",
+    "line": 8,
+    "column": 5,
+    "message": "event sub-process must have exactly one start event with an event definition"
+  }
+]

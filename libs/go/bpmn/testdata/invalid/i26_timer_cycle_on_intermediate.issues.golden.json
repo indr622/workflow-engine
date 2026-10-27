@@ -1,0 +1,11 @@
+[
+  {
+    "code": "TIMER_CYCLE_NOT_ALLOWED",
+    "severity": "error",
+    "processId": "cycle-catch",
+    "elementId": "wait",
+    "line": 6,
+    "column": 5,
+    "message": "timeCycle is only allowed on timer start events and non-interrupting boundary events"
+  }
+]

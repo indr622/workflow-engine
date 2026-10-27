@@ -1,0 +1,11 @@
+[
+  {
+    "code": "USER_TASK_FORM_CONFLICT",
+    "severity": "error",
+    "processId": "two-forms",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "user task may use only one of formKey, formId, or externalReference"
+  }
+]

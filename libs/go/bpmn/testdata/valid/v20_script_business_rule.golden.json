@@ -1,0 +1,96 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v20",
+    "processes": [
+      {
+        "elements": [
+          {
+            "calledDecision": {
+              "decisionId": "discount",
+              "resultVariable": "discount"
+            },
+            "id": "decide",
+            "incoming": ["f3"],
+            "outgoing": ["f4"],
+            "type": "businessRuleTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "externalRules",
+            "incoming": ["f4"],
+            "outgoing": ["f5"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "rules-engine"
+            },
+            "type": "businessRuleTask"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "sum",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "sum",
+            "target": "legacyScript",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "legacyScript",
+            "target": "decide",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "decide",
+            "target": "externalRules",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "externalRules",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "legacyScript",
+            "incoming": ["f2"],
+            "outgoing": ["f3"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "script-worker"
+            },
+            "type": "scriptTask"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "id": "sum",
+            "incoming": ["f1"],
+            "outgoing": ["f2"],
+            "script": {
+              "expression": "feel:=a + b",
+              "resultVariable": "total"
+            },
+            "type": "scriptTask"
+          }
+        ],
+        "executable": true,
+        "id": "rules",
+        "name": "rules"
+      }
+    ]
+  },
+  "warnings": []
+}

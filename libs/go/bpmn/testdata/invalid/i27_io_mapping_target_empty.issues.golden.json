@@ -1,0 +1,11 @@
+[
+  {
+    "code": "IO_MAPPING_TARGET_EMPTY",
+    "severity": "error",
+    "processId": "bad-io",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "I/O mapping has an empty target"
+  }
+]

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v12" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="escalation" name="escalation" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:subProcess id="handle"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing>
+      <bpmn:startEvent id="hStart"><bpmn:outgoing>s1</bpmn:outgoing></bpmn:startEvent>
+      <bpmn:intermediateThrowEvent id="raise"><bpmn:incoming>s1</bpmn:incoming><bpmn:outgoing>s2</bpmn:outgoing><bpmn:escalationEventDefinition id="x1" escalationRef="escLate" /></bpmn:intermediateThrowEvent>
+      <bpmn:endEvent id="hEnd"><bpmn:incoming>s2</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="s1" sourceRef="hStart" targetRef="raise" />
+      <bpmn:sequenceFlow id="s2" sourceRef="raise" targetRef="hEnd" />
+    </bpmn:subProcess>
+    <bpmn:boundaryEvent id="onLate" cancelActivity="false" attachedToRef="handle"><bpmn:outgoing>f3</bpmn:outgoing><bpmn:escalationEventDefinition id="x2" escalationRef="escLate" /></bpmn:boundaryEvent>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="lateEnd"><bpmn:incoming>f3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="handle" />
+    <bpmn:sequenceFlow id="f2" sourceRef="handle" targetRef="end" />
+    <bpmn:sequenceFlow id="f3" sourceRef="onLate" targetRef="lateEnd" />
+  </bpmn:process>
+  <bpmn:escalation id="escLate" name="Late" escalationCode="LATE" />
+</bpmn:definitions>

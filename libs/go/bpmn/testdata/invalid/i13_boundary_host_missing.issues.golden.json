@@ -1,0 +1,29 @@
+[
+  {
+    "code": "BOUNDARY_ATTACHED_TO_NOT_FOUND",
+    "severity": "error",
+    "processId": "orphan-boundary",
+    "elementId": "lost",
+    "line": 10,
+    "column": 5,
+    "message": "attachedToRef \"ghost\" does not reference an element"
+  },
+  {
+    "code": "ELEMENT_UNREACHABLE",
+    "severity": "warning",
+    "processId": "orphan-boundary",
+    "elementId": "lost",
+    "line": 10,
+    "column": 5,
+    "message": "boundaryEvent cannot be reached from any start event"
+  },
+  {
+    "code": "ELEMENT_UNREACHABLE",
+    "severity": "warning",
+    "processId": "orphan-boundary",
+    "elementId": "lostEnd",
+    "line": 11,
+    "column": 5,
+    "message": "endEvent cannot be reached from any start event"
+  }
+]

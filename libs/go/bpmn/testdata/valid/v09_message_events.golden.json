@@ -1,0 +1,109 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v09",
+    "messages": [
+      {
+        "id": "msgPlaced",
+        "name": "OrderPlaced"
+      },
+      {
+        "correlationKey": "feel:=orderId",
+        "id": "msgPaid",
+        "name": "PaymentReceived"
+      },
+      {
+        "correlationKey": "feel:=orderId",
+        "id": "msgCancel",
+        "name": "OrderCancelled"
+      },
+      {
+        "correlationKey": "feel:=orderId",
+        "id": "msgShipped",
+        "name": "OrderShipped"
+      }
+    ],
+    "processes": [
+      {
+        "elements": [
+          {
+            "boundaryEvents": ["cancelled"],
+            "id": "awaitPayment",
+            "incoming": ["f1"],
+            "messageRef": "msgPaid",
+            "outgoing": ["f2"],
+            "type": "receiveTask"
+          },
+          {
+            "definition": {
+              "kind": "message",
+              "ref": "msgShipped"
+            },
+            "id": "awaitShipment",
+            "incoming": ["f2"],
+            "outgoing": ["f4"],
+            "type": "intermediateCatchEvent"
+          },
+          {
+            "attachedTo": "awaitPayment",
+            "cancelActivity": true,
+            "definition": {
+              "kind": "message",
+              "ref": "msgCancel"
+            },
+            "id": "cancelled",
+            "outgoing": ["f3"],
+            "type": "boundaryEvent"
+          },
+          {
+            "id": "end",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "id": "endCancelled",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "awaitPayment",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "awaitPayment",
+            "target": "awaitShipment",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "cancelled",
+            "target": "endCancelled",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "awaitShipment",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "definition": {
+              "kind": "message",
+              "ref": "msgPlaced"
+            },
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "messages",
+        "name": "messages"
+      }
+    ]
+  },
+  "warnings": []
+}

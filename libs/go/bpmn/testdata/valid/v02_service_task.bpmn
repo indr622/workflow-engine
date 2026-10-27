@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v02" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="payment-process" name="Payment" isExecutable="true">
+    <bpmn:extensionElements><zeebe:versionTag value="v1.2" /></bpmn:extensionElements>
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:serviceTask id="charge" name="Charge card"><bpmn:extensionElements><zeebe:taskDefinition type="payment-service" retries="5" /><zeebe:taskHeaders><zeebe:header key="provider" value="stripe" /><zeebe:header key="mode" value="live" /></zeebe:taskHeaders><zeebe:ioMapping><zeebe:input source="=order.total" target="amount" /><zeebe:output source="=result.id" target="paymentId" /></zeebe:ioMapping><zeebe:properties><zeebe:property name="team" value="billing" /></zeebe:properties></bpmn:extensionElements><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:serviceTask>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="charge" />
+    <bpmn:sequenceFlow id="f2" sourceRef="charge" targetRef="end" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="payment-process">
+      <bpmndi:BPMNShape id="charge_di" bpmnElement="charge"><dc:Bounds x="240" y="80" width="100" height="80" /></bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

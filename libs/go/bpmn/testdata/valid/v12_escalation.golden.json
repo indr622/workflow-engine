@@ -1,0 +1,111 @@
+{
+  "model": {
+    "escalations": {
+      "escLate": {
+        "escalationCode": "LATE",
+        "name": "Late"
+      }
+    },
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v12",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "handle",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "handle",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "onLate",
+            "target": "lateEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "hEnd",
+            "incoming": ["s2"],
+            "scope": "handle",
+            "type": "endEvent"
+          },
+          {
+            "id": "hStart",
+            "outgoing": ["s1"],
+            "scope": "handle",
+            "type": "startEvent"
+          },
+          {
+            "boundaryEvents": ["onLate"],
+            "id": "handle",
+            "incoming": ["f1"],
+            "inner": ["hEnd", "hStart", "raise", "s1", "s2"],
+            "outgoing": ["f2"],
+            "type": "subProcess"
+          },
+          {
+            "id": "lateEnd",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "attachedTo": "handle",
+            "cancelActivity": false,
+            "definition": {
+              "kind": "escalation",
+              "ref": "escLate"
+            },
+            "id": "onLate",
+            "outgoing": ["f3"],
+            "type": "boundaryEvent"
+          },
+          {
+            "definition": {
+              "kind": "escalation",
+              "ref": "escLate"
+            },
+            "id": "raise",
+            "incoming": ["s1"],
+            "outgoing": ["s2"],
+            "scope": "handle",
+            "type": "intermediateThrowEvent"
+          },
+          {
+            "id": "s1",
+            "scope": "handle",
+            "source": "hStart",
+            "target": "raise",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "s2",
+            "scope": "handle",
+            "source": "raise",
+            "target": "hEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "escalation",
+        "name": "escalation"
+      }
+    ]
+  },
+  "warnings": []
+}

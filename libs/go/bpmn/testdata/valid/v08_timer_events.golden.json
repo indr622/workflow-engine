@@ -1,0 +1,126 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v08",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "work",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "work",
+            "target": "waitUntil",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "timeout",
+            "target": "timedOut",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "reminder",
+            "target": "reminded",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "waitUntil",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "reminded",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "attachedTo": "work",
+            "cancelActivity": false,
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "cycle",
+                "value": "R3/PT10M"
+              }
+            },
+            "id": "reminder",
+            "outgoing": ["f4"],
+            "type": "boundaryEvent"
+          },
+          {
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "cycle",
+                "value": "R/PT1H"
+              }
+            },
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "id": "timedOut",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "attachedTo": "work",
+            "cancelActivity": true,
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "duration",
+                "value": "PT30M"
+              }
+            },
+            "id": "timeout",
+            "outgoing": ["f3"],
+            "type": "boundaryEvent"
+          },
+          {
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "date",
+                "value": "2026-12-31T23:59:00Z"
+              }
+            },
+            "id": "waitUntil",
+            "incoming": ["f2"],
+            "outgoing": ["f5"],
+            "type": "intermediateCatchEvent"
+          },
+          {
+            "boundaryEvents": ["timeout", "reminder"],
+            "id": "work",
+            "incoming": ["f1"],
+            "name": "work",
+            "outgoing": ["f2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "long-job"
+            },
+            "type": "serviceTask"
+          }
+        ],
+        "executable": true,
+        "id": "timers",
+        "name": "timers"
+      }
+    ]
+  },
+  "warnings": []
+}

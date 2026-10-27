@@ -1,0 +1,20 @@
+[
+  {
+    "code": "MULTI_INSTANCE_INPUT_COLLECTION_MISSING",
+    "severity": "error",
+    "processId": "bad-mi",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "multi-instance needs zeebe:loopCharacteristics inputCollection"
+  },
+  {
+    "code": "MULTI_INSTANCE_OUTPUT_INCOMPLETE",
+    "severity": "error",
+    "processId": "bad-mi",
+    "elementId": "task",
+    "line": 6,
+    "column": 5,
+    "message": "multi-instance outputCollection and outputElement must be set together"
+  }
+]

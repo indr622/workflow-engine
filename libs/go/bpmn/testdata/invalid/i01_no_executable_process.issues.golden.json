@@ -1,0 +1,19 @@
+[
+  {
+    "code": "NO_EXECUTABLE_PROCESS",
+    "severity": "error",
+    "elementId": "Definitions_i01",
+    "line": 0,
+    "column": 0,
+    "message": "definitions contain no executable process"
+  },
+  {
+    "code": "PROCESS_NOT_EXECUTABLE",
+    "severity": "warning",
+    "processId": "draft",
+    "elementId": "draft",
+    "line": 4,
+    "column": 3,
+    "message": "process is not executable and is ignored"
+  }
+]

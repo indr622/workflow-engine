@@ -1,0 +1,97 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v19",
+    "messages": [
+      {
+        "correlationKey": "feel:=requestId",
+        "id": "msgAnswer",
+        "name": "Answer"
+      }
+    ],
+    "processes": [
+      {
+        "elements": [
+          {
+            "definition": {
+              "kind": "message",
+              "ref": "msgAnswer"
+            },
+            "id": "answer",
+            "incoming": ["f3"],
+            "outgoing": ["f5"],
+            "type": "intermediateCatchEvent"
+          },
+          {
+            "id": "endAnswer",
+            "incoming": ["f5"],
+            "type": "endEvent"
+          },
+          {
+            "id": "endTimeout",
+            "incoming": ["f4"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "race",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "race",
+            "target": "timeout",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "race",
+            "target": "answer",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "timeout",
+            "target": "endTimeout",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "answer",
+            "target": "endAnswer",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "race",
+            "incoming": ["f1"],
+            "outgoing": ["f2", "f3"],
+            "type": "eventBasedGateway"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "duration",
+                "value": "PT5M"
+              }
+            },
+            "id": "timeout",
+            "incoming": ["f2"],
+            "outgoing": ["f4"],
+            "type": "intermediateCatchEvent"
+          }
+        ],
+        "executable": true,
+        "id": "race-process",
+        "name": "race-process"
+      }
+    ]
+  },
+  "warnings": []
+}

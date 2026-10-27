@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_i25" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <!-- expect: FLOW_CROSSES_SCOPE -->
+  <bpmn:process id="leak-process" name="leak-process" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:subProcess id="sub"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing><bpmn:startEvent id="subStart"><bpmn:outgoing>s1</bpmn:outgoing><bpmn:outgoing>leak</bpmn:outgoing></bpmn:startEvent><bpmn:endEvent id="subEnd"><bpmn:incoming>s1</bpmn:incoming></bpmn:endEvent><bpmn:sequenceFlow id="s1" sourceRef="subStart" targetRef="subEnd" /><bpmn:sequenceFlow id="leak" sourceRef="subStart" targetRef="end" /></bpmn:subProcess>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming><bpmn:incoming>leak</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="sub" />
+    <bpmn:sequenceFlow id="f2" sourceRef="sub" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

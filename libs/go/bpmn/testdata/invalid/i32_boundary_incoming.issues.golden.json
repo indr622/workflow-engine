@@ -1,0 +1,11 @@
+[
+  {
+    "code": "BOUNDARY_EVENT_HAS_INCOMING",
+    "severity": "error",
+    "processId": "boundary-in",
+    "elementId": "b",
+    "line": 7,
+    "column": 5,
+    "message": "boundary event must not have incoming flows"
+  }
+]

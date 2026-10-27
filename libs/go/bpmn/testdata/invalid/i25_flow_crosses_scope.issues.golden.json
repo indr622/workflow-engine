@@ -1,0 +1,11 @@
+[
+  {
+    "code": "FLOW_CROSSES_SCOPE",
+    "severity": "error",
+    "processId": "leak-process",
+    "elementId": "leak",
+    "line": 6,
+    "column": 359,
+    "message": "sequence flow must connect elements in the same scope"
+  }
+]

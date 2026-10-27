@@ -1,0 +1,9 @@
+[
+  {
+    "code": "XML_MALFORMED",
+    "severity": "error",
+    "line": 6,
+    "column": 18,
+    "message": "XML syntax error on line 6: element \u003cstartEvent\u003e closed by \u003c/process\u003e"
+  }
+]

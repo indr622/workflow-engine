@@ -1,0 +1,143 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v14",
+    "messages": [
+      {
+        "correlationKey": "feel:=orderId",
+        "id": "msgUpdate",
+        "name": "OrderUpdated"
+      }
+    ],
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "e1",
+            "scope": "onError",
+            "source": "eStart",
+            "target": "eEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "eEnd",
+            "incoming": ["e1"],
+            "scope": "onError",
+            "type": "endEvent"
+          },
+          {
+            "definition": {
+              "kind": "error"
+            },
+            "id": "eStart",
+            "outgoing": ["e1"],
+            "scope": "onError",
+            "type": "startEvent"
+          },
+          {
+            "id": "end",
+            "incoming": ["f2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "task",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "task",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "onError",
+            "inner": ["e1", "eEnd", "eStart"],
+            "type": "eventSubProcess"
+          },
+          {
+            "id": "onTimeout",
+            "inner": ["t1", "tEnd", "tStart"],
+            "type": "eventSubProcess"
+          },
+          {
+            "id": "onUpdate",
+            "inner": ["u1", "uEnd", "uStart"],
+            "type": "eventSubProcess"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          },
+          {
+            "id": "t1",
+            "scope": "onTimeout",
+            "source": "tStart",
+            "target": "tEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "tEnd",
+            "incoming": ["t1"],
+            "scope": "onTimeout",
+            "type": "endEvent"
+          },
+          {
+            "definition": {
+              "kind": "timer",
+              "timer": {
+                "kind": "duration",
+                "value": "PT1H"
+              }
+            },
+            "id": "tStart",
+            "outgoing": ["t1"],
+            "scope": "onTimeout",
+            "type": "startEvent"
+          },
+          {
+            "id": "task",
+            "incoming": ["f1"],
+            "name": "task",
+            "outgoing": ["f2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "work"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "u1",
+            "scope": "onUpdate",
+            "source": "uStart",
+            "target": "uEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "uEnd",
+            "incoming": ["u1"],
+            "scope": "onUpdate",
+            "type": "endEvent"
+          },
+          {
+            "definition": {
+              "kind": "message",
+              "ref": "msgUpdate"
+            },
+            "id": "uStart",
+            "interrupting": false,
+            "outgoing": ["u1"],
+            "scope": "onUpdate",
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "event-subprocess",
+        "name": "event-subprocess"
+      }
+    ]
+  },
+  "warnings": []
+}

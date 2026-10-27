@@ -1,0 +1,58 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v06",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "prepare",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "prepare",
+            "target": "pack",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "pack",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "pack",
+            "incoming": ["f2"],
+            "name": "Pack box",
+            "outgoing": ["f3"],
+            "type": "manualTask"
+          },
+          {
+            "id": "prepare",
+            "incoming": ["f1"],
+            "name": "Prepare",
+            "outgoing": ["f2"],
+            "type": "task"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "manual",
+        "name": "manual"
+      }
+    ]
+  },
+  "warnings": []
+}

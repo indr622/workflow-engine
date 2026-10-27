@@ -1,0 +1,29 @@
+[
+  {
+    "code": "ELEMENT_UNREACHABLE",
+    "severity": "warning",
+    "processId": "dangling",
+    "elementId": "end",
+    "line": 6,
+    "column": 5,
+    "message": "endEvent cannot be reached from any start event"
+  },
+  {
+    "code": "FLOW_TARGET_NOT_FOUND",
+    "severity": "error",
+    "processId": "dangling",
+    "elementId": "f1",
+    "line": 7,
+    "column": 5,
+    "message": "targetRef \"ghost\" does not reference a flow node"
+  },
+  {
+    "code": "FLOW_SOURCE_NOT_FOUND",
+    "severity": "error",
+    "processId": "dangling",
+    "elementId": "f2",
+    "line": 8,
+    "column": 5,
+    "message": "sourceRef \"phantom\" does not reference a flow node"
+  }
+]

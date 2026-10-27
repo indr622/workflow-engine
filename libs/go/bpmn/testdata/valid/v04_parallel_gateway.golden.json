@@ -1,0 +1,96 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v04",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "end",
+            "incoming": ["f6"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "fork",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "fork",
+            "target": "reserve",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "fork",
+            "target": "invoice",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f4",
+            "source": "reserve",
+            "target": "join",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f5",
+            "source": "invoice",
+            "target": "join",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f6",
+            "source": "join",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "fork",
+            "incoming": ["f1"],
+            "outgoing": ["f2", "f3"],
+            "type": "parallelGateway"
+          },
+          {
+            "id": "invoice",
+            "incoming": ["f3"],
+            "name": "invoice",
+            "outgoing": ["f5"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "create-invoice"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "join",
+            "incoming": ["f4", "f5"],
+            "outgoing": ["f6"],
+            "type": "parallelGateway"
+          },
+          {
+            "id": "reserve",
+            "incoming": ["f2"],
+            "name": "reserve",
+            "outgoing": ["f4"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "reserve-stock"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "parallel",
+        "name": "parallel"
+      }
+    ]
+  },
+  "warnings": []
+}

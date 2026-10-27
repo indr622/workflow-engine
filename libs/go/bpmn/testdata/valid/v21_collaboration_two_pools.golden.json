@@ -1,0 +1,99 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v21",
+    "messages": [
+      {
+        "id": "msgOrder",
+        "name": "Order"
+      }
+    ],
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "c_end",
+            "incoming": ["cf2"],
+            "type": "endEvent"
+          },
+          {
+            "id": "c_start",
+            "outgoing": ["cf1"],
+            "type": "startEvent"
+          },
+          {
+            "id": "cf1",
+            "source": "c_start",
+            "target": "customerTask",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "cf2",
+            "source": "customerTask",
+            "target": "c_end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "customerTask",
+            "incoming": ["cf1"],
+            "name": "customerTask",
+            "outgoing": ["cf2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "place-order"
+            },
+            "type": "serviceTask"
+          }
+        ],
+        "executable": true,
+        "id": "customer",
+        "name": "customer"
+      },
+      {
+        "elements": [
+          {
+            "id": "sf1",
+            "source": "shopStart",
+            "target": "ship",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "sf2",
+            "source": "ship",
+            "target": "shopEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "ship",
+            "incoming": ["sf1"],
+            "name": "ship",
+            "outgoing": ["sf2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "ship"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "shopEnd",
+            "incoming": ["sf2"],
+            "type": "endEvent"
+          },
+          {
+            "definition": {
+              "kind": "message",
+              "ref": "msgOrder"
+            },
+            "id": "shopStart",
+            "outgoing": ["sf1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "shop",
+        "name": "shop"
+      }
+    ]
+  },
+  "warnings": []
+}

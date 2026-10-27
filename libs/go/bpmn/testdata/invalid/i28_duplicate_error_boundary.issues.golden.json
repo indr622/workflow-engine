@@ -1,0 +1,11 @@
+[
+  {
+    "code": "BOUNDARY_DUPLICATE_ERROR_CATCH",
+    "severity": "error",
+    "processId": "two-catches",
+    "elementId": "catch2",
+    "line": 11,
+    "column": 5,
+    "message": "activity \"task\" already has an error boundary event for error code \"FAIL\""
+  }
+]

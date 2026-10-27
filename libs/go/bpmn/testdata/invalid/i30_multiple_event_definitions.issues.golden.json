@@ -1,0 +1,11 @@
+[
+  {
+    "code": "MULTIPLE_EVENT_DEFINITIONS",
+    "severity": "error",
+    "processId": "two-defs",
+    "elementId": "both",
+    "line": 6,
+    "column": 5,
+    "message": "event has more than one event definition"
+  }
+]

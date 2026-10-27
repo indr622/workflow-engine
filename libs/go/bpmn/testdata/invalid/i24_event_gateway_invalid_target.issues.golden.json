@@ -1,0 +1,11 @@
+[
+  {
+    "code": "EVENT_GATEWAY_INVALID_TARGET",
+    "severity": "error",
+    "processId": "bad-race",
+    "elementId": "f3",
+    "line": 13,
+    "column": 5,
+    "message": "event-based gateway may only lead to timer, message, or signal intermediate catch events"
+  }
+]

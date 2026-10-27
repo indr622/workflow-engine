@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v13" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="nested" name="nested" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:subProcess id="outer"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing>
+      <bpmn:startEvent id="oStart"><bpmn:outgoing>o1</bpmn:outgoing></bpmn:startEvent>
+      <bpmn:subProcess id="inner"><bpmn:incoming>o1</bpmn:incoming><bpmn:outgoing>o2</bpmn:outgoing>
+        <bpmn:startEvent id="iStart"><bpmn:outgoing>i1</bpmn:outgoing></bpmn:startEvent>
+        <bpmn:serviceTask id="deep" name="deep"><bpmn:extensionElements><zeebe:taskDefinition type="deep-work" retries="3" /></bpmn:extensionElements><bpmn:incoming>i1</bpmn:incoming><bpmn:outgoing>i2</bpmn:outgoing></bpmn:serviceTask>
+        <bpmn:endEvent id="iEnd"><bpmn:incoming>i2</bpmn:incoming></bpmn:endEvent>
+        <bpmn:sequenceFlow id="i1" sourceRef="iStart" targetRef="deep" />
+        <bpmn:sequenceFlow id="i2" sourceRef="deep" targetRef="iEnd" />
+      </bpmn:subProcess>
+      <bpmn:endEvent id="oEnd"><bpmn:incoming>o2</bpmn:incoming></bpmn:endEvent>
+      <bpmn:sequenceFlow id="o1" sourceRef="oStart" targetRef="inner" />
+      <bpmn:sequenceFlow id="o2" sourceRef="inner" targetRef="oEnd" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="outer" />
+    <bpmn:sequenceFlow id="f2" sourceRef="outer" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

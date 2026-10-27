@@ -1,0 +1,94 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v16",
+    "processes": [
+      {
+        "elements": [
+          {
+            "id": "each",
+            "incoming": ["f1"],
+            "multiInstance": {
+              "inputCollection": "feel:=items",
+              "inputElement": "item",
+              "outputCollection": "results",
+              "outputElement": "feel:=result",
+              "sequential": false
+            },
+            "name": "each",
+            "outgoing": ["f2"],
+            "taskDefinition": {
+              "retries": "3",
+              "type": "process-item"
+            },
+            "type": "serviceTask"
+          },
+          {
+            "id": "end",
+            "incoming": ["f3"],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "each",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "each",
+            "target": "seq",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f3",
+            "source": "seq",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "s1",
+            "scope": "seq",
+            "source": "sStart",
+            "target": "sEnd",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "sEnd",
+            "incoming": ["s1"],
+            "scope": "seq",
+            "type": "endEvent"
+          },
+          {
+            "id": "sStart",
+            "outgoing": ["s1"],
+            "scope": "seq",
+            "type": "startEvent"
+          },
+          {
+            "id": "seq",
+            "incoming": ["f2"],
+            "inner": ["s1", "sEnd", "sStart"],
+            "multiInstance": {
+              "completionCondition": "feel:=approved",
+              "inputCollection": "feel:=approvers",
+              "inputElement": "approver",
+              "sequential": true
+            },
+            "outgoing": ["f3"],
+            "type": "subProcess"
+          },
+          {
+            "id": "start",
+            "outgoing": ["f1"],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "multi",
+        "name": "multi"
+      }
+    ]
+  },
+  "warnings": []
+}

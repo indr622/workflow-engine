@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_v09" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="messages" name="messages" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing><bpmn:messageEventDefinition id="m0" messageRef="msgPlaced" /></bpmn:startEvent>
+    <bpmn:receiveTask id="awaitPayment" messageRef="msgPaid"><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:receiveTask>
+    <bpmn:boundaryEvent id="cancelled" attachedToRef="awaitPayment"><bpmn:outgoing>f3</bpmn:outgoing><bpmn:messageEventDefinition id="m1" messageRef="msgCancel" /></bpmn:boundaryEvent>
+    <bpmn:intermediateCatchEvent id="awaitShipment"><bpmn:incoming>f2</bpmn:incoming><bpmn:outgoing>f4</bpmn:outgoing><bpmn:messageEventDefinition id="m2" messageRef="msgShipped" /></bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="end"><bpmn:incoming>f4</bpmn:incoming></bpmn:endEvent>
+    <bpmn:endEvent id="endCancelled"><bpmn:incoming>f3</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="awaitPayment" />
+    <bpmn:sequenceFlow id="f2" sourceRef="awaitPayment" targetRef="awaitShipment" />
+    <bpmn:sequenceFlow id="f3" sourceRef="cancelled" targetRef="endCancelled" />
+    <bpmn:sequenceFlow id="f4" sourceRef="awaitShipment" targetRef="end" />
+  </bpmn:process>
+  <bpmn:message id="msgPlaced" name="OrderPlaced" />
+  <bpmn:message id="msgPaid" name="PaymentReceived"><bpmn:extensionElements><zeebe:subscription correlationKey="=orderId" /></bpmn:extensionElements></bpmn:message>
+  <bpmn:message id="msgCancel" name="OrderCancelled"><bpmn:extensionElements><zeebe:subscription correlationKey="=orderId" /></bpmn:extensionElements></bpmn:message>
+  <bpmn:message id="msgShipped" name="OrderShipped"><bpmn:extensionElements><zeebe:subscription correlationKey="=orderId" /></bpmn:extensionElements></bpmn:message>
+</bpmn:definitions>
