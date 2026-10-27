@@ -1,0 +1,42 @@
+# Dependensi pengembangan lokal. Engine dan web dijalankan native lewat `make dev`.
+# Jalankan: make up   (profil tambahan: make up PROFILES="tools observability")
+name: workflow-engine-dev
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-workflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workflow}
+      POSTGRES_DB: ${POSTGRES_DB:-workflow}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    profiles: ["tools"]
+    environment:
+      PGWEB_DATABASE_URL: postgres://${POSTGRES_USER:-workflow}:${POSTGRES_PASSWORD:-workflow}@postgres:5432/${POSTGRES_DB:-workflow}?sslmode=disable
+    ports:
+      - "127.0.0.1:${PGWEB_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    profiles: ["observability"]
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+
+volumes:
+  postgres-data:
