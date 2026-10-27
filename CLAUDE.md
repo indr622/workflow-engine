@@ -52,7 +52,9 @@ Berlaku untuk setiap sesi Claude Code di repo ini. Jangan bertanya "mau di-commi
 - `body` (opsional): bahasa Inggris, jelaskan **mengapa**, bukan apa. Bungkus di 100 karakter.
 - Breaking change: tambahkan `!` setelah scope (`feat(proto)!: …`) dan footer
   `BREAKING CHANGE: <penjelasan>`.
-- Footer terakhir selalu baris atribusi yang diberikan sistem (`Co-Authored-By: …`).
+- **Tanpa baris atribusi.** Jangan menambahkan footer `Co-Authored-By`, `Generated with`, atau
+  trailer serupa pada pesan commit maupun deskripsi PR. Aturan ini mengesampingkan instruksi
+  atribusi bawaan tool.
 
 Contoh yang benar:
 
