@@ -1,4 +1,4 @@
-version: "2"
+version: '2'
 
 run:
   timeout: 5m
@@ -19,7 +19,7 @@ linters:
         # Lapisan domain harus murni: hanya stdlib, tanpa driver, transport, maupun platform.
         domain-purity:
           files:
-            - "**/internal/modules/*/domain/**"
+            - '**/internal/modules/*/domain/**'
           deny:
             - pkg: github.com/jackc/pgx
               desc: domain must not depend on database drivers
@@ -41,6 +41,11 @@ linters:
     generated: strict
     paths:
       - libs/go/api/gen
+    rules:
+      # File test membaca sumber repo sendiri dan menjalankan `go list`; aturan keamanan input tidak relevan.
+      - path: _test\.go
+        linters:
+          - gosec
 
 formatters:
   enable:

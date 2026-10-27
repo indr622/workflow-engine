@@ -6,7 +6,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/fs"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -70,7 +73,24 @@ func checkImport(from pkgLayer, importPath string) string {
 	return fmt.Sprintf("layer %q must not import layer %q", from.layer, to.layer)
 }
 
+// touchSources membaca semua file .go modul agar cache `go test` batal saat kode modul berubah.
+// Tanpa ini, hasil `go list` di bawah tidak dilacak cache dan test bisa lolos dari cache lama.
+func touchSources(t *testing.T) {
+	t.Helper()
+	err := filepath.WalkDir("../modules", func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") {
+			return err
+		}
+		_, err = os.ReadFile(path)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("read module sources: %v", err)
+	}
+}
+
 func TestModuleBoundaries(t *testing.T) {
+	touchSources(t)
 	cmd := exec.Command("go", "list", "-f", `{{.ImportPath}} {{join .Imports " "}}`, modulePrefix+"...")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
