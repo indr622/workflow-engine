@@ -2,7 +2,7 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Dieksekusi sebagian — **dijeda** pada 2026-10-28 atas permintaan user
+**Status:** ✅ Selesai pada 2026-10-28, seluruh Definition of Done terbukti
 **Tanggal:** 2026-10-27 (rencana), 2026-10-28 (eksekusi)
 
 ---
@@ -11,29 +11,32 @@
 
 | Langkah | Status | Bukti / catatan |
 |---|---|---|
-| 5.1 Tooling lokal | ✅ Selesai | buf 1.75.0, protoc-gen-go 1.36.12, protoc-gen-connect-go 1.21.1, goose 3.29.0, sqlc 1.31.1, goimports terpasang |
-| 5.2 Git | ✅ Selesai | `.gitattributes` (LF), `.editorconfig`, `.gitignore`; branch `main` di GitHub `indr622/workflow-engine`; `core.autocrlf=false` diset di level repo |
-| 5.3 Workspace Nx | ✅ Selesai | Nx 24.0.1 + pnpm 12; target Go via `nx:run-commands`; `nx run-many -t build test -p engine api-go` lolos |
-| 5.4 Struktur folder | 🟡 Sebagian | `apps/engine`, `libs/proto`, `libs/go/api`, `infra/docker` sudah ada; `operate-web`, `tasklist-web`, `worker-example`, `libs/go/{bpmn,feel,sdk}` belum dibuat |
-| 5.5 Engine Go | ✅ Selesai | Platform (config, logger, db+goose, httpserver, eventbus) + modul `health` lima lapisan; uji langsung: `/healthz` dan RPC `HealthService/Check` mengembalikan serving, migrasi versi 1 jalan |
-| 5.5 Modeler-web | 🟡 Sedang dikerjakan, belum di-commit | App di-generate (React 19, Vite 8, Vitest 5); lib `core`, `api-client`, `ui`, `flow-canvas`, `bpmn-viewer` di-generate; `core` dan `api-client` sudah berisi kode; shadcn/ui, fitur `health`, TanStack Router, kanvas bpmn-js dan React Flow belum ditulis |
-| 5.6 Docker | 🟡 Sebagian | `docker-compose.yml` dev dengan Postgres 18 sudah jalan; Dockerfile engine/web dan `docker-compose.prod.yml` belum |
-| 5.7 Proto | ✅ Selesai | `health/v1/health.proto`, buf lint lolos, stub Go dan TS ter-generate |
-| 5.8 Lint dan hook | ⏳ Belum | Paket husky, lint-staged, commitlint, prettier, eslint-plugin-boundaries sudah terpasang; konfigurasi belum |
-| 5.9 CI | ⏳ Belum | |
-| 5.10 Docs dan ADR | ⏳ Belum | |
-| 5.11 Makefile dan DX | ⏳ Belum | |
+| 5.1 Tooling lokal | ✅ | buf 1.75.0, protoc-gen-go 1.36.12, protoc-gen-connect-go 1.21.1, goose 3.29.0, sqlc 1.31.1, golangci-lint 2.15.0; versi dipin di `make tools` |
+| 5.2 Git | ✅ | LF lewat `.gitattributes` dan `.editorconfig`; branch `main` di GitHub `indr622/workflow-engine` |
+| 5.3 Workspace Nx | ✅ | Nx 24.0.1 + pnpm 12; 9 proyek; target Go via `nx:run-commands` |
+| 5.4 Struktur folder | ✅ | Semua folder sesuai rencana; aplikasi dan lib fase berikutnya berupa folder penanda dengan README |
+| 5.5 Engine Go | ✅ | Platform + modul `health` lima lapisan; migrasi goose; `/healthz` dan RPC Connect diuji langsung |
+| 5.5 Modeler-web | ✅ | Fitur `health` empat lapisan (Connect, TanStack Query, Zustand), TanStack Router file-based, shadcn/ui, kanvas bpmn-js dan React Flow tampil berdampingan (diverifikasi di browser) |
+| 5.6 Docker | ✅ | Image engine 25,8 MB (distroless) dan web 94,8 MB (nginx); compose prod diuji: ketiga container sehat, API lewat nginx dan fallback SPA menjawab 200 |
+| 5.7 Proto | ✅ | `health/v1`; stub Go dan TS dipakai kedua sisi; CI memeriksa stub tetap sinkron |
+| 5.8 Lint dan hook | ✅ | golangci-lint + depguard, test arsitektur Go, tag Nx, aturan impor per lapisan; pelanggaran sengaja di keempat aturan tertangkap; husky + lint-staged + commitlint aktif |
+| 5.9 CI | ✅ | GitHub Actions: check, integration (Postgres 18), docker; run pertama hijau penuh |
+| 5.10 Docs dan ADR | ✅ | README, CONTRIBUTING, ADR-0001 sampai ADR-0007 |
+| 5.11 Makefile dan DX | ✅ | 23 target; jalan dari Git Bash dan PowerShell; setelan dan rekomendasi ekstensi VS Code |
 
 **Penyesuaian terhadap rencana selama eksekusi:**
 
 - **Nx 24** (bukan 21), versi terbaru saat eksekusi.
 - **Go di Nx memakai `nx:run-commands`**, bukan plugin `@nx-go/nx-go`. Ini jalur cadangan di bagian risiko, dipilih agar tidak bergantung pada kompatibilitas plugin komunitas.
-- **TypeScript dikunci ke 6.0**, karena typescript-eslint belum mendukung TypeScript 7.
+- **TypeScript dikunci ke 6.0**, karena typescript-eslint belum mendukung TypeScript 7. Opsi `baseUrl` dihapus karena ditolak TypeScript 6.
 - **Daemon Nx dimatikan** (`useDaemonProcess: false`) karena macet di Windows mesin ini.
 - **Postgres dev memakai port host 5433**, karena 5432 sudah dipakai Postgres proyek lain. Bisa diubah lewat `POSTGRES_PORT`.
 - **Module Go**: `github.com/indr622/workflow-engine`.
-
-**Lanjutkan dari:** isi `libs/web/ui` (shadcn), `flow-canvas`, `bpmn-viewer`, lalu fitur `health` di modeler-web, kemudian 5.6 sampai 5.11.
+- **Batas lapisan Go**: depguard ditambah test arsitektur berbasis `go list`, menggantikan `go-arch-lint`. Aturan antar-modul tidak bisa diekspresikan dengan pola prefix depguard.
+- **Batas lapisan UI**: aturan bawaan `no-restricted-imports` per lapisan, menggantikan `eslint-plugin-boundaries`.
+- **Linter `misspell` tidak dipakai**, karena komentar boleh berbahasa Indonesia.
+- **Prettier `printWidth` 120** dan tidak memformat file Markdown.
+- **Generator modul/fitur Nx** (risiko di bagian 6) belum dibuat; modul `health` dan fitur `health` menjadi contoh rujukan. Dipertimbangkan saat modul kedua lahir di Fase 1.
 
 ## 1. Lingkup
 
@@ -49,17 +52,17 @@ dan CI hijau.
 
 ## 2. Definition of Done Fase 0
 
-- [ ] `git clone` → `make setup` → `make check` berjalan hijau di Windows dan CI.
-- [ ] `make up` menyalakan PostgreSQL 18 (dan opsional Camunda 8 referensi lewat profil).
-- [ ] `make dev` menjalankan engine Go (modul `health` dengan lima lapisan) dan modeler-web (fitur `health` dengan empat lapisan).
-- [ ] Modeler-web memakai shadcn/ui dari `libs/web/ui`, TanStack Query untuk `/healthz`, TanStack Router untuk halaman, Zustand untuk state klien.
-- [ ] Kanvas bpmn-js dan kanvas React Flow (dari `libs/web/flow-canvas`) tampil di halaman yang sama dengan tema shadcn.
-- [ ] Satu file `.proto` contoh menghasilkan stub Go dan TypeScript lewat `make gen`, dan hasilnya terpakai di kedua sisi.
-- [ ] Aturan batas lapisan dan antar modul ditegakkan lint (depguard, enforce-module-boundaries, eslint-plugin-boundaries) dan dibuktikan dengan satu pelanggaran sengaja yang gagal lint.
-- [ ] `make docker-build` menghasilkan image `engine` dan `web`; `make deploy-local` menjalankan keduanya bersama Postgres lewat compose prod dan `/healthz` menjawab ok.
-- [ ] `nx affected` di CI hanya mem-build proyek yang berubah (cache Nx bekerja); CI mem-build image Docker.
-- [ ] Pre-commit hook menjalankan format + lint pada file yang di-stage.
-- [ ] README, CONTRIBUTING, dan 7 ADR tersimpan di `docs/`.
+- [x] `git clone` → `make setup` → `make check` berjalan hijau di Windows dan CI.
+- [x] `make up` menyalakan PostgreSQL 18 (dan opsional Camunda 8 referensi lewat profil).
+- [x] `make dev` menjalankan engine Go (modul `health` dengan lima lapisan) dan modeler-web (fitur `health` dengan empat lapisan).
+- [x] Modeler-web memakai shadcn/ui dari `libs/web/ui`, TanStack Query untuk `/healthz`, TanStack Router untuk halaman, Zustand untuk state klien.
+- [x] Kanvas bpmn-js dan kanvas React Flow (dari `libs/web/flow-canvas`) tampil di halaman yang sama dengan tema shadcn.
+- [x] Satu file `.proto` contoh menghasilkan stub Go dan TypeScript lewat `make gen`, dan hasilnya terpakai di kedua sisi.
+- [x] Aturan batas lapisan dan antar modul ditegakkan lint (depguard, test arsitektur Go, enforce-module-boundaries, no-restricted-imports) dan dibuktikan dengan satu pelanggaran sengaja yang gagal lint.
+- [x] `make docker-build` menghasilkan image `engine` dan `web`; `make deploy-local` menjalankan keduanya bersama Postgres lewat compose prod dan `/healthz` menjawab ok.
+- [x] `nx affected` di CI hanya mem-build proyek yang berubah (cache Nx bekerja); CI mem-build image Docker.
+- [x] Pre-commit hook menjalankan format + lint pada file yang di-stage.
+- [x] README, CONTRIBUTING, dan 7 ADR tersimpan di `docs/`.
 
 ## 3. Kondisi mesin saat ini (hasil cek 2026-10-27)
 
