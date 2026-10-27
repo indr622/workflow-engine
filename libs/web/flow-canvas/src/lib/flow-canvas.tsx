@@ -48,6 +48,7 @@ export function FlowCanvas<N extends Node = Node, E extends Edge = Edge>({
         nodesDraggable={!readOnly}
         nodesConnectable={!readOnly}
         fitView
+        fitViewOptions={{ padding: 0.2 }}
         proOptions={{ hideAttribution: true }}
       >
         <Background gap={16} />

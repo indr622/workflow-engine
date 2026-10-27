@@ -1,0 +1,5 @@
+/* Tema bersama (Tailwind v4 + token shadcn) dari libs/web/ui. */
+@import '../../../libs/web/ui/src/styles/globals.css';
+
+/* Pindai class Tailwind milik aplikasi ini. */
+@source '.';
