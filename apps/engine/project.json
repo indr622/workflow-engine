@@ -1,0 +1,39 @@
+{
+  "name": "engine",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/engine",
+  "tags": ["type:app", "lang:go", "scope:engine"],
+  "implicitDependencies": ["api-go"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "!{projectRoot}/**/*_test.go", "{projectRoot}/**/*.sql", "goMod", "^production"],
+      "outputs": ["{workspaceRoot}/dist/apps/engine"],
+      "options": {
+        "command": "go build -trimpath -o dist/apps/engine/ ./apps/engine/cmd/engine",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "continuous": true,
+      "options": { "command": "go run ./apps/engine/cmd/engine", "cwd": "{workspaceRoot}" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod", "^production"],
+      "options": { "command": "go test ./apps/engine/...", "cwd": "{workspaceRoot}" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod", "{workspaceRoot}/.golangci.yml"],
+      "options": { "command": "golangci-lint run ./apps/engine/...", "cwd": "{workspaceRoot}" }
+    },
+    "tidy": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "command": "go mod tidy", "cwd": "{workspaceRoot}" }
+    }
+  }
+}

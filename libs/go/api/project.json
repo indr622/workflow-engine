@@ -1,0 +1,15 @@
+{
+  "name": "api-go",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/go/api",
+  "tags": ["type:api-client", "lang:go"],
+  "implicitDependencies": ["proto"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod"],
+      "options": { "command": "go build ./libs/go/api/...", "cwd": "{workspaceRoot}" }
+    }
+  }
+}

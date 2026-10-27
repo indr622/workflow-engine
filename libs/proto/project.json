@@ -1,0 +1,25 @@
+{
+  "name": "proto",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/proto",
+  "tags": ["type:contract"],
+  "targets": {
+    "generate": {
+      "executor": "nx:run-commands",
+      "inputs": ["proto"],
+      "outputs": ["{workspaceRoot}/libs/go/api/gen", "{workspaceRoot}/libs/web/api-client/src/gen"],
+      "options": { "command": "buf generate", "cwd": "libs/proto" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["proto"],
+      "options": { "command": "buf lint", "cwd": "libs/proto" }
+    },
+    "breaking": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "command": "buf breaking --against \"../../.git#branch=main,subdir=libs/proto\"", "cwd": "libs/proto" }
+    }
+  }
+}
