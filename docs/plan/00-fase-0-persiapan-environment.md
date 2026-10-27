@@ -75,7 +75,8 @@ Folder `D:\workflow-engine` masih kosong dan **belum** menjadi repositori git.
 | Lint Go | golangci-lint v2 (config di root) | Sudah terpasang |
 | Lint/format TS | ESLint flat config + Prettier | Standar Nx |
 | Test | `go test` + `testify`; Vitest; Playwright (e2e, Fase berikutnya) | — |
-| Commit | Conventional Commits + commitlint + husky + lint-staged | Changelog otomatis nanti |
+| Bahasa kode | **Identifier bahasa Inggris**: nama file, paket, fungsi, tipe, variabel, kolom DB, field proto, route. **Komentar dan dokumentasi boleh bahasa Indonesia** (komentar kode, ADR, docs) | Identifier Inggris selaras dengan library dan istilah BPMN/Camunda; komentar Indonesia memudahkan tim |
+| Commit | Conventional Commits, **seluruh pesan bahasa Inggris**; ditegakkan `commitlint` + `husky`; **auto-commit dan push** oleh agen setiap unit kerja selesai (aturan lengkap di `CLAUDE.md` root) | Changelog otomatis; riwayat konsisten tanpa menunggu commit manual |
 | CI | GitHub Actions dengan `nx affected` | Gratis untuk mulai; Nx Cloud opsional |
 | Line ending | LF di semua file (`.gitattributes` + `.editorconfig`) | Hindari diff palsu di Windows |
 
@@ -171,9 +172,15 @@ Pastikan `%USERPROFILE%\go\bin` ada di `PATH`.
 - `.gitignore` gabungan Node + Go + Nx (`.nx/cache`, `dist/`, `tmp/`, `node_modules/`, `*.exe`, `.env`).
 - `.gitattributes`: `* text=auto eol=lf`, binari (`*.png`, `*.woff2`) ditandai `binary`.
 - `.editorconfig`: indent 2 untuk TS/JSON/YAML, tab untuk Go (`[*.go] indent_style = tab`).
-- Strategi branch: `main` dilindungi, fitur lewat `feat/*` + PR, squash merge.
+- Remote: `git remote add origin <url>` (GitHub, org pancaran-logistic) dan `git push -u origin main`
+  pada commit pertama. Tanpa remote, aturan auto-push di `CLAUDE.md` tidak bisa berjalan.
+- Strategi branch: `main` dilindungi setelah Fase 0 selesai; fitur lewat `feat/*` + PR, squash merge.
+  Selama bootstrap Fase 0, commit langsung ke `main`.
+- Konvensi commit: Conventional Commits, bahasa Inggris penuh, ditegakkan `commitlint`
+  (`@commitlint/config-conventional` + daftar `scope-enum` sesuai area monorepo) lewat hook
+  `commit-msg` husky. Aturan auto-commit/push untuk agen ada di `CLAUDE.md`.
 
-Hasil: commit pertama `chore: init repository`.
+Hasil: commit pertama `chore: init repository`, commit kedua `docs(plan): add phase 0 environment plan`.
 
 ### 5.3 Inisialisasi workspace Nx
 
@@ -392,8 +399,11 @@ Hasil: `make up` lalu `make dev` → `curl localhost:8080/healthz` mengembalikan
 - `.prettierrc` (singleQuote, printWidth 100).
 - `husky` + `lint-staged`: `gofmt -l` / `goimports` untuk `*.go`, `eslint --fix` + `prettier` untuk
   `*.{ts,tsx,json,md}`.
-- `commitlint` config conventional.
-- Target Nx `format:check` di CI.
+- `commitlint.config.mjs`: extends `@commitlint/config-conventional`, `scope-enum` berisi
+  `engine, modeler-web, operate-web, tasklist-web, ui, api-client, core, proto, bpmn, feel, sdk, infra,
+  docker, ci, nx, deps, docs, plan` plus pola `engine/<modul>`; `subject-case` lowercase;
+  `header-max-length` 72. Hook `commit-msg` menjalankan `commitlint --edit`.
+- Target Nx `format:check` di CI; CI juga menjalankan `commitlint --from origin/main` pada PR.
 
 ### 5.9 CI (GitHub Actions)
 
@@ -413,7 +423,15 @@ Matrix OS: `ubuntu-latest` saja dulu; Windows runner ditambah bila ada bug spesi
 ### 5.10 Dokumentasi awal
 
 - `README.md`: tujuan proyek, prasyarat, "mulai dalam 5 menit", peta folder.
-- `CONTRIBUTING.md`: alur branch/PR, konvensi commit, cara menambah lib/app lewat generator Nx.
+- `CONTRIBUTING.md`: alur branch/PR, konvensi commit, cara menambah lib/app lewat generator Nx,
+  dan **konvensi bahasa**: identifier (file, paket, fungsi, tipe, variabel, kolom, field proto) wajib
+  bahasa Inggris; komentar kode, docstring, ADR, dan dokumen boleh bahasa Indonesia. Contoh:
+
+  ```go
+  // ActivateJobs mengambil job yang siap dikerjakan untuk tipe tertentu,
+  // mengunci barisnya dengan SKIP LOCKED agar tidak diambil worker lain.
+  func (s *JobService) ActivateJobs(ctx context.Context, req ActivateJobsRequest) ([]Job, error)
+  ```
 - `docs/adr/`:
   - ADR-0001 Monorepo dengan Nx + pnpm
   - ADR-0002 Engine ditulis di Go, satu go.mod
