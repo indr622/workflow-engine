@@ -2,7 +2,8 @@
 
 Engine workflow BPMN 2.0 yang dibangun dari nol dengan fitur-fitur setara Camunda 8.
 Inti ditulis di Go sebagai modular monolith dengan Clean Architecture per modul; UI di React
-(shadcn/ui, Zustand, TanStack) dengan Clean Architecture per fitur; monorepo Nx; deploy lewat Docker.
+(shadcn/ui, Zustand, TanStack, bpmn-js untuk BPMN, React Flow untuk graf lain) dengan Clean
+Architecture per fitur; monorepo Nx; deploy lewat Docker.
 Setiap fase punya dokumen sendiri di folder ini. Hanya Fase 0 yang sudah dirinci.
 
 | Fase | Nama | Keluaran utama | Dokumen |
@@ -13,7 +14,7 @@ Setiap fase punya dokumen sendiri di folder ini. Hanya Fase 0 yang sudah dirinci
 | 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | _belum ditulis_ |
 | 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | _belum ditulis_ |
 | 5 | Timer, message, boundary event, sub-process | Scheduler timer, korelasi message, error dan escalation event | _belum ditulis_ |
-| 6 | UI: Modeler, Operate, Tasklist | React: modeler bpmn-js dengan properties panel, monitoring instance, user task inbox | _belum ditulis_ |
+| 6 | UI: Modeler, Operate, Tasklist | React: modeler bpmn-js dengan properties panel, monitoring instance (viewer bpmn-js + pohon instance React Flow), user task inbox | _belum ditulis_ |
 | 7 | FEEL dan DMN | Evaluator FEEL untuk kondisi dan input/output mapping; DMN decision table (opsional) | _belum ditulis_ |
 | 8 | Observability, keamanan, hardening deploy | OpenTelemetry, auth (OIDC), multi-tenant dasar, compose prod dengan reverse proxy/TLS, backup DB, zero-downtime restart | _belum ditulis_ |
 

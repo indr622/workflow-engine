@@ -25,6 +25,7 @@ dan CI hijau.
 - [ ] `make up` menyalakan PostgreSQL 18 (dan opsional Camunda 8 referensi lewat profil).
 - [ ] `make dev` menjalankan engine Go (modul `health` dengan lima lapisan) dan modeler-web (fitur `health` dengan empat lapisan).
 - [ ] Modeler-web memakai shadcn/ui dari `libs/web/ui`, TanStack Query untuk `/healthz`, TanStack Router untuk halaman, Zustand untuk state klien.
+- [ ] Kanvas bpmn-js dan kanvas React Flow (dari `libs/web/flow-canvas`) tampil di halaman yang sama dengan tema shadcn.
 - [ ] Satu file `.proto` contoh menghasilkan stub Go dan TypeScript lewat `make gen`, dan hasilnya terpakai di kedua sisi.
 - [ ] Aturan batas lapisan dan antar modul ditegakkan lint (depguard, enforce-module-boundaries, eslint-plugin-boundaries) dan dibuktikan dengan satu pelanggaran sengaja yang gagal lint.
 - [ ] `make docker-build` menghasilkan image `engine` dan `web`; `make deploy-local` menjalankan keduanya bersama Postgres lewat compose prod dan `/healthz` menjawab ok.
@@ -65,6 +66,7 @@ Folder `D:\workflow-engine` masih kosong dan **belum** menjadi repositori git.
 | Routing | **TanStack Router** (file-based, type-safe) | Route params dan search params bertipe, loader terintegrasi Query |
 | Tabel dan form | **TanStack Table** + **TanStack Form** + Zod | Satu ekosistem, headless, cocok dengan shadcn |
 | Modeler BPMN | `bpmn-js` (bpmn.io) | Library yang sama dipakai Camunda Modeler, format XML 100% kompatibel |
+| Kanvas graf | **React Flow** (`@xyflow/react`) dibungkus di `libs/web/flow-canvas`, dikombinasikan dengan bpmn-js (lihat 4.3) | Kanvas React-native untuk graf non-BPMN dan tampilan ringkas; node custom memakai komponen shadcn |
 | API engine | gRPC + REST via **Connect** (`connectrpc.com/connect`) dan `buf` | Satu definisi proto menghasilkan client Go dan TS; browser bisa panggil tanpa grpc-web proxy |
 | Database | **PostgreSQL 18** (major stabil terbaru, rilis Sep 2025, didukung komunitas sampai Nov 2030) | PostgreSQL tidak punya label "LTS"; setiap major didukung 5 tahun. Versi 18 adalah yang terbaru dengan umur dukungan terpanjang dan sudah matang satu tahun. Transaksi kuat untuk state instance; `SKIP LOCKED` untuk job queue |
 | Deployment | **Docker**: image `engine` (distroless) dan `web` (nginx static), dijalankan lewat `docker-compose.prod.yml` | Satu cara deploy untuk dev, staging, dan server; tidak butuh Kubernetes di awal |
@@ -138,6 +140,23 @@ Aturan:
 4. Routing: TanStack Router file-based di `src/routes/`; `loader` route memanggil `queryClient.ensureQueryData` dari `application`.
 5. Komponen shadcn/ui tinggal di `libs/web/ui` sebagai kode milik repo; aplikasi tidak menginstal shadcn sendiri-sendiri.
 6. Batas lintas lib ditegakkan `@nx/enforce-module-boundaries` dengan tag (`type:ui`, `type:api-client`, `type:core`, `scope:modeler`, …).
+
+### 4.3 Pembagian peran bpmn-js dan React Flow
+
+Keduanya dipakai bersama dengan batas yang jelas agar tidak ada dua sumber kebenaran:
+
+| Kebutuhan | Library | Alasan |
+|---|---|---|
+| Mengedit dan menampilkan BPMN 2.0 (modeler, viewer di Operate dengan overlay token/incident) | **bpmn-js** | Satu-satunya yang menghasilkan dan membaca XML BPMN kompatibel Camunda Modeler; properties panel dan `zeebe:` extension sudah ada |
+| Graf non-BPMN: pohon process instance dan call activity, peta dependensi process definition, topologi worker/job type, flow DMN/decision (Fase 7) | **React Flow** | Node dan edge adalah komponen React biasa (shadcn `Card`, `Badge`), layout bebas, interaksi mudah dihubungkan ke Zustand |
+| Flow builder sederhana untuk pengguna non-teknis (opsional, fase lanjut) | **React Flow** → dikompilasi ke BPMN XML lewat `libs/web/core` | Pengguna awam mendapat kanvas sederhana, engine tetap hanya mengenal BPMN |
+
+Aturan:
+
+1. **BPMN XML adalah satu-satunya format yang dikenal engine.** Graf React Flow tidak pernah dikirim ke engine; bila perlu, dikonversi ke BPMN di sisi klien (`libs/web/core`).
+2. `libs/web/flow-canvas` membungkus `@xyflow/react` dengan tema shadcn (CSS variable yang sama), node/edge dasar, dan auto-layout (`@dagrejs/dagre` atau `elkjs`). Aplikasi tidak meng-import `@xyflow/react` langsung, hanya lib ini.
+3. State graf (node, edge, seleksi) disimpan di Zustand store milik fitur, mengikuti pola bawaan React Flow; data sumber (instance, definition) tetap dari TanStack Query.
+4. Fase 0 hanya memastikan keduanya terbundel dan hidup di halaman yang sama: kanvas bpmn-js kosong plus kanvas React Flow dengan dua node contoh.
 
 ## 5. Rencana kerja Fase 0 (urutan eksekusi)
 
@@ -238,7 +257,8 @@ workflow-engine/
 │  │  ├─ ui/                        # shadcn/ui components + tema (tag type:ui)
 │  │  ├─ api-client/                # hasil generate proto (Connect-ES) + transport (tag type:api-client)
 │  │  ├─ core/                      # tipe & util domain bersama, Result/Error (tag type:core)
-│  │  └─ bpmn-viewer/               # pembungkus bpmn-js untuk React (tag type:ui)
+│  │  ├─ bpmn-viewer/               # pembungkus bpmn-js untuk React (tag type:ui)
+│  │  └─ flow-canvas/               # pembungkus React Flow + tema shadcn + auto-layout (tag type:ui)
 │  └─ proto/                        # sumber kebenaran .proto (buf module)
 ├─ infra/
 │  └─ docker/
@@ -262,7 +282,7 @@ workflow-engine/
 
 Di Fase 0 yang dibuat: **`apps/engine`** (platform + modul `health`), **`apps/modeler-web`**
 (fitur `health`), **`libs/proto`**, **`libs/go/api`**, **`libs/web/api-client`**, **`libs/web/ui`**,
-**`libs/web/core`**, dan **`infra/docker`** lengkap. Sisanya cukup folder kosong dengan `README.md`
+**`libs/web/core`**, **`libs/web/flow-canvas`** (kerangka minimal), dan **`infra/docker`** lengkap. Sisanya cukup folder kosong dengan `README.md`
 penanda. Migrasi dan akses DB (pgx/sqlc) tinggal di `internal/platform/db` dan `infrastructure`
 tiap modul, bukan lib terpisah.
 
@@ -298,7 +318,7 @@ Target Nx yang harus ada dan lolos: `build`, `serve`, `test`, `lint`, `tidy`.
 pnpm nx g @nx/react:application modeler-web --directory=apps/modeler-web --bundler=vite --style=css --routing=false --unitTestRunner=vitest --e2eTestRunner=none
 pnpm add zustand @tanstack/react-query @tanstack/react-router @tanstack/react-table @tanstack/react-form zod
 pnpm add -D @tanstack/router-plugin @tanstack/react-query-devtools @tanstack/router-devtools
-pnpm add bpmn-js @connectrpc/connect @connectrpc/connect-web @bufbuild/protobuf
+pnpm add bpmn-js @xyflow/react @dagrejs/dagre @connectrpc/connect @connectrpc/connect-web @bufbuild/protobuf
 ```
 
 Generator `routing=false` karena routing memakai TanStack Router (plugin Vite `@tanstack/router-plugin`
@@ -323,7 +343,9 @@ Isi minimal `modeler-web`:
 - Fitur `health` lengkap empat lapisan: `domain/health.ts`, `application/use-health.ts` (TanStack Query)
   + `application/health.store.ts` (Zustand untuk state klien, mis. auto-refresh on/off),
   `infrastructure/health.repository.ts` (Connect client → domain), `presentation/health-card.tsx` (shadcn `Card`, `Badge`).
-- Kanvas `bpmn-js` kosong untuk membuktikan library bisa dibundel.
+- Kanvas `bpmn-js` kosong dan kanvas React Flow (lewat `libs/web/flow-canvas`) berisi dua node
+  contoh yang digambar dengan komponen shadcn, untuk membuktikan kedua library terbundel dan
+  temanya konsisten.
 
 Target Nx yang harus lolos: `build`, `serve`, `test`, `lint`.
 
