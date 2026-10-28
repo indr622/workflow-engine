@@ -1,0 +1,32 @@
+{
+  "name": "feel-go",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "library",
+  "sourceRoot": "libs/go/feel",
+  "tags": ["type:kernel", "lang:go"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "!{projectRoot}/**/*_test.go", "goMod"],
+      "options": { "command": "go build ./libs/go/feel/...", "cwd": "{workspaceRoot}" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "{projectRoot}/testdata/**", "goMod"],
+      "options": { "command": "go test ./libs/go/feel/...", "cwd": "{workspaceRoot}" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod", "{workspaceRoot}/.golangci.yml"],
+      "options": { "command": "golangci-lint run ./libs/go/feel/...", "cwd": "{workspaceRoot}" }
+    },
+    "fuzz": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "go test -run=^$ -fuzz=FuzzCompile -fuzztime=${FUZZTIME:-60s} ./libs/go/feel",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}
