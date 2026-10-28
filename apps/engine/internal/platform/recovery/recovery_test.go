@@ -73,10 +73,14 @@ func TestRunnerModes(t *testing.T) {
 }
 
 func TestParseOnMismatch(t *testing.T) {
-	for in, want := range map[string]OnMismatch{"": OnMismatchFail, "FAIL": OnMismatchFail, "rebuild": OnMismatchRebuild, " warn ": OnMismatchWarn} {
-		got, err := ParseOnMismatch(in)
-		if err != nil || got != want {
-			t.Errorf("ParseOnMismatch(%q) = %v, %v", in, got, err)
+	cases := []struct {
+		in   string
+		want OnMismatch
+	}{{"", OnMismatchFail}, {"FAIL", OnMismatchFail}, {"rebuild", OnMismatchRebuild}, {"  warn	", OnMismatchWarn}}
+	for _, c := range cases {
+		got, err := ParseOnMismatch(c.in)
+		if err != nil || got != c.want {
+			t.Errorf("ParseOnMismatch(%q) = %v, %v", c.in, got, err)
 		}
 	}
 	if _, err := ParseOnMismatch("ignore"); err == nil {
