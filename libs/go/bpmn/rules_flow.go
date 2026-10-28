@@ -88,7 +88,52 @@ func (v *validator) nodeRules(n FlowNode) {
 			v.errorAt(CodeIOMappingSourceEmpty, n, "I/O mapping for target %q has an empty source", m.Target)
 		}
 	}
+	if v.profile.rejectIOMapping && len(io.Inputs)+len(io.Outputs) > 0 {
+		v.errorAt(CodeIOMappingNotSupported, n, "input/output mappings are not supported by the engine yet")
+	}
 	v.implicitEndRule(n)
+}
+
+// inclusiveJoinCycleRule memberi warning bila inclusive join berada dalam siklus bersama inclusive
+// join lain: keduanya bisa saling menunggu selamanya (batas algoritma join, ADR-0013).
+func (v *validator) inclusiveJoinCycleRule(g *Gateway) {
+	if g.typ != InclusiveGatewayType || len(g.incoming) < 2 {
+		return
+	}
+	fromG := forwardReachable(g)
+	for id := range fromG {
+		el, ok := v.proc.index[id]
+		if !ok {
+			continue
+		}
+		h, ok := el.(*Gateway)
+		if !ok || h == g || h.typ != InclusiveGatewayType || len(h.incoming) < 2 {
+			continue
+		}
+		if forwardReachable(h)[g.id] {
+			v.warnAt(CodeInclusiveJoinInCycle, g, "inclusive join is in a cycle with inclusive join %q; both may wait for each other forever", h.id)
+			return
+		}
+	}
+}
+
+// forwardReachable mengembalikan id flow node yang bisa dicapai dari n lewat outgoing flow.
+func forwardReachable(n FlowNode) map[string]bool {
+	seen := map[string]bool{}
+	stack := []FlowNode{n}
+	for len(stack) > 0 {
+		cur := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		for _, f := range cur.Outgoing() {
+			t := f.target
+			if t == nil || seen[t.ID()] {
+				continue
+			}
+			seen[t.ID()] = true
+			stack = append(stack, t)
+		}
+	}
+	return seen
 }
 
 // inconsistent membandingkan referensi yang ditulis di XML dengan flow sebenarnya.

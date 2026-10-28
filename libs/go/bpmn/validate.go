@@ -57,6 +57,7 @@ func (v *validator) walk(s *Scope) {
 			v.flowRules(x)
 		case *Gateway:
 			v.gatewayRules(x)
+			v.inclusiveJoinCycleRule(x)
 			v.nodeRules(x)
 		case *Event:
 			v.eventRules(x)

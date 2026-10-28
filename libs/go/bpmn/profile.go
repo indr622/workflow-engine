@@ -4,6 +4,8 @@ package bpmn
 type Profile struct {
 	name    string
 	accepts func(FlowElement) bool
+	// rejectIOMapping menolak zeebe:ioMapping karena engine belum mengevaluasinya (Fase 7).
+	rejectIOMapping bool
 }
 
 // Name adalah nama profil ("full" atau "executable").
@@ -15,7 +17,7 @@ var ProfileFull = Profile{name: "full", accepts: func(FlowElement) bool { return
 // ProfileExecutable hanya menerima elemen yang sudah bisa dieksekusi engine.
 // Daftarnya tumbuh setiap fase; Fase 2: none start/end, sequence flow, service task,
 // undefined/manual task, exclusive/parallel/inclusive gateway.
-var ProfileExecutable = Profile{name: "executable", accepts: executableInPhase2}
+var ProfileExecutable = Profile{name: "executable", accepts: executableInPhase2, rejectIOMapping: true}
 
 func executableInPhase2(el FlowElement) bool {
 	switch x := el.(type) {

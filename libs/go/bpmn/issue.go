@@ -95,6 +95,8 @@ const (
 	CodeEventSubprocessInvalidStart  Code = "EVENT_SUBPROCESS_INVALID_START"
 	CodeExecutionPlatformMismatch    Code = "EXECUTION_PLATFORM_MISMATCH"
 	CodeCamunda7ExtensionIgnored     Code = "CAMUNDA7_EXTENSION_IGNORED"
+	CodeIOMappingNotSupported        Code = "IO_MAPPING_NOT_SUPPORTED"
+	CodeInclusiveJoinInCycle         Code = "INCLUSIVE_JOIN_IN_CYCLE"
 )
 
 // Position adalah lokasi elemen di XML sumber (1-based).

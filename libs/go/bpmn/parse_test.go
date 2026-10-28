@@ -150,7 +150,7 @@ func issuesForGolden(is Issues) []goldenIssue {
 // TestExecutableProfile memastikan ProfileExecutable menerima tepat elemen Fase 2 dan menolak sisanya.
 func TestExecutableProfile(t *testing.T) {
 	accepted := map[string]bool{
-		"v01_minimal.bpmn": true, "v02_service_task.bpmn": true, "v03_exclusive_gateway.bpmn": true,
+		"v01_minimal.bpmn": true, "v03_exclusive_gateway.bpmn": true,
 		"v04_parallel_gateway.bpmn": true, "v05_inclusive_gateway.bpmn": true, "v06_undefined_manual_task.bpmn": true,
 		"v22_bpmn2_prefix.bpmn": true, "v23_large_process.bpmn": true, "v24_implicit_end.bpmn": true,
 		"v25_non_executable_pool.bpmn": true, "v26_camunda7_extension.bpmn": true, "v27_unreachable_element.bpmn": true,
@@ -167,8 +167,8 @@ func TestExecutableProfile(t *testing.T) {
 				t.Fatalf("executable profile accepted=%v, want %v: %v", got, accepted[name], issues.Errors())
 			}
 			for _, i := range issues.Errors() {
-				if i.Code != CodeUnsupportedElement {
-					t.Fatalf("executable profile must only add UNSUPPORTED_ELEMENT, got %s", i.Code)
+				if i.Code != CodeUnsupportedElement && i.Code != CodeIOMappingNotSupported {
+					t.Fatalf("executable profile must only add UNSUPPORTED_ELEMENT or IO_MAPPING_NOT_SUPPORTED, got %s", i.Code)
 				}
 			}
 		})
