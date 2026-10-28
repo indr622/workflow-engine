@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
 // Mismatch adalah satu ketidakcocokan proyeksi.
@@ -109,9 +111,14 @@ func (r *Runner) Run(ctx context.Context) (Report, error) {
 	var total Report
 	for _, v := range r.Verifiers {
 		r.Gate.setPhase("verify:" + v.Name())
+		phaseStart := time.Now()
 		rep, err := v.VerifyOnStart(ctx)
+		metrics.Since(ctx, metrics.Get().RecoveryDuration, phaseStart, metrics.Attr("phase", "verify:"+v.Name()))
 		if err != nil {
 			return total, fmt.Errorf("verify %s: %w", v.Name(), err)
+		}
+		for _, m := range rep.Mismatches {
+			metrics.Get().RecoveryMismatch.Add(ctx, 1, metrics.Attr("kind", m.Kind))
 		}
 		for _, m := range rep.Mismatches {
 			log.Error("projection mismatch", slog.String("verifier", v.Name()), slog.String("subject", m.Subject),
@@ -145,7 +152,10 @@ func (r *Runner) Run(ctx context.Context) (Report, error) {
 	}
 	for _, p := range r.Participants {
 		r.Gate.setPhase("recover:" + p.Name())
-		if err := p.Recover(ctx); err != nil {
+		phaseStart := time.Now()
+		err := p.Recover(ctx)
+		metrics.Since(ctx, metrics.Get().RecoveryDuration, phaseStart, metrics.Attr("phase", "recover:"+p.Name()))
+		if err != nil {
 			return total, fmt.Errorf("recover %s: %w", p.Name(), err)
 		}
 	}

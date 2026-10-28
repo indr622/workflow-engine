@@ -16,6 +16,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
 // MaxKeyBytes adalah panjang maksimum request_id.
@@ -90,6 +92,7 @@ VALUES ($1, $2, $3, now() + make_interval(secs => $4)) ON CONFLICT (scope, key) 
 			return Result{}, fmt.Errorf("claim request_id: %w", err)
 		}
 		if tag.RowsAffected() == 1 {
+			metrics.Get().Idempotency.Add(ctx, 1, metrics.Attr("rpc", c.Scope, "outcome", "claimed"))
 			return Result{Outcome: Claimed}, nil
 		}
 		var (
@@ -112,11 +115,13 @@ VALUES ($1, $2, $3, now() + make_interval(secs => $4)) ON CONFLICT (scope, key) 
 			continue
 		}
 		if !bytes.Equal(hash, c.RequestHash[:]) {
+			metrics.Get().Idempotency.Add(ctx, 1, metrics.Attr("rpc", c.Scope, "outcome", "reused"))
 			return Result{}, ErrKeyReused
 		}
 		if response == nil {
 			return Result{}, fmt.Errorf("request_id claim of %s has no stored response", c.Key)
 		}
+		metrics.Get().Idempotency.Add(ctx, 1, metrics.Attr("rpc", c.Scope, "outcome", "replayed"))
 		return Result{Outcome: Replayed, Response: response}, nil
 	}
 	return Result{}, fmt.Errorf("could not claim request_id %q", c.Key)

@@ -9,12 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
 )
@@ -60,6 +62,7 @@ var ErrDefinitionRequired = errors.New("process definition key or bpmn process i
 
 // CreateProcessInstance memilih versi proses lalu menjalankan instance baru sampai wait state.
 func (c *Commands) CreateProcessInstance(ctx context.Context, req api.CreateInstanceRequest) (api.CreateInstanceResult, error) {
+	defer metrics.Since(ctx, metrics.Get().CommandDuration, time.Now(), metrics.Attr("command", "create_process_instance"))
 	def, proc, err := c.resolve(ctx, req)
 	if err != nil {
 		return api.CreateInstanceResult{}, err
@@ -164,12 +167,15 @@ func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []b
 // runOnInstance menjalankan command pada instance yang sudah ada: kunci + muat, klaim request_id
 // (setelah lock), Processor, lalu tulis record, proyeksi, outbox, dan response dalam satu batch.
 func (c *Commands) runOnInstance(ctx context.Context, op, piKey string, proc *bpmn.Process, idem *api.Idempotency, cmd domain.Command) (bool, error) {
+	defer metrics.Since(ctx, metrics.Get().CommandDuration, time.Now(), metrics.Attr("command", op))
 	var st *domain.InstanceState
 	var records []domain.Record
 	replayed := false
 	err := c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
 		var err error
+		lockStart := time.Now()
 		st, err = lockAndLoad(ctx, tx, piKey, proc)
+		metrics.Since(ctx, metrics.Get().CommandLockWait, lockStart, metrics.Attr("command", op))
 		if err != nil {
 			return err
 		}

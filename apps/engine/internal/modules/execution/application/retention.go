@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"time"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
 // RetentionStore menghapus instance final yang lebih tua dari batas (ADR-0019).
@@ -47,6 +49,9 @@ func (r *Retention) Prune(ctx context.Context, olderThan time.Duration, dryRun b
 			return total, err
 		}
 		total += len(keys)
+		if !dryRun {
+			metrics.Get().HistoryPrunedInstances.Add(ctx, int64(len(keys)))
+		}
 		if dryRun || len(keys) < r.batch {
 			break
 		}

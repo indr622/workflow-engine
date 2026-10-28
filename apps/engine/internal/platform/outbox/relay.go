@@ -11,6 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
 // Start menentukan posisi awal kursor consumer yang baru pertama kali terdaftar.
@@ -350,6 +352,10 @@ func (r *Relay) processBatch(ctx context.Context, c *Consumer, limit int) (int, 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, false, err
 	}
+	m := metrics.Get()
+	for _, p := range batch {
+		m.OutboxDelivered.Add(ctx, 1, metrics.Attr("consumer", c.Name, "topic", p.ev.Topic))
+	}
 	return len(batch), false, nil
 }
 
@@ -377,6 +383,7 @@ WHERE consumer = $1 RETURNING attempts`, c.Name, cause.Error()).Scan(&attempts);
 		return err
 	}
 	log := r.log.With(slog.String("consumer", c.Name), slog.String("event_id", p.ev.ID), slog.Int("attempts", attempts))
+	metrics.Get().OutboxFailed.Add(ctx, 1, metrics.Attr("consumer", c.Name, "topic", p.ev.Topic))
 	if attempts < c.MaxAttempts {
 		log.Warn("outbox event failed", slog.Any("error", cause))
 		return tx.Commit(ctx)
@@ -391,6 +398,7 @@ VALUES ($1, $2::uuid, $3, $4::uuid, $5, $6, $7) ON CONFLICT (consumer, event_id)
 		return err
 	}
 	log.Error("outbox event dead lettered", slog.Any("error", cause))
+	metrics.Get().OutboxDeadLetter.Add(ctx, 1, metrics.Attr("consumer", c.Name, "topic", p.ev.Topic))
 	return tx.Commit(ctx)
 }
 

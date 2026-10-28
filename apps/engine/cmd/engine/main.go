@@ -151,6 +151,10 @@ func janitor(ctx context.Context, app *application, cfg config.Config, log *slog
 			return
 		case <-t.C:
 		}
+		st := app.pool.Stat()
+		log.Debug("db pool stats", slog.Int("acquired", int(st.AcquiredConns())), slog.Int("idle", int(st.IdleConns())),
+			slog.Int("max", int(st.MaxConns())), slog.Int64("wait_ms", st.AcquireDuration().Milliseconds()),
+			slog.Int64("empty_acquire", st.EmptyAcquireCount()))
 		if n, err := outbox.Prune(ctx, app.pool, cfg.Outbox.Retention); err != nil {
 			log.Warn("outbox prune failed", slog.Any("error", err))
 		} else if n > 0 {
