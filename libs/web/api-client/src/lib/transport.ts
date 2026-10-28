@@ -4,6 +4,8 @@ import { HealthService } from '../gen/workflow/health/v1/health_pb';
 import { DeploymentService } from '../gen/workflow/deployment/v1/deployment_pb';
 import { ProcessInstanceService } from '../gen/workflow/process/v1/process_instance_pb';
 import { JobService } from '../gen/workflow/job/v1/job_pb';
+import { IncidentService } from '../gen/workflow/incident/v1/incident_pb';
+import { MessageService } from '../gen/workflow/message/v1/message_pb';
 
 /**
  * createEngineTransport membuat transport Connect ke engine.
@@ -17,6 +19,8 @@ export type HealthClient = Client<typeof HealthService>;
 export type DeploymentClient = Client<typeof DeploymentService>;
 export type ProcessInstanceClient = Client<typeof ProcessInstanceService>;
 export type JobClient = Client<typeof JobService>;
+export type IncidentClient = Client<typeof IncidentService>;
+export type MessageClient = Client<typeof MessageService>;
 
 /** createHealthClient membuat client bertipe untuk HealthService. */
 export function createHealthClient(transport: Transport): HealthClient {
@@ -36,4 +40,14 @@ export function createProcessInstanceClient(transport: Transport): ProcessInstan
 /** createJobClient membuat client bertipe untuk JobService. */
 export function createJobClient(transport: Transport): JobClient {
   return createClient(JobService, transport);
+}
+
+/** createIncidentClient membuat client bertipe untuk IncidentService. */
+export function createIncidentClient(transport: Transport): IncidentClient {
+  return createClient(IncidentService, transport);
+}
+
+/** createMessageClient membuat client bertipe untuk MessageService. */
+export function createMessageClient(transport: Transport): MessageClient {
+  return createClient(MessageService, transport);
 }
