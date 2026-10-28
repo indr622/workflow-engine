@@ -75,7 +75,7 @@ event, sub-process, call activity, multi-instance, error/escalation (Fase 5); Op
 - [ ] `CreateProcessInstance` (dengan `process_definition_key`, atau `bpmn_process_id` + versi/terbaru, plus variabel JSON) mengembalikan `process_instance_key`; instance tanpa wait state langsung `COMPLETED` dalam satu panggilan.
 - [ ] Setiap pola di matriks 4.1 punya minimal satu skenario tabel yang lolos: urutan record, element instance akhir, variabel akhir, job, dan incident sesuai ekspektasi.
 - [ ] Parallel join: property test atas ≥ 1.000 graf blok acak (fork/join bersarang, urutan penyelesaian job acak) selalu berakhir `COMPLETED`, setiap join aktif tepat sekali per fork, tidak ada sisa counter flow.
-- [ ] Inclusive join: property test yang sama untuk graf blok inclusive dengan kondisi acak; skenario batas (cabang tidak diambil, cabang menunggu job, default flow) lolos; keterbatasan algoritma (siklus) tercatat di ADR-0012 dan diuji sebagai perilaku yang terdokumentasi.
+- [ ] Inclusive join: property test yang sama untuk graf blok inclusive dengan kondisi acak; skenario batas (cabang tidak diambil, cabang menunggu job, default flow) lolos; keterbatasan algoritma (siklus) tercatat di ADR-0013 dan diuji sebagai perilaku yang terdokumentasi.
 - [ ] Determinisme: menerapkan ulang (`Apply`) seluruh record sebuah instance ke state kosong menghasilkan state identik dengan proyeksi di database (test untuk semua skenario; fondasi replay Fase 3).
 - [ ] Service task membuat job (`CREATED`) dengan `type`, `retries`, header; `CompleteJob` dengan variabel menggabungkan variabel ke scope process instance dan melanjutkan token; job yang sudah selesai atau dibatalkan ditolak `FailedPrecondition`/`NotFound`.
 - [ ] Kondisi gagal dievaluasi atau tidak ada flow yang cocok di exclusive/inclusive gateway tanpa default membuat incident dengan tipe dan pesan yang jelas; instance tetap `ACTIVE` dengan `has_incident = true`.
@@ -85,7 +85,7 @@ event, sub-process, call activity, multi-instance, error/escalation (Fase 5); Op
 - [ ] Uji paritas eksekusi: semua skenario bertanda `parity` memberi hasil observable yang sama dengan Camunda 8.8 referensi (selesai/incident, multiset tipe job yang diaktifkan, variabel akhir); deviasi disengaja tercatat di `expectations.json` dengan alasan.
 - [ ] Modeler-web: dari daftar definition, mulai instance dengan variabel JSON, lihat token aktif/selesai/incident sebagai marker di viewer bpmn-js, selesaikan job dari UI; uji manual tercatat di PR.
 - [ ] Benchmark: proses linear 20 service task, create + 20 `CompleteJob` < 50 ms p50 total di mesin dev dengan Postgres lokal (angka awal, dikunci setelah pengukuran pertama); `Processor` murni (tanpa DB) > 50.000 element instance/detik.
-- [ ] ADR-0010 sampai ADR-0013 tersimpan di `docs/adr/`; `docs/plan/README.md` menautkan dokumen ini.
+- [ ] ADR-0010 sampai ADR-0014 tersimpan di `docs/adr/`; `docs/plan/README.md` menautkan dokumen ini.
 
 ## 3. Keputusan teknis
 
@@ -95,13 +95,13 @@ event, sub-process, call activity, multi-instance, error/escalation (Fase 5); Op
 | Kernel di domain | `archtest` diberi **allowlist kernel murni**: `libs/go/bpmn`, `libs/go/feel` boleh diimpor `domain` (ADR-0010) | Keduanya hanya stdlib (ditegakkan `deps_test.go` masing-masing), immutable, tanpa I/O; secara arsitektur setara stdlib domain |
 | Model eksekusi | **Aggregate event-sourced**: command → `Processor` menghasilkan record (event) → state hanya berubah lewat `Apply(record)`; satu command diproses *run-to-completion* sampai semua token mencapai wait state atau selesai | Pola yang sama dengan Zeebe (command/event record); replay Fase 3 = `Apply` ulang record tanpa logika baru |
 | Persistensi Fase 2 | Dalam **satu transaksi Postgres** per command: append record ke `execution_record` + proyeksi ke tabel state (`process_instance`, `element_instance`, `variable`, `job`, `incident`, `taken_sequence_flow`) | Tidak ada fase "in-memory saja" yang harus dibuang; Fase 3 menjadikan record sebagai sumber kebenaran (replay, verifikasi) dan menambah outbox serta idempotensi tanpa mengubah skema inti |
-| Konkurensi | **Single writer per process instance lewat row lock**: `SELECT ... FROM process_instance WHERE key = $1 FOR UPDATE` di awal transaksi; state runtime instance dimuat ulang setiap command | Benar juga saat engine lebih dari satu replika; tanpa infrastruktur actor/partisi; contention hanya di dalam satu instance. Partisi ala Zeebe ditinjau di Fase 3 tanpa mengubah domain (ADR-0011) |
-| Key | `int64` dari `internal/platform/keygen` (Fase 1) dengan **alokasi blok** (`nextval` × n lewat `generate_series`, cache 64 key per proses engine); key dicatat di record | Satu command bisa butuh puluhan key; satu round-trip per key terlalu mahal. Celah key setelah restart tidak masalah; replay memakai key dari record, bukan generator |
+| Konkurensi | **Single writer per process instance lewat row lock**: `SELECT ... FROM process_instance WHERE key = $1 FOR UPDATE` di awal transaksi; state runtime instance dimuat ulang setiap command | Benar juga saat engine lebih dari satu replika; tanpa infrastruktur actor/partisi; contention hanya di dalam satu instance. Partisi ala Zeebe ditinjau di Fase 3 tanpa mengubah domain (ADR-0012) |
+| Key | **UUIDv7** dari `internal/platform/keygen` yang dibuat di proses engine, tanpa sequence auto-increment (ADR-0011, diputuskan user 2026-10-28); key dicatat di record | Tanpa round trip ke database dan tanpa alokasi blok; tetap terurut waktu untuk indeks dan keyset. Replay memakai key dari record, bukan generator |
 | Key process instance | `process_instance_key` = key element instance bertipe `PROCESS` | Sama dengan konvensi Zeebe; satu ruang key untuk instance dan elemen |
 | Siklus hidup elemen | State `ACTIVATING`, `ACTIVATED`, `COMPLETING`, `COMPLETED`, `TERMINATING`, `TERMINATED`; intent record mengikuti nama Zeebe (`ELEMENT_ACTIVATING`, …, `SEQUENCE_FLOW_TAKEN`) | Memudahkan paritas dan pembacaan dokumentasi Camunda; Operate (Fase 6) memetakan langsung |
 | Join parallel gateway | Counter per `(flow_scope_key, gateway_id, sequence_flow_id)`; join aktif saat **setiap** incoming flow punya counter ≥ 1, lalu tiap counter dikurangi 1 | Perilaku standar BPMN dan Zeebe; mendukung token berulang (loop) secara benar |
-| Join inclusive gateway | **Reachability statis + cek token aktif saat quiescence** (detail 5.6) | Tanpa menyimpan "token mati"; benar untuk graf blok dan sebagian besar graf asiklik; keterbatasan di graf bersiklus didokumentasikan (ADR-0012) |
-| Kondisi | **Subset FEEL** di `libs/go/feel` (`Compile`/`Evaluate`) di balik port `domain.ExpressionEvaluator`; ekspresi di luar subset **ditolak saat deploy** (lihat 3.4, ADR-0013) | Model dari Camunda Modeler hampir selalu memakai `=x > 10`; menolak semua kondisi membuat gateway tidak bisa diuji. Semantik subset dibuat identik dengan FEEL untuk konstruksi yang didukung, sehingga Fase 7 adalah perluasan, bukan penggantian perilaku |
+| Join inclusive gateway | **Reachability statis + cek token aktif saat quiescence** (detail 5.6) | Tanpa menyimpan "token mati"; benar untuk graf blok dan sebagian besar graf asiklik; keterbatasan di graf bersiklus didokumentasikan (ADR-0013) |
+| Kondisi | **Subset FEEL** di `libs/go/feel` (`Compile`/`Evaluate`) di balik port `domain.ExpressionEvaluator`; ekspresi di luar subset **ditolak saat deploy** (lihat 3.4, ADR-0014) | Model dari Camunda Modeler hampir selalu memakai `=x > 10`; menolak semua kondisi membuat gateway tidak bisa diuji. Semantik subset dibuat identik dengan FEEL untuk konstruksi yang didukung, sehingga Fase 7 adalah perluasan, bukan penggantian perilaku |
 | Variabel | Dokumen JSON; disimpan per `(scope_key, name)` dengan nilai `JSONB`; Fase 2 hanya **scope process instance** (scope lokal ada di skema, belum dipakai) | Skema siap untuk scope lokal Fase 5/7; semantik propagasi tanpa I/O mapping identik dengan Zeebe karena hanya satu scope |
 | I/O mapping | **Ditolak saat deploy** di `ProfileExecutable` (`IO_MAPPING_NOT_SUPPORTED`) sampai Fase 7 | Mapping butuh FEEL penuh dan scope lokal; menerima lalu mengabaikannya diam-diam lebih berbahaya daripada menolak |
 | Kepemilikan job | Job adalah **bagian state instance** di modul `execution` (tabel `job` ditulis dalam transaksi yang sama); `execution/api` mengekspos `Jobs` | Penyelesaian job dan kelanjutan token harus atomik; menaruh job di modul lain memaksa transaksi lintas modul. Modul `job` Fase 4 menjadi lapisan protokol worker (long polling, timeout) di atas `execution/api` |
@@ -209,7 +209,7 @@ apps/engine/internal/modules/execution/
 6. Commit, lalu publikasi event domain. Kegagalan handler dicatat di log (ditutup outbox Fase 3).
 7. Error domain (`ErrJobNotActive`, `ErrInvalidVariables`, …) membatalkan transaksi tanpa record.
 
-### 3.4 Subset kondisi `libs/go/feel` (ADR-0013)
+### 3.4 Subset kondisi `libs/go/feel` (ADR-0014)
 
 Pilihan yang dipertimbangkan:
 
@@ -508,7 +508,7 @@ Pengecekan dilakukan **hanya saat antrean kosong** sehingga token yang sedang "t
 command yang sama sudah sampai ke posisi akhirnya; ini menghindari join prematur. Kompleksitas
 O(token aktif × incoming G) per join tertunda, cukup untuk ukuran instance yang wajar.
 
-**Batas yang diketahui** (dicatat di ADR-0012, diuji sebagai perilaku terdokumentasi):
+**Batas yang diketahui** (dicatat di ADR-0013, diuji sebagai perilaku terdokumentasi):
 
 | Kasus | Perilaku kita |
 |---|---|
@@ -1047,9 +1047,9 @@ tercatat di PR dengan screenshot.
 
 - `BenchmarkProcessorLinear`, `BenchmarkProcessorParallel50`, `BenchmarkInclusiveJoin`, benchmark
   integrasi create + complete.
-- ADR-0010 (allowlist kernel), ADR-0011 (model eksekusi: record append-only + proyeksi, single
-  writer row lock, kepemilikan job), ADR-0012 (algoritma join parallel dan inclusive beserta
-  batasnya), ADR-0013 (subset FEEL dan penolakan saat deploy).
+- ADR-0010 (allowlist kernel), ADR-0012 (model eksekusi: record append-only + proyeksi, single
+  writer row lock, kepemilikan job), ADR-0013 (algoritma join parallel dan inclusive beserta
+  batasnya), ADR-0014 (subset FEEL dan penolakan saat deploy).
 - README modul `execution` (siklus hidup, daftar record, daftar incident) dan README `libs/go/feel`
   (subset yang didukung, tabel semantik `null`).
 - Perbarui `docs/plan/README.md`: Fase 2 menautkan dokumen ini.
@@ -1082,7 +1082,7 @@ Target Makefile baru/diperluas: `make prop [PROP_ITER=100000] [PROP_SEED=...]`,
 
 | Risiko | Dampak | Mitigasi |
 |---|---|---|
-| Semantik inclusive join berbeda dari Camunda 8.8 | Paritas gagal di model nyata | Skenario paritas khusus inclusive sejak 8.13; algoritma dan batas di ADR-0012; deviasi tercatat; warning deploy untuk siklus |
+| Semantik inclusive join berbeda dari Camunda 8.8 | Paritas gagal di model nyata | Skenario paritas khusus inclusive sejak 8.13; algoritma dan batas di ADR-0013; deviasi tercatat; warning deploy untuk siklus |
 | Subset FEEL menyimpang dari FEEL penuh (`null`, tipe campuran, angka) | Fase 7 mengubah perilaku proses yang sudah jalan | Semantik diambil dari spesifikasi FEEL, kasus tak pasti ditandai `verify` dan masuk paritas; konstruksi di luar subset ditolak saat deploy, bukan ditebak |
 | Non-determinisme (iterasi `map`, jam, urutan goroutine) | Replay Fase 3 gagal, test flaky | `Processor` tanpa goroutine; semua iterasi diurutkan; `Clock` dan `KeyGenerator` di-inject; test determinisme untuk setiap skenario + property test replay |
 | Contention row lock pada instance dengan banyak cabang paralel | Latensi `CompleteJob` naik | Transaksi pendek (muat state runtime saja, tanpa elemen final); benchmark 50 cabang; partisi/actor ditinjau Fase 3 bila terukur |
@@ -1090,7 +1090,7 @@ Target Makefile baru/diperluas: `make prop [PROP_ITER=100000] [PROP_SEED=...]`,
 | Model "macet" (exclusive split → parallel join) tidak pernah selesai | Instance menggantung tanpa incident | Perilaku sama dengan Zeebe (verifikasi); dokumentasi; Operate Fase 6 menandai token di join; opsional warning lint di masa depan |
 | Loop tanpa wait state | Command tidak berhenti | Batas record per command → incident `EXECUTION_LIMIT_EXCEEDED` |
 | Fase 1 terlambat atau API `deployment` berubah | Fase 2 tertahan | Domain, `feel`, property test hanya butuh `libs/go/bpmn`; `ProcessDefinitions` palsu di test; perubahan `deployment` dikumpulkan di 6.2 |
-| Kepemilikan job di `execution` membuat modul `job` Fase 4 tipis atau bocor | Batas modul kabur | Kontrak `execution/api.Jobs` ditetapkan di ADR-0011; modul `job` hanya protokol worker; ditinjau di awal Fase 4 |
+| Kepemilikan job di `execution` membuat modul `job` Fase 4 tipis atau bocor | Batas modul kabur | Kontrak `execution/api.Jobs` ditetapkan di ADR-0012; modul `job` hanya protokol worker; ditinjau di awal Fase 4 |
 | API pencarian Camunda 8.8 butuh secondary storage | Paritas jalur elemen tidak bisa dibandingkan | Paritas difokuskan pada hasil observable (selesai/incident, tipe job, variabel akhir); profil compose dengan secondary storage opsional |
 | Event pasca-commit hilang saat crash | Subscriber (Operate, long polling) tertinggal | Tidak ada subscriber kritis di Fase 2; outbox dari `execution_record` di Fase 3 |
 | Allowlist kernel dipakai untuk menyelundupkan dependensi | Domain tidak murni | `TestKernelsArePure` + `deps_test.go` setiap kernel; paket `internal` kernel tetap terlarang |
@@ -1154,7 +1154,7 @@ Perkiraan **16–19 hari kerja** untuk 1 engineer, atau 10–11 hari untuk 2 eng
 | 14 | 8.12 skenario penuh |
 | 15–16 | 8.13 paritas live + perbaikan deviasi |
 | 17–18 | 8.14 modeler-web `process-instance` |
-| 19 | 8.15 benchmark, ADR-0011 sampai ADR-0013, review DoD |
+| 19 | 8.15 benchmark, ADR-0012 sampai ADR-0014, review DoD |
 
 Pembagian jika 2 orang: **A** = `archtest`, domain (`Apply`, `Processor`, gateway), property test,
 lalu paritas; **B** = `libs/go/feel`, proto, skema + sqlc + repository + proyektor, application,
