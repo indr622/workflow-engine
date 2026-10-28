@@ -37,13 +37,14 @@ func (systemClock) Now() time.Time { return time.Now().UTC() }
 
 // application adalah hasil perakitan semua modul, dipakai server dan subperintah admin.
 type application struct {
-	pool     *pgxpool.Pool
-	mux      *http.ServeMux
-	keys     *keygen.UUIDv7
-	writer   *outbox.Writer
-	relay    *outbox.Relay
-	recovery *executionapp.Recovery
-	commands *executionapp.Commands
+	pool      *pgxpool.Pool
+	mux       *http.ServeMux
+	keys      *keygen.UUIDv7
+	writer    *outbox.Writer
+	relay     *outbox.Relay
+	recovery  *executionapp.Recovery
+	commands  *executionapp.Commands
+	retention *executionapp.Retention
 }
 
 // assemble membuka pool, menjalankan migrasi (bila diaktifkan), lalu merakit modul.
@@ -84,12 +85,15 @@ func assemble(ctx context.Context, cfg config.Config, log *slog.Logger) (*applic
 		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
 	commands := executionapp.NewCommands(executionRepo, processCache, processor,
 		executioninfra.NewKeyGenerator(keys), bus, log, executionapp.Config{MaxVariablesBytes: cfg.MaxVariablesBytes})
-	executionifc.NewHandler(commands, commands, executionapp.NewQueries(executionRepo)).Register(mux)
+	executionifc.NewHandler(commands, commands, executionapp.NewQueries(executionRepo), executionapp.NewHistory(executionRepo)).Register(mux)
 	rec := executionapp.NewRecovery(executionRepo, processCache, log, executionapp.RecoveryConfig{
 		DeepWindow: cfg.Recovery.DeepWindow, DeepSample: cfg.Recovery.DeepSample,
 	})
 
+	retention := executionapp.NewRetention(executionRepo, log, 500, cfg.HistoryPrunePause)
+
 	return &application{
 		pool: pool, mux: mux, keys: keys, writer: writer, relay: relay, recovery: rec, commands: commands,
+		retention: retention,
 	}, nil
 }

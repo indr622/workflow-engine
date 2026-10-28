@@ -19,6 +19,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/paging"
 	commonv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1"
 	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
 	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1/jobv1connect"
@@ -34,6 +35,7 @@ type Handler struct {
 	instances api.ProcessInstances
 	jobs      api.Jobs
 	queries   *application.Queries
+	history   *application.History
 }
 
 var (
@@ -42,8 +44,8 @@ var (
 )
 
 // NewHandler membuat handler.
-func NewHandler(instances api.ProcessInstances, jobs api.Jobs, queries *application.Queries) *Handler {
-	return &Handler{instances: instances, jobs: jobs, queries: queries}
+func NewHandler(instances api.ProcessInstances, jobs api.Jobs, queries *application.Queries, history *application.History) *Handler {
+	return &Handler{instances: instances, jobs: jobs, queries: queries, history: history}
 }
 
 // Register memasang kedua service ke mux.
@@ -98,12 +100,9 @@ func (h *Handler) GetProcessInstance(ctx context.Context, req *connect.Request[p
 	if err != nil {
 		return nil, toConnectError(err)
 	}
-	out := &processv1.GetProcessInstanceResponse{ProcessInstance: toProtoInstance(d.Instance)}
+	out := &processv1.GetProcessInstanceResponse{ProcessInstance: toProtoInstance(d.Instance), ElementInstancesTruncated: d.ElementsTruncated}
 	for _, e := range d.Elements {
-		out.ElementInstances = append(out.ElementInstances, &processv1.ElementInstance{
-			ElementInstanceKey: e.Key, FlowScopeKey: e.FlowScopeKey, ElementId: e.ElementID, BpmnElementType: e.BpmnElementType,
-			State: elementState(e.State), IncidentKey: e.IncidentKey, StartTime: timestamppb.New(e.StartTime), EndTime: optTimestamp(e.EndTime),
-		})
+		out.ElementInstances = append(out.ElementInstances, toProtoElement(e))
 	}
 	for _, v := range d.Variables {
 		out.Variables = append(out.Variables, &processv1.Variable{ScopeKey: v.ScopeKey, Name: v.Name, Value: string(v.Value)})
@@ -163,6 +162,58 @@ func (h *Handler) CancelProcessInstance(ctx context.Context, req *connect.Reques
 	resp := connect.NewResponse(&processv1.CancelProcessInstanceResponse{})
 	markReplayed(resp.Header(), replayed)
 	return resp, nil
+}
+
+// ListProcessInstanceRecords mengimplementasikan RPC ListProcessInstanceRecords.
+func (h *Handler) ListProcessInstanceRecords(ctx context.Context, req *connect.Request[processv1.ListProcessInstanceRecordsRequest]) (*connect.Response[processv1.ListProcessInstanceRecordsResponse], error) {
+	m := req.Msg
+	if err := requireKey("process_instance_key", m.GetProcessInstanceKey()); err != nil {
+		return nil, err
+	}
+	tok, err := paging.Decode(m.GetPageToken())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	records, next, err := h.history.ListRecords(ctx, m.GetProcessInstanceKey(), tok.Sequence, m.GetPageSize())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	out := &processv1.ListProcessInstanceRecordsResponse{NextPageToken: paging.Encode(paging.Token{Sequence: next})}
+	for _, r := range records {
+		out.Records = append(out.Records, &processv1.ExecutionRecord{
+			Sequence: r.Sequence, RecordKey: r.RecordKey, ValueType: r.ValueType, Intent: r.Intent,
+			ElementId: r.ElementID, Payload: string(r.Payload), Timestamp: timestamppb.New(r.Timestamp),
+		})
+	}
+	return connect.NewResponse(out), nil
+}
+
+// ListElementInstances mengimplementasikan RPC ListElementInstances.
+func (h *Handler) ListElementInstances(ctx context.Context, req *connect.Request[processv1.ListElementInstancesRequest]) (*connect.Response[processv1.ListElementInstancesResponse], error) {
+	m := req.Msg
+	if err := requireKey("process_instance_key", m.GetProcessInstanceKey()); err != nil {
+		return nil, err
+	}
+	tok, err := paging.Decode(m.GetPageToken())
+	if err != nil || (tok.Key != "" && !keygen.Valid(tok.Key)) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, paging.ErrInvalidToken)
+	}
+	elements, next, err := h.history.ListElementInstances(ctx, m.GetProcessInstanceKey(), m.GetOnlyActive(), tok.Key, m.GetPageSize())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	out := &processv1.ListElementInstancesResponse{NextPageToken: paging.Encode(paging.Token{Key: next})}
+	for _, e := range elements {
+		out.ElementInstances = append(out.ElementInstances, toProtoElement(e))
+	}
+	return connect.NewResponse(out), nil
+}
+
+func toProtoElement(e application.ElementInstanceView) *processv1.ElementInstance {
+	return &processv1.ElementInstance{
+		ElementInstanceKey: e.Key, FlowScopeKey: e.FlowScopeKey, ElementId: e.ElementID, BpmnElementType: e.BpmnElementType,
+		State: elementState(e.State), IncidentKey: e.IncidentKey, StartTime: timestamppb.New(e.StartTime), EndTime: optTimestamp(e.EndTime),
+	}
 }
 
 // ListJobs mengimplementasikan RPC ListJobs.

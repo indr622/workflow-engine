@@ -32,6 +32,10 @@ type Config struct {
 	SnapshotIntervalRecords int `env:"ENGINE_SNAPSHOT_INTERVAL_RECORDS" envDefault:"5000"`
 	// IdempotencyTTL adalah masa berlaku klaim request_id.
 	IdempotencyTTL time.Duration `env:"ENGINE_IDEMPOTENCY_TTL" envDefault:"24h"`
+	// HistoryRetentionDays: instance final lebih tua dari N hari dihapus janitor (0 = simpan selamanya).
+	HistoryRetentionDays int `env:"ENGINE_HISTORY_RETENTION_DAYS" envDefault:"0"`
+	// HistoryPrunePause adalah jeda antar batch penghapusan retensi.
+	HistoryPrunePause time.Duration `env:"ENGINE_HISTORY_PRUNE_PAUSE" envDefault:"200ms"`
 	// JanitorInterval adalah jeda antar putaran janitor (outbox, idempotensi, retensi).
 	JanitorInterval time.Duration `env:"ENGINE_JANITOR_INTERVAL" envDefault:"1m"`
 }

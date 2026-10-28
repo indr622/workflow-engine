@@ -34,6 +34,9 @@ func (r *PostgresRepository) GetInstance(ctx context.Context, key string) (appli
 	if err != nil {
 		return d, fmt.Errorf("list elements: %w", err)
 	}
+	if len(elements) > application.MaxElementsInDetail {
+		elements, d.ElementsTruncated = elements[:application.MaxElementsInDetail], true
+	}
 	for _, e := range elements {
 		d.Elements = append(d.Elements, application.ElementInstanceView{
 			Key: e.Key, FlowScopeKey: deref(e.FlowScopeKey), ElementID: e.ElementID, BpmnElementType: e.BpmnElementType,

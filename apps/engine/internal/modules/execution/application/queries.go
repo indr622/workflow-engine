@@ -74,11 +74,13 @@ type JobView struct {
 
 // InstanceDetail adalah satu instance lengkap.
 type InstanceDetail struct {
-	Instance  InstanceSummary
-	Elements  []ElementInstanceView
-	Variables []VariableView
-	Incidents []IncidentView
-	Jobs      []JobView
+	Instance InstanceSummary
+	// Elements dibatasi MaxElementsInDetail; ElementsTruncated true bila ada lebih banyak.
+	Elements          []ElementInstanceView
+	ElementsTruncated bool
+	Variables         []VariableView
+	Incidents         []IncidentView
+	Jobs              []JobView
 }
 
 // InstanceFilter memfilter daftar instance; AfterKey adalah key terakhir halaman sebelumnya.

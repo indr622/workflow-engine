@@ -98,7 +98,7 @@ func setup(t *testing.T) *fixture {
 	queries := application.NewQueries(repo)
 	mux := http.NewServeMux()
 	deploymentifc.NewHandler(deploy, deploymentapp.NewQueries(deployRepo)).Register(mux)
-	interfaces.NewHandler(commands, commands, queries).Register(mux)
+	interfaces.NewHandler(commands, commands, queries, application.NewHistory(repo)).Register(mux)
 	return &fixture{
 		pool: pool, repo: repo, deploy: deploy, cache: cache, commands: commands, queries: queries, bus: bus, mux: mux,
 		run: fmt.Sprintf("%d", time.Now().UnixNano()),

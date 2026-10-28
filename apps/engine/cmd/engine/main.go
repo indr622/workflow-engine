@@ -140,8 +140,8 @@ func serve() error {
 	return <-serverErr
 }
 
-// janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer dan klaim
-// request_id yang kedaluwarsa.
+// janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer, instance
+// final di luar retensi (bila diaktifkan), dan klaim request_id yang kedaluwarsa.
 func janitor(ctx context.Context, app *application, cfg config.Config, log *slog.Logger) {
 	t := time.NewTicker(cfg.JanitorInterval)
 	defer t.Stop()
@@ -155,6 +155,11 @@ func janitor(ctx context.Context, app *application, cfg config.Config, log *slog
 			log.Warn("outbox prune failed", slog.Any("error", err))
 		} else if n > 0 {
 			log.Info("outbox pruned", slog.Int64("events", n))
+		}
+		if cfg.HistoryRetentionDays > 0 {
+			if _, err := app.retention.Prune(ctx, time.Duration(cfg.HistoryRetentionDays)*24*time.Hour, false); err != nil {
+				log.Warn("history prune failed", slog.Any("error", err))
+			}
 		}
 		if n, err := idempotency.Prune(ctx, app.pool, 1000); err != nil {
 			log.Warn("idempotency prune failed", slog.Any("error", err))

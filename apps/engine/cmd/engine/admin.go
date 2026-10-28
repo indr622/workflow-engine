@@ -9,7 +9,10 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
+	"time"
 
 	executionapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/config"
@@ -142,9 +145,57 @@ func runRebuild(ctx context.Context, cfg config.Config, log *slog.Logger, args [
 	return exitCode(err)
 }
 
-func runPrune(_ context.Context, _ config.Config, _ *slog.Logger, _ []string) int {
-	fmt.Fprintln(os.Stderr, "engine prune: retention is not enabled yet")
-	return exitError
+func runPrune(ctx context.Context, cfg config.Config, log *slog.Logger, args []string) int {
+	fs := flag.NewFlagSet("prune", flag.ContinueOnError)
+	olderThan := fs.String("older-than", "", "delete finished instances older than this (e.g. 90d, 12h); default ENGINE_HISTORY_RETENTION_DAYS")
+	dryRun := fs.Bool("dry-run", false, "only report the first batch of candidates")
+	if err := fs.Parse(args); err != nil {
+		return exitUsage
+	}
+	age := time.Duration(cfg.HistoryRetentionDays) * 24 * time.Hour
+	if *olderThan != "" {
+		d, err := parseAge(*olderThan)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "engine prune: %v\n", err)
+			return exitUsage
+		}
+		age = d
+	}
+	if age <= 0 {
+		fmt.Fprintln(os.Stderr, "engine prune: pass --older-than or set ENGINE_HISTORY_RETENTION_DAYS")
+		return exitUsage
+	}
+	app, err := assemble(ctx, cfg, log)
+	if err != nil {
+		return exitCode(err)
+	}
+	defer app.pool.Close()
+	n, err := app.retention.Prune(ctx, age, *dryRun)
+	if err != nil {
+		return exitCode(err)
+	}
+	if *dryRun {
+		fmt.Printf("%d finished instances older than %s would be deleted in the first batch\n", n, age)
+	} else {
+		fmt.Printf("deleted %d finished instances older than %s\n", n, age)
+	}
+	return exitOK
+}
+
+// parseAge menerima durasi Go (12h, 30m) atau hari (90d).
+func parseAge(s string) (time.Duration, error) {
+	if strings.HasSuffix(s, "d") {
+		days, err := strconv.Atoi(strings.TrimSuffix(s, "d"))
+		if err != nil || days <= 0 {
+			return 0, fmt.Errorf("invalid age %q", s)
+		}
+		return time.Duration(days) * 24 * time.Hour, nil
+	}
+	d, err := time.ParseDuration(s)
+	if err != nil || d <= 0 {
+		return 0, fmt.Errorf("invalid age %q", s)
+	}
+	return d, nil
 }
 
 func runOutbox(ctx context.Context, cfg config.Config, log *slog.Logger, args []string) int {
