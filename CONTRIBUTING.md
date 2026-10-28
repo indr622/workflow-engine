@@ -44,7 +44,7 @@ Setiap modul di `apps/engine/internal/modules/<modul>` punya lima paket:
 
 | Paket | Isi | Boleh meng-import |
 |---|---|---|
-| `domain` | Entity, aturan bisnis, port repository | Hanya stdlib |
+| `domain` | Entity, aturan bisnis, port repository | Hanya stdlib dan kernel murni di allowlist archtest (`libs/go/bpmn`, `libs/go/feel`; ADR-0010) |
 | `application` | Use case | `domain`, `api` (event yang dipublikasikan, interface yang diimplementasikan) |
 | `infrastructure` | Adapter keluar: Postgres, event bus | `domain`, `application`, `api` |
 | `interfaces` | Adapter masuk: handler Connect dan HTTP | `domain`, `application`, `api` |

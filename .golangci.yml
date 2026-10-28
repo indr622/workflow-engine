@@ -33,6 +33,8 @@ linters:
               desc: domain must not depend on platform packages
             - pkg: github.com/indr622/workflow-engine/libs/go/api
               desc: domain must not depend on generated API types
+            - pkg: github.com/indr622/workflow-engine/libs/go/sdk
+              desc: domain must not depend on the worker SDK
     revive:
       rules:
         - name: exported
