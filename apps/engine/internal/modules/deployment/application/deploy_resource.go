@@ -3,6 +3,7 @@ package application
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -25,6 +26,8 @@ type DeployResult struct {
 	DeploymentKey string
 	Definitions   []DeployedDefinition
 	Warnings      []domain.Violation
+	// Replayed bernilai true bila hasil diambil dari klaim request_id sebelumnya.
+	Replayed bool `json:"-"`
 }
 
 // DeployResource memvalidasi resource, memberi versi, menyimpan, dan mempublikasikan event.
@@ -79,7 +82,8 @@ func parseAndValidate(inputs []domain.ResourceInput, profile bpmn.Profile) ([]pa
 }
 
 // Execute menjalankan alur deploy. Mengembalikan *domain.RejectedError bila ada violation error.
-func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs []domain.ResourceInput) (DeployResult, error) {
+// idem opsional: deploy dengan klaim request_id yang sama dijalankan sekali (ADR-0017).
+func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs []domain.ResourceInput, idem *domain.IdempotencyClaim) (DeployResult, error) {
 	if tenantID == "" {
 		tenantID = domain.DefaultTenant
 	}
@@ -107,6 +111,25 @@ func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs [
 		}
 		sort.Slice(refs, func(a, b int) bool { return refs[a].candidate.BpmnProcessID < refs[b].candidate.BpmnProcessID })
 
+		// Semua lock proses diambil dulu, baru klaim request_id (urutan xid mengikuti urutan lock).
+		for _, ref := range refs {
+			if err := tx.LockProcessID(ctx, tenantID, ref.candidate.BpmnProcessID); err != nil {
+				return err
+			}
+		}
+		if idem != nil {
+			stored, replayed, err := tx.BeginIdempotent(ctx, *idem)
+			if err != nil {
+				return err
+			}
+			if replayed {
+				if err := json.Unmarshal(stored, &result); err != nil {
+					return fmt.Errorf("decode stored response: %w", err)
+				}
+				result.Replayed = true
+				return nil
+			}
+		}
 		keys, err := tx.NextKeys(ctx, 1+len(refs))
 		if err != nil {
 			return err
@@ -119,9 +142,6 @@ func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs [
 		nextKey := 1
 		for _, ref := range refs {
 			c := ref.candidate
-			if err := tx.LockProcessID(ctx, tenantID, c.BpmnProcessID); err != nil {
-				return err
-			}
 			latest, found, err := tx.LatestByProcessID(ctx, tenantID, c.BpmnProcessID)
 			if err != nil {
 				return err
@@ -151,10 +171,23 @@ func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs [
 			})
 		}
 		result.DeploymentKey = dep.Key
+		result.Warnings = warningsOnly(violations)
+		if idem != nil {
+			stored, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			if err := tx.StoreIdempotent(ctx, *idem, stored); err != nil {
+				return err
+			}
+		}
 		return tx.SaveDeployment(ctx, dep)
 	})
 	if err != nil {
 		return DeployResult{}, fmt.Errorf("deploy: %w", err)
+	}
+	if result.Replayed {
+		return result, nil
 	}
 
 	// Setelah commit: isi cache dan publikasikan event versi baru.

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	deploymentv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1"
@@ -16,7 +17,9 @@ import (
 
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	commonv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1"
 )
 
 // MaxRequestBytes adalah batas ukuran request Connect untuk service ini.
@@ -44,7 +47,18 @@ func (h *Handler) Register(mux *http.ServeMux) {
 
 // DeployResource mengimplementasikan RPC DeployResource.
 func (h *Handler) DeployResource(ctx context.Context, req *connect.Request[deploymentv1.DeployResourceRequest]) (*connect.Response[deploymentv1.DeployResourceResponse], error) {
-	res, err := h.deploy.Execute(ctx, domain.DefaultTenant, toInputs(req.Msg.GetResources()))
+	var idem *domain.IdempotencyClaim
+	if rid := req.Msg.GetRequestId(); rid != "" {
+		if err := idempotency.ValidateKey(rid); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		hash, err := idempotency.Hash(req.Msg, func(m proto.Message) { m.(*deploymentv1.DeployResourceRequest).RequestId = "" })
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		idem = &domain.IdempotencyClaim{Scope: domain.DefaultTenant + deploymentv1connect.DeploymentServiceDeployResourceProcedure, Key: rid, RequestHash: hash}
+	}
+	res, err := h.deploy.Execute(ctx, domain.DefaultTenant, toInputs(req.Msg.GetResources()), idem)
 	if err != nil {
 		return nil, toConnectError(err)
 	}
@@ -54,7 +68,11 @@ func (h *Handler) DeployResource(ctx context.Context, req *connect.Request[deplo
 		pd.Duplicate = d.Duplicate
 		out.ProcessDefinitions = append(out.ProcessDefinitions, pd)
 	}
-	return connect.NewResponse(out), nil
+	resp := connect.NewResponse(out)
+	if res.Replayed {
+		resp.Header().Set("Idempotent-Replayed", "true")
+	}
+	return resp, nil
 }
 
 // ValidateResource mengimplementasikan RPC ValidateResource.
@@ -154,6 +172,12 @@ func toConnectError(err error) error {
 	case errors.As(err, &rejected):
 		cerr := connect.NewError(connect.CodeInvalidArgument, rejected)
 		if detail, derr := connect.NewErrorDetail(&deploymentv1.DeploymentRejection{Issues: toProtoIssues(rejected.Violations)}); derr == nil {
+			cerr.AddDetail(detail)
+		}
+		return cerr
+	case errors.Is(err, idempotency.ErrKeyReused):
+		cerr := connect.NewError(connect.CodeInvalidArgument, err)
+		if detail, derr := connect.NewErrorDetail(&commonv1.IdempotencyKeyReused{}); derr == nil {
 			cerr.AddDetail(detail)
 		}
 		return cerr

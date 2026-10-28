@@ -37,7 +37,7 @@ func TestRebuildFromSnapshotMatchesFullRebuild(t *testing.T) {
 		if err != nil || len(jobs) != 1 {
 			t.Fatalf("iteration %d: %d jobs, %v", i, len(jobs), err)
 		}
-		if err := f.commands.CompleteJob(ctx, jobs[0].Key, []byte(fmt.Sprintf(`{"i": %d}`, i))); err != nil {
+		if err := completeJob(ctx, f, jobs[0].Key, []byte(fmt.Sprintf(`{"i": %d}`, i))); err != nil {
 			t.Fatal(err)
 		}
 	}

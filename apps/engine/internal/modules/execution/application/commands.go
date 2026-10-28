@@ -14,6 +14,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
 )
@@ -70,11 +71,35 @@ func (c *Commands) CreateProcessInstance(ctx context.Context, req api.CreateInst
 	ref := domain.DefinitionRef{Key: def.Key, BpmnProcessID: def.BpmnProcessID, Version: def.Version}
 	var st *domain.InstanceState
 	var records []domain.Record
+	var result api.CreateInstanceResult
 	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
+		// Instance baru belum punya aggregate untuk dikunci, jadi klaim dilakukan di awal.
+		claim, replay, err := c.begin(ctx, tx, req.Idempotency)
+		if err != nil {
+			return err
+		}
+		if replay != nil {
+			if err := json.Unmarshal(replay, &result); err != nil {
+				return fmt.Errorf("decode stored response: %w", err)
+			}
+			result.Replayed = true
+			return nil
+		}
 		st = domain.NewInstanceState(ref, proc)
 		records, err = c.processor.Process(st, domain.CreateInstance{Variables: vars}, c.keys)
 		if err != nil {
 			return err
+		}
+		result = api.CreateInstanceResult{
+			ProcessInstanceKey: st.Key, ProcessDefinitionKey: def.Key, BpmnProcessID: def.BpmnProcessID,
+			Version: def.Version, State: string(st.Status),
+		}
+		if claim != nil {
+			stored, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			tx.StoreIdempotent(*claim, stored)
 		}
 		tx.EnqueueForRecords(outboxEvents(st, records))
 		return tx.AppendAndProject(ctx, records, st)
@@ -82,11 +107,28 @@ func (c *Commands) CreateProcessInstance(ctx context.Context, req api.CreateInst
 	if err != nil {
 		return api.CreateInstanceResult{}, fmt.Errorf("create process instance: %w", err)
 	}
-	c.publish(ctx, st, records)
-	return api.CreateInstanceResult{
-		ProcessInstanceKey: st.Key, ProcessDefinitionKey: def.Key, BpmnProcessID: def.BpmnProcessID,
-		Version: def.Version, State: string(st.Status),
-	}, nil
+	if !result.Replayed {
+		c.publish(ctx, st, records)
+	}
+	return result, nil
+}
+
+// begin mengklaim request_id bila ada; replay berisi response tersimpan bila klaim sudah pernah
+// dijalankan.
+func (c *Commands) begin(ctx context.Context, tx TxScope, idem *api.Idempotency) (*idempotency.Claim, []byte, error) {
+	if idem == nil {
+		return nil, nil, nil
+	}
+	claim := idempotency.Claim{Scope: idem.Scope, Key: idem.Key, RequestHash: idem.RequestHash}
+	res, err := tx.BeginIdempotent(ctx, claim)
+	if err != nil {
+		return nil, nil, err
+	}
+	if res.Outcome == idempotency.Replayed {
+		c.log.Info("idempotent replay", slog.String("scope", idem.Scope), slog.String("request_id", idem.Key))
+		return nil, res.Response, nil
+	}
+	return &claim, nil, nil
 }
 
 func (c *Commands) resolve(ctx context.Context, req api.CreateInstanceRequest) (deploymentapi.ProcessDefinition, *bpmn.Process, error) {
@@ -103,67 +145,68 @@ func (c *Commands) resolve(ctx context.Context, req api.CreateInstanceRequest) (
 }
 
 // CompleteJob menyelesaikan job terbuka dan melanjutkan token instance pemiliknya.
-func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []byte) error {
+func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []byte, idem *api.Idempotency) (bool, error) {
 	vars, err := domain.ParseVariables(variables, c.cfg.MaxVariablesBytes)
 	if err != nil {
-		return err
+		return false, err
 	}
 	piKey, defKey, err := c.uow.JobRef(ctx, jobKey)
 	if err != nil {
-		return fmt.Errorf("complete job: %w", err)
+		return false, fmt.Errorf("complete job: %w", err)
 	}
 	proc, err := c.process(ctx, defKey)
 	if err != nil {
-		return fmt.Errorf("complete job: %w", err)
+		return false, fmt.Errorf("complete job: %w", err)
 	}
+	return c.runOnInstance(ctx, "complete job", piKey, proc, idem, domain.CompleteJob{JobKey: jobKey, Variables: vars})
+}
+
+// runOnInstance menjalankan command pada instance yang sudah ada: kunci + muat, klaim request_id
+// (setelah lock), Processor, lalu tulis record, proyeksi, outbox, dan response dalam satu batch.
+func (c *Commands) runOnInstance(ctx context.Context, op, piKey string, proc *bpmn.Process, idem *api.Idempotency, cmd domain.Command) (bool, error) {
 	var st *domain.InstanceState
 	var records []domain.Record
-	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
+	replayed := false
+	err := c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
 		var err error
 		st, err = lockAndLoad(ctx, tx, piKey, proc)
 		if err != nil {
 			return err
 		}
-		records, err = c.processor.Process(st, domain.CompleteJob{JobKey: jobKey, Variables: vars}, c.keys)
+		claim, replay, err := c.begin(ctx, tx, idem)
 		if err != nil {
 			return err
+		}
+		if replay != nil {
+			replayed = true
+			return nil
+		}
+		records, err = c.processor.Process(st, cmd, c.keys)
+		if err != nil {
+			return err
+		}
+		if claim != nil {
+			tx.StoreIdempotent(*claim, []byte{})
 		}
 		tx.EnqueueForRecords(outboxEvents(st, records))
 		return tx.AppendAndProject(ctx, records, st)
 	})
 	if err != nil {
-		return fmt.Errorf("complete job: %w", err)
+		return false, fmt.Errorf("%s: %w", op, err)
 	}
-	c.publish(ctx, st, records)
-	return nil
+	if !replayed {
+		c.publish(ctx, st, records)
+	}
+	return replayed, nil
 }
 
 // CancelProcessInstance menghentikan instance aktif.
-func (c *Commands) CancelProcessInstance(ctx context.Context, processInstanceKey string) error {
+func (c *Commands) CancelProcessInstance(ctx context.Context, processInstanceKey string, idem *api.Idempotency) (bool, error) {
 	proc, err := c.processOf(ctx, processInstanceKey)
 	if err != nil {
-		return fmt.Errorf("cancel process instance: %w", err)
+		return false, fmt.Errorf("cancel process instance: %w", err)
 	}
-	var st *domain.InstanceState
-	var records []domain.Record
-	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
-		var err error
-		st, err = lockAndLoad(ctx, tx, processInstanceKey, proc)
-		if err != nil {
-			return err
-		}
-		records, err = c.processor.Process(st, domain.CancelInstance{}, c.keys)
-		if err != nil {
-			return err
-		}
-		tx.EnqueueForRecords(outboxEvents(st, records))
-		return tx.AppendAndProject(ctx, records, st)
-	})
-	if err != nil {
-		return fmt.Errorf("cancel process instance: %w", err)
-	}
-	c.publish(ctx, st, records)
-	return nil
+	return c.runOnInstance(ctx, "cancel process instance", processInstanceKey, proc, idem, domain.CancelInstance{})
 }
 
 // processOf memuat model proses sebuah instance SEBELUM transaksi dibuka. Memuatnya di dalam

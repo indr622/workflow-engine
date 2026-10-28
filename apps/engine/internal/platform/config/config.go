@@ -30,6 +30,8 @@ type Config struct {
 	Outbox Outbox
 	// SnapshotIntervalRecords: snapshot state runtime instance aktif setiap N record (0 = mati).
 	SnapshotIntervalRecords int `env:"ENGINE_SNAPSHOT_INTERVAL_RECORDS" envDefault:"5000"`
+	// IdempotencyTTL adalah masa berlaku klaim request_id.
+	IdempotencyTTL time.Duration `env:"ENGINE_IDEMPOTENCY_TTL" envDefault:"24h"`
 	// JanitorInterval adalah jeda antar putaran janitor (outbox, idempotensi, retensi).
 	JanitorInterval time.Duration `env:"ENGINE_JANITOR_INTERVAL" envDefault:"1m"`
 }

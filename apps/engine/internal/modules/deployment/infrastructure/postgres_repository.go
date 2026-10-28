@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,16 +15,24 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/infrastructure/db"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 )
 
 // PostgresRepository mengimplementasikan domain.Repository di atas pgx dan sqlc.
 type PostgresRepository struct {
-	pool   *pgxpool.Pool
-	q      *db.Queries
-	keys   keygen.Generator
-	outbox *outbox.Writer
+	pool    *pgxpool.Pool
+	q       *db.Queries
+	keys    keygen.Generator
+	outbox  *outbox.Writer
+	idemTTL time.Duration
+}
+
+// WithIdempotencyTTL mengubah masa berlaku klaim request_id.
+func (r *PostgresRepository) WithIdempotencyTTL(ttl time.Duration) *PostgresRepository {
+	r.idemTTL = ttl
+	return r
 }
 
 // NewPostgresRepository membuat repository untuk pool yang diberikan.
@@ -40,7 +49,7 @@ func (r *PostgresRepository) WithTx(ctx context.Context, fn func(ctx context.Con
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), tx: tx, keys: r.keys, outbox: r.outbox}); err != nil {
+	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), tx: tx, keys: r.keys, outbox: r.outbox, idemTTL: r.idemTTL}); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -125,10 +134,11 @@ func (r *PostgresRepository) List(ctx context.Context, q domain.ListQuery) ([]do
 }
 
 type txRepository struct {
-	q      *db.Queries
-	tx     pgx.Tx
-	keys   keygen.Generator
-	outbox *outbox.Writer
+	q       *db.Queries
+	tx      pgx.Tx
+	keys    keygen.Generator
+	outbox  *outbox.Writer
+	idemTTL time.Duration
 }
 
 func (t *txRepository) LockProcessID(ctx context.Context, tenantID, bpmnProcessID string) error {
@@ -153,6 +163,23 @@ func (t *txRepository) LatestByProcessID(ctx context.Context, tenantID, bpmnProc
 
 func (t *txRepository) NextKeys(ctx context.Context, n int) ([]string, error) {
 	return t.keys.NextKeys(ctx, n)
+}
+
+// BeginIdempotent memenuhi domain.TxRepository.
+func (t *txRepository) BeginIdempotent(ctx context.Context, c domain.IdempotencyClaim) ([]byte, bool, error) {
+	res, err := idempotency.Begin(ctx, t.tx, idempotency.Claim{Scope: c.Scope, Key: c.Key, RequestHash: c.RequestHash}, t.idemTTL)
+	if err != nil {
+		return nil, false, err
+	}
+	return res.Response, res.Outcome == idempotency.Replayed, nil
+}
+
+// StoreIdempotent memenuhi domain.TxRepository.
+func (t *txRepository) StoreIdempotent(ctx context.Context, c domain.IdempotencyClaim, response []byte) error {
+	if _, err := t.tx.Exec(ctx, idempotency.StoreSQL, c.Scope, c.Key, response); err != nil {
+		return fmt.Errorf("store idempotent response: %w", err)
+	}
+	return nil
 }
 
 func (t *txRepository) SaveDeployment(ctx context.Context, d domain.Deployment) error {

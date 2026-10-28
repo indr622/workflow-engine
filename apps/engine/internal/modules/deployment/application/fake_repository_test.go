@@ -140,3 +140,9 @@ func (t *fakeTx) SaveDeployment(_ context.Context, d domain.Deployment) error {
 	}
 	return nil
 }
+
+func (t *fakeTx) BeginIdempotent(context.Context, domain.IdempotencyClaim) ([]byte, bool, error) {
+	return nil, false, nil
+}
+
+func (t *fakeTx) StoreIdempotent(context.Context, domain.IdempotencyClaim, []byte) error { return nil }

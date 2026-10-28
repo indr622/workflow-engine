@@ -50,7 +50,7 @@ func TestDeployCreatesVersionsAndDedupsIdenticalResource(t *testing.T) {
 	h := newHarness()
 	ctx := context.Background()
 
-	first, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "a")}})
+	first, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "a")}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,7 +58,7 @@ func TestDeployCreatesVersionsAndDedupsIdenticalResource(t *testing.T) {
 		t.Fatalf("first deploy = %+v", first.Definitions)
 	}
 
-	again, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "a")}})
+	again, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "a")}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +69,7 @@ func TestDeployCreatesVersionsAndDedupsIdenticalResource(t *testing.T) {
 		t.Fatal("each deploy request gets its own deployment key")
 	}
 
-	changed, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "b")}})
+	changed, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "order.bpmn", Content: bpmnXML("order", "b")}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestDeployRejectsInvalidResourceAtomically(t *testing.T) {
 		{Name: "ok.bpmn", Content: bpmnXML("ok", "a")},
 		{Name: "broken.bpmn", Content: broken},
 		{Name: "rules.dmn", Content: []byte("<definitions/>")},
-	})
+	}, nil)
 	var rejected *domain.RejectedError
 	if !errors.As(err, &rejected) {
 		t.Fatalf("err = %v, want RejectedError", err)
@@ -129,7 +129,7 @@ func TestDeployRejectsDuplicateProcessIDAcrossResources(t *testing.T) {
 	_, err := h.deploy.Execute(context.Background(), "", []domain.ResourceInput{
 		{Name: "a.bpmn", Content: bpmnXML("same", "a")},
 		{Name: "b.bpmn", Content: bpmnXML("same", "b")},
-	})
+	}, nil)
 	var rejected *domain.RejectedError
 	if !errors.As(err, &rejected) || rejected.Errors()[0].Code != domain.CodeDuplicateProcessID {
 		t.Fatalf("err = %v", err)
@@ -152,7 +152,7 @@ func TestListProcessDefinitionsPagination(t *testing.T) {
 	ctx := context.Background()
 	for _, id := range []string{"a", "b", "c"} {
 		for _, tt := range []string{"1", "2"} {
-			if _, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: id + ".bpmn", Content: bpmnXML(id, tt)}}); err != nil {
+			if _, err := h.deploy.Execute(ctx, "", []domain.ResourceInput{{Name: id + ".bpmn", Content: bpmnXML(id, tt)}}, nil); err != nil {
 				t.Fatal(err)
 			}
 		}

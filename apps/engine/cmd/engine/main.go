@@ -17,6 +17,7 @@ import (
 
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/config"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/httpserver"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/logger"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/recovery"
@@ -139,7 +140,8 @@ func serve() error {
 	return <-serverErr
 }
 
-// janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer.
+// janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer dan klaim
+// request_id yang kedaluwarsa.
 func janitor(ctx context.Context, app *application, cfg config.Config, log *slog.Logger) {
 	t := time.NewTicker(cfg.JanitorInterval)
 	defer t.Stop()
@@ -153,6 +155,11 @@ func janitor(ctx context.Context, app *application, cfg config.Config, log *slog
 			log.Warn("outbox prune failed", slog.Any("error", err))
 		} else if n > 0 {
 			log.Info("outbox pruned", slog.Int64("events", n))
+		}
+		if n, err := idempotency.Prune(ctx, app.pool, 1000); err != nil {
+			log.Warn("idempotency prune failed", slog.Any("error", err))
+		} else if n > 0 {
+			log.Info("idempotency keys pruned", slog.Int64("keys", n))
 		}
 	}
 }

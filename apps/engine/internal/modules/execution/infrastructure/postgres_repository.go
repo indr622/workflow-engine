@@ -19,6 +19,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure/db"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
@@ -30,6 +31,13 @@ type PostgresRepository struct {
 	q                *db.Queries
 	outbox           *outbox.Writer
 	snapshotInterval int32
+	idemTTL          time.Duration
+}
+
+// WithIdempotencyTTL mengubah masa berlaku klaim request_id.
+func (r *PostgresRepository) WithIdempotencyTTL(ttl time.Duration) *PostgresRepository {
+	r.idemTTL = ttl
+	return r
 }
 
 // DefaultSnapshotInterval adalah jumlah record antar snapshot instance aktif.
@@ -56,9 +64,16 @@ func (r *PostgresRepository) Do(ctx context.Context, fn func(ctx context.Context
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	scope := &txRepository{tx: tx, outbox: r.outbox, snapshotInterval: r.snapshotInterval}
+	scope := &txRepository{tx: tx, outbox: r.outbox, snapshotInterval: r.snapshotInterval, idemTTL: r.idemTTL}
 	if err := fn(ctx, scope); err != nil {
 		return err
+	}
+	if len(scope.stores) > 0 {
+		b := &pgx.Batch{}
+		scope.queueStores(b)
+		if err := tx.SendBatch(ctx, b).Close(); err != nil {
+			return fmt.Errorf("store idempotent response: %w", err)
+		}
 	}
 	if len(scope.pending) > 0 {
 		events := make([]outbox.Event, 0, len(scope.pending))
@@ -106,6 +121,30 @@ type txRepository struct {
 	// lastSequence adalah sequence record terakhir instance yang dimuat (0 untuk instance baru).
 	lastSequence int32
 	pending      []application.RecordEvent
+	stores       []pendingStore
+	idemTTL      time.Duration
+}
+
+type pendingStore struct {
+	claim    idempotency.Claim
+	response []byte
+}
+
+// BeginIdempotent memenuhi application.TxScope.
+func (t *txRepository) BeginIdempotent(ctx context.Context, c idempotency.Claim) (idempotency.Result, error) {
+	return idempotency.Begin(ctx, t.tx, c, t.idemTTL)
+}
+
+// StoreIdempotent memenuhi application.TxScope; dikirim bersama batch AppendAndProject atau saat commit.
+func (t *txRepository) StoreIdempotent(c idempotency.Claim, response []byte) {
+	t.stores = append(t.stores, pendingStore{claim: c, response: response})
+}
+
+func (t *txRepository) queueStores(b *pgx.Batch) {
+	for _, s := range t.stores {
+		idempotency.QueueStore(b, s.claim, s.response)
+	}
+	t.stores = nil
 }
 
 // EnqueueForRecords memenuhi application.TxScope.
@@ -358,6 +397,8 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 		}
 	}
 	b.Queue(sqlInsertRecords, st.Key, seqs, keys, types, intents, elementIDs, payloads, times)
+
+	t.queueStores(b)
 
 	// Snapshot state runtime instance aktif setiap kali last_sequence melewati kelipatan interval.
 	newLast := t.lastSequence + int32(n) //nolint:gosec // dibatasi Limits

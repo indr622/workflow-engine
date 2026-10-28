@@ -60,11 +60,11 @@ func TestDeployAgainstPostgres(t *testing.T) {
 	// Id unik per run agar test bisa diulang di database yang sama.
 	pid := fmt.Sprintf("it-%d", time.Now().UnixNano())
 
-	first, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, "a")}})
+	first, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, "a")}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	dup, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, "a")}})
+	dup, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, "a")}}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestDeployAgainstPostgres(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			res, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, fmt.Sprintf("t%d", i))}})
+			res, err := deploy.Execute(ctx, "", []domain.ResourceInput{{Name: "p.bpmn", Content: bpmnXML(pid, fmt.Sprintf("t%d", i))}}, nil)
 			if err != nil {
 				errs[i] = err
 				return

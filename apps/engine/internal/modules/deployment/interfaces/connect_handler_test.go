@@ -176,3 +176,11 @@ func TestRejectionCarriesDeploymentRejectionDetail(t *testing.T) {
 		t.Fatalf("validate = %v, err %v", val, err)
 	}
 }
+
+func (r *memoryRepository) BeginIdempotent(context.Context, domain.IdempotencyClaim) ([]byte, bool, error) {
+	return nil, false, nil
+}
+
+func (r *memoryRepository) StoreIdempotent(context.Context, domain.IdempotencyClaim, []byte) error {
+	return nil
+}

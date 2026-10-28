@@ -56,6 +56,17 @@ type fixture struct {
 	run      string
 }
 
+// completeJob dan cancelInstance membungkus command tanpa request_id.
+func completeJob(ctx context.Context, f *fixture, key string, vars []byte) error {
+	_, err := f.commands.CompleteJob(ctx, key, vars, nil)
+	return err
+}
+
+func cancelInstance(ctx context.Context, f *fixture, key string) error {
+	_, err := f.commands.CancelProcessInstance(ctx, key, nil)
+	return err
+}
+
 type clock struct{}
 
 func (clock) Now() time.Time { return time.Now().UTC() }
@@ -100,7 +111,7 @@ func (f *fixture) deployXML(t *testing.T, name, xml string) string {
 	id := name + "-" + f.run
 	_, err := f.deploy.Execute(context.Background(), deploymentdomain.DefaultTenant, []deploymentdomain.ResourceInput{
 		{Name: id + ".bpmn", Content: []byte(strings.ReplaceAll(xml, "PID", id))},
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("deploy %s: %v", name, err)
 	}
@@ -286,7 +297,7 @@ func TestParallelCompleteJobsJoinOnce(t *testing.T) {
 		wg.Add(1)
 		go func(key string) {
 			defer wg.Done()
-			errs <- f.commands.CompleteJob(ctx, key, []byte(`{"last": "`+key+`"}`))
+			errs <- completeJob(ctx, f, key, []byte(`{"last": "`+key+`"}`))
 		}(j.Key)
 	}
 	wg.Wait()
@@ -383,7 +394,7 @@ func TestReplayMatchesProjection(t *testing.T) {
 		t.Fatalf("has_incident = %v, %v", detail.Instance.HasIncident, err)
 	}
 
-	if err := f.commands.CancelProcessInstance(ctx, created.ProcessInstanceKey); err != nil {
+	if err := cancelInstance(ctx, f, created.ProcessInstanceKey); err != nil {
 		t.Fatal(err)
 	}
 	assertReplay(t, f, created.ProcessInstanceKey, false)
@@ -528,7 +539,7 @@ func TestLinear20Latency(t *testing.T) {
 				t.Fatalf("step %d: jobs %d, %v", j, len(jobs), err)
 			}
 			start = time.Now()
-			if err := f.commands.CompleteJob(ctx, jobs[0].Key, nil); err != nil {
+			if err := completeJob(ctx, f, jobs[0].Key, nil); err != nil {
 				t.Fatal(err)
 			}
 			spent += time.Since(start)
@@ -601,7 +612,7 @@ func TestOutboxEventsOrderedPerInstance(t *testing.T) {
 			wg.Add(1)
 			go func(key string) {
 				defer wg.Done()
-				errs <- f.commands.CompleteJob(ctx, key, nil)
+				errs <- completeJob(ctx, f, key, nil)
 			}(j.Key)
 		}
 		wg.Wait()

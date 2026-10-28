@@ -64,7 +64,7 @@ func recoveryInstances(t *testing.T, f *fixture) []string {
 			if len(jobs) == 0 {
 				return
 			}
-			if err := f.commands.CompleteJob(ctx, jobs[0].Key, []byte(fmt.Sprintf(`{"step": %d}`, i))); err != nil {
+			if err := completeJob(ctx, f, jobs[0].Key, []byte(fmt.Sprintf(`{"step": %d}`, i))); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -87,7 +87,7 @@ func recoveryInstances(t *testing.T, f *fixture) []string {
 	broken := create(incident, `{"amount": 1}`)
 	canceled := create(fork, `{}`)
 	completeSome(canceled, 2)
-	if err := f.commands.CancelProcessInstance(ctx, canceled); err != nil {
+	if err := cancelInstance(ctx, f, canceled); err != nil {
 		t.Fatal(err)
 	}
 	return []string{done, partial, broken, canceled}

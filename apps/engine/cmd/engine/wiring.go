@@ -71,14 +71,15 @@ func assemble(ctx context.Context, cfg config.Config, log *slog.Logger) (*applic
 	healthifc.NewHandler(checkHealth).Register(mux)
 
 	// Modul deployment.
-	deploymentRepo := deploymentinfra.NewPostgresRepository(pool, keys)
+	deploymentRepo := deploymentinfra.NewPostgresRepository(pool, keys).WithIdempotencyTTL(cfg.IdempotencyTTL)
 	processCache := deploymentapp.NewProcessCache(deploymentRepo, 256)
 	deployResource := deploymentapp.NewDeployResource(deploymentRepo, bus, processCache, nil, log)
 	deploymentifc.NewHandler(deployResource, deploymentapp.NewQueries(deploymentRepo)).Register(mux)
 	var _ deploymentapi.ProcessDefinitions = processCache
 
 	// Modul execution: hanya bergantung pada deployment lewat api.ProcessDefinitions.
-	executionRepo := executioninfra.NewPostgresRepository(pool, writer).WithSnapshotInterval(cfg.SnapshotIntervalRecords)
+	executionRepo := executioninfra.NewPostgresRepository(pool, writer).
+		WithSnapshotInterval(cfg.SnapshotIntervalRecords).WithIdempotencyTTL(cfg.IdempotencyTTL)
 	processor := executiondomain.NewProcessor(executiondomain.NewFeelEvaluator(), systemClock{},
 		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
 	commands := executionapp.NewCommands(executionRepo, processCache, processor,

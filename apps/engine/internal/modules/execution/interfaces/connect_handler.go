@@ -10,13 +10,16 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	commonv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1"
 	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
 	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1/jobv1connect"
 	processv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1"
@@ -68,14 +71,22 @@ func (h *Handler) CreateProcessInstance(ctx context.Context, req *connect.Reques
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, application.ErrDefinitionRequired)
 	}
+	idem, err := idempotencyOf(processv1connect.ProcessInstanceServiceCreateProcessInstanceProcedure, req.Msg, req.Msg.GetRequestId(),
+		func(m proto.Message) { m.(*processv1.CreateProcessInstanceRequest).RequestId = "" })
+	if err != nil {
+		return nil, err
+	}
+	in.Idempotency = idem
 	res, err := h.instances.CreateProcessInstance(ctx, in)
 	if err != nil {
 		return nil, toConnectError(err)
 	}
-	return connect.NewResponse(&processv1.CreateProcessInstanceResponse{
+	resp := connect.NewResponse(&processv1.CreateProcessInstanceResponse{
 		ProcessInstanceKey: res.ProcessInstanceKey, ProcessDefinitionKey: res.ProcessDefinitionKey,
 		BpmnProcessId: res.BpmnProcessID, Version: res.Version, State: instanceState(res.State),
-	}), nil
+	})
+	markReplayed(resp.Header(), res.Replayed)
+	return resp, nil
 }
 
 // GetProcessInstance mengimplementasikan RPC GetProcessInstance.
@@ -140,10 +151,18 @@ func (h *Handler) CancelProcessInstance(ctx context.Context, req *connect.Reques
 	if err := requireKey("process_instance_key", req.Msg.GetProcessInstanceKey()); err != nil {
 		return nil, err
 	}
-	if err := h.instances.CancelProcessInstance(ctx, req.Msg.GetProcessInstanceKey()); err != nil {
+	idem, err := idempotencyOf(processv1connect.ProcessInstanceServiceCancelProcessInstanceProcedure, req.Msg, req.Msg.GetRequestId(),
+		func(m proto.Message) { m.(*processv1.CancelProcessInstanceRequest).RequestId = "" })
+	if err != nil {
+		return nil, err
+	}
+	replayed, err := h.instances.CancelProcessInstance(ctx, req.Msg.GetProcessInstanceKey(), idem)
+	if err != nil {
 		return nil, toConnectError(err)
 	}
-	return connect.NewResponse(&processv1.CancelProcessInstanceResponse{}), nil
+	resp := connect.NewResponse(&processv1.CancelProcessInstanceResponse{})
+	markReplayed(resp.Header(), replayed)
+	return resp, nil
 }
 
 // ListJobs mengimplementasikan RPC ListJobs.
@@ -182,10 +201,45 @@ func (h *Handler) CompleteJob(ctx context.Context, req *connect.Request[jobv1.Co
 	if err := requireKey("job_key", req.Msg.GetJobKey()); err != nil {
 		return nil, err
 	}
-	if err := h.jobs.CompleteJob(ctx, req.Msg.GetJobKey(), []byte(req.Msg.GetVariables())); err != nil {
+	idem, err := idempotencyOf(jobv1connect.JobServiceCompleteJobProcedure, req.Msg, req.Msg.GetRequestId(),
+		func(m proto.Message) { m.(*jobv1.CompleteJobRequest).RequestId = "" })
+	if err != nil {
+		return nil, err
+	}
+	replayed, err := h.jobs.CompleteJob(ctx, req.Msg.GetJobKey(), []byte(req.Msg.GetVariables()), idem)
+	if err != nil {
 		return nil, toConnectError(err)
 	}
-	return connect.NewResponse(&jobv1.CompleteJobResponse{}), nil
+	resp := connect.NewResponse(&jobv1.CompleteJobResponse{})
+	markReplayed(resp.Header(), replayed)
+	return resp, nil
+}
+
+// ReplayedHeader menandai response yang diambil dari klaim request_id sebelumnya.
+const ReplayedHeader = "Idempotent-Replayed"
+
+// defaultTenant sama dengan tenant default modul lain; multi-tenant menyusul di Fase 8.
+const defaultTenant = "<default>"
+
+// idempotencyOf membangun klaim dari request_id; nil bila request_id kosong.
+func idempotencyOf(procedure string, msg proto.Message, requestID string, clear func(proto.Message)) (*api.Idempotency, error) {
+	if requestID == "" {
+		return nil, nil
+	}
+	if err := idempotency.ValidateKey(requestID); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	hash, err := idempotency.Hash(msg, clear)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
+	return &api.Idempotency{Scope: defaultTenant + procedure, Key: requestID, RequestHash: hash}, nil
+}
+
+func markReplayed(h http.Header, replayed bool) {
+	if replayed {
+		h.Set(ReplayedHeader, "true")
+	}
 }
 
 func requireKey(field, key string) error {
@@ -261,6 +315,12 @@ func toConnectError(err error) error {
 	switch {
 	case errors.Is(err, domain.ErrInstanceNotFound), errors.Is(err, domain.ErrJobNotFound), errors.Is(err, deploymentapi.ErrNotFound):
 		return connect.NewError(connect.CodeNotFound, err)
+	case errors.Is(err, idempotency.ErrKeyReused):
+		cerr := connect.NewError(connect.CodeInvalidArgument, err)
+		if detail, derr := connect.NewErrorDetail(&commonv1.IdempotencyKeyReused{}); derr == nil {
+			cerr.AddDetail(detail)
+		}
+		return cerr
 	case errors.Is(err, domain.ErrInvalidVariables), errors.Is(err, application.ErrDefinitionRequired):
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	case errors.Is(err, domain.ErrInstanceNotActive), errors.Is(err, domain.ErrJobNotActive), errors.Is(err, domain.ErrNoNoneStartEvent):

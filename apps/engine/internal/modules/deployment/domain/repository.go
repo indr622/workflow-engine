@@ -26,6 +26,18 @@ type TxRepository interface {
 	NextKeys(ctx context.Context, n int) ([]string, error)
 	// SaveDeployment menyimpan deployment, resource, dan definition baru.
 	SaveDeployment(ctx context.Context, d Deployment) error
+	// BeginIdempotent mengklaim request_id setelah semua lock proses diambil; replayed = true
+	// berarti response tersimpan dikembalikan dan deploy tidak dijalankan.
+	BeginIdempotent(ctx context.Context, c IdempotencyClaim) (response []byte, replayed bool, err error)
+	// StoreIdempotent menyimpan response untuk klaim yang dibuat transaksi ini.
+	StoreIdempotent(ctx context.Context, c IdempotencyClaim, response []byte) error
+}
+
+// IdempotencyClaim adalah klaim request_id klien (ADR-0017).
+type IdempotencyClaim struct {
+	Scope       string
+	Key         string
+	RequestHash [32]byte
 }
 
 // ListQuery adalah parameter keyset pagination daftar definition.
