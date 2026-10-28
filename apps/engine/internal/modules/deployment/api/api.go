@@ -3,14 +3,19 @@ package api
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
 )
 
+// notFoundError membawa reason stabil untuk ErrorInfo (ADR-0023).
+type notFoundError struct{}
+
+func (notFoundError) Error() string  { return "process definition not found" }
+func (notFoundError) Reason() string { return "PROCESS_DEFINITION_NOT_FOUND" }
+
 // ErrNotFound dikembalikan bila process definition tidak ada.
-var ErrNotFound = errors.New("process definition not found")
+var ErrNotFound error = notFoundError{}
 
 // ProcessDefinition adalah metadata satu versi proses.
 type ProcessDefinition struct {

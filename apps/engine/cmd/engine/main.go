@@ -15,6 +15,8 @@ import (
 	"syscall"
 	"time"
 
+	engineapp "github.com/indr622/workflow-engine/apps/engine/internal/app"
+
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/config"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/httpserver"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
@@ -87,7 +89,7 @@ func healthcheck() int {
 }
 
 // serve menjalankan urutan start Fase 3 (5.2): migrasi → server HTTP mendengarkan (liveness saja)
-// → pemulihan → relay outbox dan janitor → ready.
+// → pemulihan → relay outbox, janitor, dan sweeper → ready.
 func serve() error {
 	cfg, err := config.Load()
 	if err != nil {
@@ -103,21 +105,26 @@ func serve() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	app, err := assemble(ctx, cfg, log)
+	app, err := engineapp.Build(ctx, cfg, log, version)
 	if err != nil {
 		return err
 	}
-	defer app.pool.Close()
+	defer app.Pool.Close()
+	// Long polling dijawab kosong begitu shutdown dimulai, agar Shutdown tidak menunggu request_timeout.
+	go func() {
+		<-ctx.Done()
+		app.BeginShutdown()
+	}()
 
 	gate := recovery.NewGate()
-	app.mux.Handle("/readyz", gate.ReadyzHandler())
-	handler := gate.Middleware(httpserver.CORS(cfg.CORSOrigins, app.mux), "/healthz", "/readyz")
+	app.Mux.Handle("/readyz", gate.ReadyzHandler())
+	handler := gate.Middleware(httpserver.CORS(cfg.CORSOrigins, app.Mux), "/healthz", "/readyz")
 	srv := httpserver.New(cfg.HTTPAddr, handler, log)
 	serverErr := make(chan error, 1)
 	go func() { serverErr <- srv.Run(ctx, cfg.ShutdownTimeout) }()
 
 	runner := recovery.Runner{
-		Verifiers: []recovery.Verifier{app.recovery}, OnMismatch: onMismatch,
+		Verifiers: []recovery.Verifier{app.Recovery}, OnMismatch: onMismatch,
 		Timeout: cfg.Recovery.Timeout, Log: log, Gate: gate,
 	}
 	if _, err := runner.Run(ctx); err != nil {
@@ -129,11 +136,12 @@ func serve() error {
 	}
 
 	go func() {
-		if err := app.relay.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+		if err := app.Relay.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
 			log.Error("outbox relay stopped", slog.Any("error", err))
 		}
 	}()
 	go janitor(ctx, app, cfg, log)
+	go app.Sweeper.Run(ctx)
 
 	gate.SetReady()
 	log.Info("engine ready", slog.String("addr", cfg.HTTPAddr))
@@ -142,7 +150,7 @@ func serve() error {
 
 // janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer, instance
 // final di luar retensi (bila diaktifkan), dan klaim request_id yang kedaluwarsa.
-func janitor(ctx context.Context, app *application, cfg config.Config, log *slog.Logger) {
+func janitor(ctx context.Context, app *engineapp.App, cfg config.Config, log *slog.Logger) {
 	t := time.NewTicker(cfg.JanitorInterval)
 	defer t.Stop()
 	for {
@@ -151,21 +159,21 @@ func janitor(ctx context.Context, app *application, cfg config.Config, log *slog
 			return
 		case <-t.C:
 		}
-		st := app.pool.Stat()
+		st := app.Pool.Stat()
 		log.Debug("db pool stats", slog.Int("acquired", int(st.AcquiredConns())), slog.Int("idle", int(st.IdleConns())),
 			slog.Int("max", int(st.MaxConns())), slog.Int64("wait_ms", st.AcquireDuration().Milliseconds()),
 			slog.Int64("empty_acquire", st.EmptyAcquireCount()))
-		if n, err := outbox.Prune(ctx, app.pool, cfg.Outbox.Retention); err != nil {
+		if n, err := outbox.Prune(ctx, app.Pool, cfg.Outbox.Retention); err != nil {
 			log.Warn("outbox prune failed", slog.Any("error", err))
 		} else if n > 0 {
 			log.Info("outbox pruned", slog.Int64("events", n))
 		}
 		if cfg.HistoryRetentionDays > 0 {
-			if _, err := app.retention.Prune(ctx, time.Duration(cfg.HistoryRetentionDays)*24*time.Hour, false); err != nil {
+			if _, err := app.Retention.Prune(ctx, time.Duration(cfg.HistoryRetentionDays)*24*time.Hour, false); err != nil {
 				log.Warn("history prune failed", slog.Any("error", err))
 			}
 		}
-		if n, err := idempotency.Prune(ctx, app.pool, 1000); err != nil {
+		if n, err := idempotency.Prune(ctx, app.Pool, 1000); err != nil {
 			log.Warn("idempotency prune failed", slog.Any("error", err))
 		} else if n > 0 {
 			log.Info("idempotency keys pruned", slog.Int64("keys", n))

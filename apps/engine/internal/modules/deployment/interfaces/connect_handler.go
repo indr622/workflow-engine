@@ -19,7 +19,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
-	commonv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/rpc"
 )
 
 // MaxRequestBytes adalah batas ukuran request Connect untuk service ini.
@@ -40,9 +40,12 @@ func NewHandler(deploy *application.DeployResource, queries *application.Queries
 }
 
 // Register memasang route Connect ke mux.
-func (h *Handler) Register(mux *http.ServeMux) {
-	path, handler := deploymentv1connect.NewDeploymentServiceHandler(h, connect.WithReadMaxBytes(MaxRequestBytes))
-	mux.Handle(path, handler)
+// opts adalah rantai interceptor bersama (ADR-0023); tanpa opts hanya batas ukuran yang dipasang.
+func (h *Handler) Register(mux *http.ServeMux, opts ...connect.HandlerOption) {
+	if len(opts) == 0 {
+		opts = []connect.HandlerOption{connect.WithReadMaxBytes(MaxRequestBytes)}
+	}
+	mux.Handle(deploymentv1connect.NewDeploymentServiceHandler(h, opts...))
 }
 
 // DeployResource mengimplementasikan RPC DeployResource.
@@ -170,22 +173,14 @@ func toConnectError(err error) error {
 	var rejected *domain.RejectedError
 	switch {
 	case errors.As(err, &rejected):
-		cerr := connect.NewError(connect.CodeInvalidArgument, rejected)
+		cerr := rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonDeploymentRejected, rejected, nil)
 		if detail, derr := connect.NewErrorDetail(&deploymentv1.DeploymentRejection{Issues: toProtoIssues(rejected.Violations)}); derr == nil {
 			cerr.AddDetail(detail)
 		}
 		return cerr
-	case errors.Is(err, idempotency.ErrKeyReused):
-		cerr := connect.NewError(connect.CodeInvalidArgument, err)
-		if detail, derr := connect.NewErrorDetail(&commonv1.IdempotencyKeyReused{}); derr == nil {
-			cerr.AddDetail(detail)
-		}
-		return cerr
-	case errors.Is(err, domain.ErrNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
 	case errors.Is(err, application.ErrInvalidPageToken):
-		return connect.NewError(connect.CodeInvalidArgument, err)
+		return rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonPageTokenInvalid, err, nil)
 	default:
-		return connect.NewError(connect.CodeInternal, err)
+		return rpc.ToConnect(err)
 	}
 }

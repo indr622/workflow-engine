@@ -1,5 +1,5 @@
 // Package interfaces berisi adapter masuk modul execution: handler Connect untuk
-// ProcessInstanceService dan JobService.
+// ProcessInstanceService dan IncidentService. JobService pindah ke modul job di Fase 4.
 package interfaces
 
 import (
@@ -13,69 +13,42 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/paging"
-	commonv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1"
-	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
-	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1/jobv1connect"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/rpc"
 	processv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1"
 	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1/processv1connect"
 )
 
-// MaxRequestBytes adalah batas ukuran request; dokumen variabel dibatasi terpisah oleh application.
-const MaxRequestBytes = 2 << 20
-
-// Handler mengekspos use case execution lewat Connect RPC.
+// Handler mengekspos use case process instance lewat Connect RPC.
 type Handler struct {
-	// RPC Fase 4 yang belum diimplementasikan menjawab UNIMPLEMENTED sampai use case-nya ada.
-	processv1connect.UnimplementedProcessInstanceServiceHandler
-	jobv1connect.UnimplementedJobServiceHandler
-
 	instances api.ProcessInstances
-	jobs      api.Jobs
+	variables api.Variables
 	queries   *application.Queries
 	history   *application.History
 }
 
-var (
-	_ processv1connect.ProcessInstanceServiceHandler = (*Handler)(nil)
-	_ jobv1connect.JobServiceHandler                 = (*Handler)(nil)
-)
+var _ processv1connect.ProcessInstanceServiceHandler = (*Handler)(nil)
 
 // NewHandler membuat handler.
-func NewHandler(instances api.ProcessInstances, jobs api.Jobs, queries *application.Queries, history *application.History) *Handler {
-	return &Handler{instances: instances, jobs: jobs, queries: queries, history: history}
+func NewHandler(instances api.ProcessInstances, variables api.Variables, queries *application.Queries, history *application.History) *Handler {
+	return &Handler{instances: instances, variables: variables, queries: queries, history: history}
 }
 
-// Register memasang kedua service ke mux.
-func (h *Handler) Register(mux *http.ServeMux) {
-	path, handler := processv1connect.NewProcessInstanceServiceHandler(h, connect.WithReadMaxBytes(MaxRequestBytes))
-	mux.Handle(path, handler)
-	path, handler = jobv1connect.NewJobServiceHandler(h, connect.WithReadMaxBytes(MaxRequestBytes))
-	mux.Handle(path, handler)
+// Register memasang ProcessInstanceService ke mux dengan opsi rantai interceptor bersama.
+func (h *Handler) Register(mux *http.ServeMux, opts ...connect.HandlerOption) {
+	mux.Handle(processv1connect.NewProcessInstanceServiceHandler(h, opts...))
 }
 
 // CreateProcessInstance mengimplementasikan RPC CreateProcessInstance.
 func (h *Handler) CreateProcessInstance(ctx context.Context, req *connect.Request[processv1.CreateProcessInstanceRequest]) (*connect.Response[processv1.CreateProcessInstanceResponse], error) {
-	in := api.CreateInstanceRequest{Variables: []byte(req.Msg.GetVariables())}
-	switch d := req.Msg.GetDefinition().(type) {
-	case *processv1.CreateProcessInstanceRequest_ProcessDefinitionKey:
-		if err := requireKey("process_definition_key", d.ProcessDefinitionKey); err != nil {
-			return nil, err
-		}
-		in.DefinitionKey = d.ProcessDefinitionKey
-	case *processv1.CreateProcessInstanceRequest_BpmnProcess:
-		if d.BpmnProcess.GetBpmnProcessId() == "" || d.BpmnProcess.GetVersion() < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bpmn_process needs a bpmn_process_id and a version >= 0"))
-		}
-		in.BpmnProcessID, in.Version = d.BpmnProcess.GetBpmnProcessId(), d.BpmnProcess.GetVersion()
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, application.ErrDefinitionRequired)
+	in, err := createRequest(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 	idem, err := idempotencyOf(processv1connect.ProcessInstanceServiceCreateProcessInstanceProcedure, req.Msg, req.Msg.GetRequestId(),
 		func(m proto.Message) { m.(*processv1.CreateProcessInstanceRequest).RequestId = "" })
@@ -92,6 +65,69 @@ func (h *Handler) CreateProcessInstance(ctx context.Context, req *connect.Reques
 		BpmnProcessId: res.BpmnProcessID, Version: res.Version, State: instanceState(res.State),
 	})
 	markReplayed(resp.Header(), res.Replayed)
+	return resp, nil
+}
+
+func createRequest(m *processv1.CreateProcessInstanceRequest) (api.CreateInstanceRequest, error) {
+	in := api.CreateInstanceRequest{Variables: []byte(m.GetVariables())}
+	switch d := m.GetDefinition().(type) {
+	case *processv1.CreateProcessInstanceRequest_ProcessDefinitionKey:
+		if err := requireKey("process_definition_key", d.ProcessDefinitionKey); err != nil {
+			return in, err
+		}
+		in.DefinitionKey = d.ProcessDefinitionKey
+	case *processv1.CreateProcessInstanceRequest_BpmnProcess:
+		if d.BpmnProcess.GetBpmnProcessId() == "" || d.BpmnProcess.GetVersion() < 0 {
+			return in, rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonRequestInvalid,
+				errors.New("bpmn_process needs a bpmn_process_id and a version >= 0"), nil)
+		}
+		in.BpmnProcessID, in.Version = d.BpmnProcess.GetBpmnProcessId(), d.BpmnProcess.GetVersion()
+	default:
+		return in, rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonRequestInvalid, application.ErrDefinitionRequired, nil)
+	}
+	return in, nil
+}
+
+// CreateProcessInstanceWithResult mengimplementasikan RPC CreateProcessInstanceWithResult.
+func (h *Handler) CreateProcessInstanceWithResult(ctx context.Context, req *connect.Request[processv1.CreateProcessInstanceWithResultRequest]) (*connect.Response[processv1.CreateProcessInstanceWithResultResponse], error) {
+	in, err := createRequest(req.Msg.GetRequest())
+	if err != nil {
+		return nil, err
+	}
+	idem, err := idempotencyOf(processv1connect.ProcessInstanceServiceCreateProcessInstanceWithResultProcedure, req.Msg,
+		req.Msg.GetRequest().GetRequestId(), func(m proto.Message) {
+			m.(*processv1.CreateProcessInstanceWithResultRequest).GetRequest().RequestId = ""
+		})
+	if err != nil {
+		return nil, err
+	}
+	in.Idempotency = idem
+	res, err := h.instances.CreateProcessInstanceWithResult(ctx, in, req.Msg.GetFetchVariables(), req.Msg.GetRequestTimeout().AsDuration())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	resp := connect.NewResponse(&processv1.CreateProcessInstanceWithResultResponse{
+		ProcessInstanceKey: res.ProcessInstanceKey, ProcessDefinitionKey: res.ProcessDefinitionKey,
+		BpmnProcessId: res.BpmnProcessID, Version: res.Version, State: instanceState(res.State), Variables: string(res.Variables),
+	})
+	markReplayed(resp.Header(), res.Replayed)
+	return resp, nil
+}
+
+// SetVariables mengimplementasikan RPC SetVariables.
+func (h *Handler) SetVariables(ctx context.Context, req *connect.Request[processv1.SetVariablesRequest]) (*connect.Response[processv1.SetVariablesResponse], error) {
+	m := req.Msg
+	idem, err := idempotencyOf(processv1connect.ProcessInstanceServiceSetVariablesProcedure, m, m.GetRequestId(),
+		func(m proto.Message) { m.(*processv1.SetVariablesRequest).RequestId = "" })
+	if err != nil {
+		return nil, err
+	}
+	replayed, err := h.variables.SetVariables(ctx, m.GetScopeKey(), []byte(m.GetVariables()), m.GetLocal(), idem)
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	resp := connect.NewResponse(&processv1.SetVariablesResponse{})
+	markReplayed(resp.Header(), replayed)
 	return resp, nil
 }
 
@@ -176,7 +212,7 @@ func (h *Handler) ListProcessInstanceRecords(ctx context.Context, req *connect.R
 	}
 	tok, err := paging.Decode(m.GetPageToken())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonPageTokenInvalid, err, nil)
 	}
 	records, next, err := h.history.ListRecords(ctx, m.GetProcessInstanceKey(), tok.Sequence, m.GetPageSize())
 	if err != nil {
@@ -200,7 +236,7 @@ func (h *Handler) ListElementInstances(ctx context.Context, req *connect.Request
 	}
 	tok, err := paging.Decode(m.GetPageToken())
 	if err != nil || (tok.Key != "" && !keygen.Valid(tok.Key)) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, paging.ErrInvalidToken)
+		return nil, rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonPageTokenInvalid, paging.ErrInvalidToken, nil)
 	}
 	elements, next, err := h.history.ListElementInstances(ctx, m.GetProcessInstanceKey(), m.GetOnlyActive(), tok.Key, m.GetPageSize())
 	if err != nil {
@@ -220,61 +256,8 @@ func toProtoElement(e application.ElementInstanceView) *processv1.ElementInstanc
 	}
 }
 
-// ListJobs mengimplementasikan RPC ListJobs.
-func (h *Handler) ListJobs(ctx context.Context, req *connect.Request[jobv1.ListJobsRequest]) (*connect.Response[jobv1.ListJobsResponse], error) {
-	m := req.Msg
-	if err := optionalKey("process_instance_key", m.GetProcessInstanceKey()); err != nil {
-		return nil, err
-	}
-	if err := optionalKey("page_token", m.GetPageToken()); err != nil {
-		return nil, err
-	}
-	items, next, err := h.queries.ListJobs(ctx, application.JobFilter{
-		Type: m.GetType(), ProcessInstanceKey: m.GetProcessInstanceKey(), OnlyOpen: m.GetOnlyOpen(),
-		AfterKey: m.GetPageToken(), Limit: m.GetPageSize(),
-	})
-	if err != nil {
-		return nil, toConnectError(err)
-	}
-	out := &jobv1.ListJobsResponse{NextPageToken: next}
-	for _, j := range items {
-		headers := make(map[string]string, len(j.CustomHeaders))
-		for _, hd := range j.CustomHeaders {
-			headers[hd.Key] = hd.Value
-		}
-		out.Jobs = append(out.Jobs, &jobv1.JobInfo{
-			JobKey: j.Key, Type: j.Type, ProcessInstanceKey: j.ProcessInstanceKey, ElementInstanceKey: j.ElementInstanceKey,
-			ElementId: j.ElementID, BpmnProcessId: j.BpmnProcessID, Retries: j.Retries, CustomHeaders: headers,
-			State: j.State, ProcessDefinitionKey: j.ProcessDefinitionKey,
-		})
-	}
-	return connect.NewResponse(out), nil
-}
-
-// CompleteJob mengimplementasikan RPC CompleteJob.
-func (h *Handler) CompleteJob(ctx context.Context, req *connect.Request[jobv1.CompleteJobRequest]) (*connect.Response[jobv1.CompleteJobResponse], error) {
-	if err := requireKey("job_key", req.Msg.GetJobKey()); err != nil {
-		return nil, err
-	}
-	idem, err := idempotencyOf(jobv1connect.JobServiceCompleteJobProcedure, req.Msg, req.Msg.GetRequestId(),
-		func(m proto.Message) { m.(*jobv1.CompleteJobRequest).RequestId = "" })
-	if err != nil {
-		return nil, err
-	}
-	replayed, err := h.jobs.CompleteJob(ctx, req.Msg.GetJobKey(), []byte(req.Msg.GetVariables()), idem)
-	if err != nil {
-		return nil, toConnectError(err)
-	}
-	resp := connect.NewResponse(&jobv1.CompleteJobResponse{})
-	markReplayed(resp.Header(), replayed)
-	return resp, nil
-}
-
 // ReplayedHeader menandai response yang diambil dari klaim request_id sebelumnya.
 const ReplayedHeader = "Idempotent-Replayed"
-
-// defaultTenant sama dengan tenant default modul lain; multi-tenant menyusul di Fase 8.
-const defaultTenant = "<default>"
 
 // idempotencyOf membangun klaim dari request_id; nil bila request_id kosong.
 func idempotencyOf(procedure string, msg proto.Message, requestID string, clear func(proto.Message)) (*api.Idempotency, error) {
@@ -282,13 +265,13 @@ func idempotencyOf(procedure string, msg proto.Message, requestID string, clear 
 		return nil, nil
 	}
 	if err := idempotency.ValidateKey(requestID); err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonRequestInvalid, err, nil)
 	}
 	hash, err := idempotency.Hash(msg, clear)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
-	return &api.Idempotency{Scope: defaultTenant + procedure, Key: requestID, RequestHash: hash}, nil
+	return &api.Idempotency{Scope: rpc.DefaultTenant + procedure, Key: requestID, RequestHash: hash}, nil
 }
 
 func markReplayed(h http.Header, replayed bool) {
@@ -299,7 +282,7 @@ func markReplayed(h http.Header, replayed bool) {
 
 func requireKey(field, key string) error {
 	if !keygen.Valid(key) {
-		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("%s must be a canonical uuid", field))
+		return rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonRequestInvalid, fmt.Errorf("%s must be a canonical uuid", field), nil)
 	}
 	return nil
 }
@@ -365,22 +348,10 @@ func optTimestamp(t *time.Time) *timestamppb.Timestamp {
 	return timestamppb.New(*t)
 }
 
-// toConnectError memetakan error domain dan application ke kode Connect.
+// toConnectError memetakan error use case ke error Connect dengan ErrorInfo (ADR-0023).
 func toConnectError(err error) error {
-	switch {
-	case errors.Is(err, domain.ErrInstanceNotFound), errors.Is(err, domain.ErrJobNotFound), errors.Is(err, deploymentapi.ErrNotFound):
-		return connect.NewError(connect.CodeNotFound, err)
-	case errors.Is(err, idempotency.ErrKeyReused):
-		cerr := connect.NewError(connect.CodeInvalidArgument, err)
-		if detail, derr := connect.NewErrorDetail(&commonv1.IdempotencyKeyReused{}); derr == nil {
-			cerr.AddDetail(detail)
-		}
-		return cerr
-	case errors.Is(err, domain.ErrInvalidVariables), errors.Is(err, application.ErrDefinitionRequired):
-		return connect.NewError(connect.CodeInvalidArgument, err)
-	case errors.Is(err, domain.ErrInstanceNotActive), errors.Is(err, domain.ErrJobNotActive), errors.Is(err, domain.ErrNoNoneStartEvent):
-		return connect.NewError(connect.CodeFailedPrecondition, err)
-	default:
-		return connect.NewError(connect.CodeInternal, err)
+	if errors.Is(err, application.ErrDefinitionRequired) {
+		return rpc.Reject(connect.CodeInvalidArgument, rpc.ReasonRequestInvalid, err, nil)
 	}
+	return rpc.ToConnect(err)
 }

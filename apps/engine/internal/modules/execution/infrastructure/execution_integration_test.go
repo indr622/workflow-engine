@@ -32,10 +32,15 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/interfaces"
+	jobapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/job/application"
+	jobdomain "github.com/indr622/workflow-engine/apps/engine/internal/modules/job/domain"
+	jobinfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/job/infrastructure"
+	jobifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/job/interfaces"
 	platformdb "github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/rpc"
 	deploymentv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1"
 	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1/deploymentv1connect"
 	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
@@ -97,8 +102,15 @@ func setup(t *testing.T) *fixture {
 	commands := application.NewCommands(repo, cache, processor, infrastructure.NewKeyGenerator(keys), bus, log, application.Config{})
 	queries := application.NewQueries(repo)
 	mux := http.NewServeMux()
-	deploymentifc.NewHandler(deploy, deploymentapp.NewQueries(deployRepo)).Register(mux)
-	interfaces.NewHandler(commands, commands, queries, application.NewHistory(repo)).Register(mux)
+	opts, err := rpc.HandlerOptions(rpc.Config{Log: log})
+	if err != nil {
+		t.Fatal(err)
+	}
+	deploymentifc.NewHandler(deploy, deploymentapp.NewQueries(deployRepo)).Register(mux, opts...)
+	interfaces.NewHandler(commands, commands, queries, application.NewHistory(repo)).Register(mux, opts...)
+	interfaces.NewIncidentHandler(commands, queries).Register(mux, opts...)
+	activate := jobapp.NewActivateJobs(commands, jobinfra.NewNotifier(bus), jobdomain.Limits{PollInterval: 100 * time.Millisecond}, nil)
+	jobifc.NewHandler(activate, commands, queries).Register(mux, opts...)
 	return &fixture{
 		pool: pool, repo: repo, deploy: deploy, cache: cache, commands: commands, queries: queries, bus: bus, mux: mux,
 		run: fmt.Sprintf("%d", time.Now().UnixNano()),

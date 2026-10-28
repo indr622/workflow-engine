@@ -1,13 +1,18 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
 
+// notFoundError membawa reason stabil untuk ErrorInfo (ADR-0023).
+type notFoundError struct{}
+
+func (notFoundError) Error() string  { return "process definition not found" }
+func (notFoundError) Reason() string { return "PROCESS_DEFINITION_NOT_FOUND" }
+
 // ErrNotFound dikembalikan bila process definition tidak ada.
-var ErrNotFound = errors.New("process definition not found")
+var ErrNotFound error = notFoundError{}
 
 // Severity adalah tingkat keparahan violation.
 type Severity string
@@ -47,6 +52,9 @@ func (v Violation) String() string {
 type RejectedError struct {
 	Violations []Violation
 }
+
+// Reason memberi ErrorInfo.reason.
+func (e *RejectedError) Reason() string { return "DEPLOYMENT_REJECTED" }
 
 func (e *RejectedError) Error() string {
 	n := 0

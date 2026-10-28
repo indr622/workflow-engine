@@ -60,3 +60,11 @@ type ResultTimeoutError struct {
 func (e *ResultTimeoutError) Error() string {
 	return "process instance " + e.ProcessInstanceKey + " did not complete before the request timeout"
 }
+
+// Reason memberi ErrorInfo.reason.
+func (e *ResultTimeoutError) Reason() string { return "RESULT_TIMEOUT" }
+
+// ErrorMetadata memberi ErrorInfo.metadata.
+func (e *ResultTimeoutError) ErrorMetadata() map[string]string {
+	return map[string]string{"process_instance_key": e.ProcessInstanceKey}
+}

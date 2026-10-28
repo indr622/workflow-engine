@@ -246,15 +246,16 @@ func TestLeaseExtendAndExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	found := false
 	for _, r := range released {
 		if r.Key == jobs[0].Key {
 			t.Fatal("extended lease must not be released")
 		}
-		found = found || (r.Key == jobs[1].Key && r.Type == jobType)
 	}
-	if !found {
-		t.Fatalf("expired lease not released: %v", released)
+	// Sweeper engine lain (mis. paket e2e yang berjalan paralel) boleh melepas lebih dulu; yang
+	// diperiksa adalah state job, bukan siapa yang melepasnya.
+	var state string
+	if err := f.pool.QueryRow(ctx, `SELECT state FROM job WHERE key = $1`, jobs[1].Key).Scan(&state); err != nil || state != "CREATED" {
+		t.Fatalf("expired lease state = %q %v, want CREATED", state, err)
 	}
 	again, err := f.repo.ActivateJobs(ctx, api.ActivationQuery{Type: jobType, Worker: "w2", MaxJobs: 5, Timeout: time.Minute})
 	if err != nil || len(again) != 1 || again[0].Key != jobs[1].Key {

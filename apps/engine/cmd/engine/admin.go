@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 
+	engineapp "github.com/indr622/workflow-engine/apps/engine/internal/app"
+
 	executionapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/config"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
@@ -65,11 +67,11 @@ func runVerify(ctx context.Context, cfg config.Config, log *slog.Logger, args []
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
-	app, err := assemble(ctx, cfg, log)
+	app, err := engineapp.Build(ctx, cfg, log, version)
 	if err != nil {
 		return exitCode(err)
 	}
-	defer app.pool.Close()
+	defer app.Pool.Close()
 
 	var rep recovery.Report
 	switch {
@@ -78,15 +80,15 @@ func runVerify(ctx context.Context, cfg config.Config, log *slog.Logger, args []
 			fmt.Fprintln(os.Stderr, "engine verify: --instance must be a canonical uuid")
 			return exitUsage
 		}
-		m, err := app.recovery.DeepVerify(ctx, *instance)
+		m, err := app.Recovery.DeepVerify(ctx, *instance)
 		if err != nil {
 			return exitCode(err)
 		}
 		rep = recovery.Report{Checked: 1, Mismatches: m}
 	case *all:
-		rep, err = app.recovery.VerifyAll(ctx)
+		rep, err = app.Recovery.VerifyAll(ctx)
 	default:
-		rep, err = app.recovery.VerifyOnStart(ctx)
+		rep, err = app.Recovery.VerifyOnStart(ctx)
 	}
 	if err != nil {
 		return exitCode(err)
@@ -121,24 +123,24 @@ func runRebuild(ctx context.Context, cfg config.Config, log *slog.Logger, args [
 		fmt.Fprintln(os.Stderr, "engine rebuild: pass exactly one of --instance KEY or --all")
 		return exitUsage
 	}
-	app, err := assemble(ctx, cfg, log)
+	app, err := engineapp.Build(ctx, cfg, log, version)
 	if err != nil {
 		return exitCode(err)
 	}
-	defer app.pool.Close()
+	defer app.Pool.Close()
 	if *instance != "" {
 		if !keygen.Valid(*instance) {
 			fmt.Fprintln(os.Stderr, "engine rebuild: --instance must be a canonical uuid")
 			return exitUsage
 		}
-		res, err := app.recovery.RebuildInstance(ctx, *instance, *full)
+		res, err := app.Recovery.RebuildInstance(ctx, *instance, *full)
 		if err != nil {
 			return exitCode(err)
 		}
 		fmt.Printf("rebuilt %s from %d records (from snapshot: %v)\n", res.ProcessInstanceKey, res.Records, res.FromSnapshot)
 		return exitOK
 	}
-	n, err := app.recovery.RebuildAll(ctx, *full, func(res executionapp.RebuildResult) {
+	n, err := app.Recovery.RebuildAll(ctx, *full, func(res executionapp.RebuildResult) {
 		fmt.Printf("rebuilt %s from %d records\n", res.ProcessInstanceKey, res.Records)
 	})
 	fmt.Printf("rebuilt %d instances\n", n)
@@ -165,12 +167,12 @@ func runPrune(ctx context.Context, cfg config.Config, log *slog.Logger, args []s
 		fmt.Fprintln(os.Stderr, "engine prune: pass --older-than or set ENGINE_HISTORY_RETENTION_DAYS")
 		return exitUsage
 	}
-	app, err := assemble(ctx, cfg, log)
+	app, err := engineapp.Build(ctx, cfg, log, version)
 	if err != nil {
 		return exitCode(err)
 	}
-	defer app.pool.Close()
-	n, err := app.retention.Prune(ctx, age, *dryRun)
+	defer app.Pool.Close()
+	n, err := app.Retention.Prune(ctx, age, *dryRun)
 	if err != nil {
 		return exitCode(err)
 	}
@@ -203,14 +205,14 @@ func runOutbox(ctx context.Context, cfg config.Config, log *slog.Logger, args []
 		fmt.Fprintln(os.Stderr, "engine outbox: expected status or requeue")
 		return exitUsage
 	}
-	app, err := assemble(ctx, cfg, log)
+	app, err := engineapp.Build(ctx, cfg, log, version)
 	if err != nil {
 		return exitCode(err)
 	}
-	defer app.pool.Close()
+	defer app.Pool.Close()
 	switch args[0] {
 	case "status":
-		statuses, err := outbox.Status(ctx, app.pool)
+		statuses, err := outbox.Status(ctx, app.Pool)
 		if err != nil {
 			return exitCode(err)
 		}
@@ -227,7 +229,7 @@ func runOutbox(ctx context.Context, cfg config.Config, log *slog.Logger, args []
 			fmt.Fprintln(os.Stderr, "engine outbox requeue: --consumer and a canonical --event-id are required")
 			return exitUsage
 		}
-		if err := outbox.Requeue(ctx, app.pool, app.writer, *consumer, *eventID); err != nil {
+		if err := outbox.Requeue(ctx, app.Pool, app.Writer, *consumer, *eventID); err != nil {
 			return exitCode(err)
 		}
 		fmt.Printf("requeued %s for %s\n", *eventID, *consumer)

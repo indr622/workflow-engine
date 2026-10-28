@@ -28,8 +28,8 @@ func NewHandler(checkHealth *application.CheckHealth) *Handler {
 }
 
 // Register memasang route Connect dan /healthz ke mux.
-func (h *Handler) Register(mux *http.ServeMux) {
-	path, connectHandler := healthv1connect.NewHealthServiceHandler(h)
+func (h *Handler) Register(mux *http.ServeMux, opts ...connect.HandlerOption) {
+	path, connectHandler := healthv1connect.NewHealthServiceHandler(h, opts...)
 	mux.Handle(path, connectHandler)
 	mux.HandleFunc("GET /healthz", h.serveHTTP)
 }

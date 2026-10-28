@@ -20,24 +20,36 @@ const (
 	IncidentUnhandledErrorEvent IncidentType = "UNHANDLED_ERROR_EVENT"
 )
 
+// Error adalah error aturan domain dengan reason stabil (ErrorInfo.reason, ADR-0023). Modul lain
+// memetakannya lewat method Reason tanpa meng-import paket ini.
+type Error struct {
+	reason, msg string
+}
+
+func (e *Error) Error() string { return e.msg }
+
+// Reason mengembalikan kode stabil SCREAMING_SNAKE_CASE.
+func (e *Error) Reason() string { return e.reason }
+
 // Error domain. Semuanya membatalkan command tanpa menulis record.
 var (
-	ErrInstanceNotFound  = errors.New("process instance not found")
-	ErrInstanceNotActive = errors.New("process instance is not active")
-	ErrJobNotFound       = errors.New("job not found")
-	ErrJobNotActive      = errors.New("job is not active")
+	ErrInstanceNotFound  = &Error{"PROCESS_INSTANCE_NOT_FOUND", "process instance not found"}
+	ErrInstanceNotActive = &Error{"PROCESS_INSTANCE_NOT_ACTIVE", "process instance is not active"}
+	ErrJobNotFound       = &Error{"JOB_NOT_FOUND", "job not found"}
+	ErrJobNotActive      = &Error{"JOB_NOT_ACTIVE", "job is not active"}
 	// ErrJobNotActivated: UpdateJobTimeout pada job yang tidak sedang dipegang worker.
-	ErrJobNotActivated = errors.New("job is not activated")
+	ErrJobNotActivated = &Error{"JOB_NOT_ACTIVATED", "job is not activated"}
 	// ErrJobNotOpen: UpdateJobRetries pada job yang sudah final.
-	ErrJobNotOpen              = errors.New("job is already completed or canceled")
-	ErrIncidentNotFound        = errors.New("incident not found")
-	ErrIncidentAlreadyResolved = errors.New("incident is already resolved")
-	ErrScopeNotFound           = errors.New("variable scope not found")
+	ErrJobNotOpen              = &Error{"JOB_NOT_ACTIVE", "job is already completed or canceled"}
+	ErrIncidentNotFound        = &Error{"INCIDENT_NOT_FOUND", "incident not found"}
+	ErrIncidentAlreadyResolved = &Error{"INCIDENT_ALREADY_RESOLVED", "incident is already resolved"}
+	ErrScopeNotFound           = &Error{"SCOPE_NOT_FOUND", "variable scope not found"}
 	// ErrLocalScopeNotSupported: scope variabel lokal baru ada di Fase 7.
-	ErrLocalScopeNotSupported = errors.New("local variables on an element instance scope are not supported yet")
-	ErrInvalidVariables       = errors.New("invalid variables")
-	ErrNoNoneStartEvent       = errors.New("process has no none start event")
-	ErrUnsupportedElement     = errors.New("element is not supported by the engine")
+	ErrLocalScopeNotSupported = &Error{"LOCAL_SCOPE_NOT_SUPPORTED", "local variables on an element instance scope are not supported yet"}
+	ErrInvalidVariables       = &Error{"VARIABLES_INVALID", "invalid variables"}
+	ErrNoNoneStartEvent       = &Error{"PROCESS_HAS_NO_NONE_START_EVENT", "process has no none start event"}
+	// ErrUnsupportedElement dan ErrInvalidRecord sengaja tanpa reason: keduanya bug, dipetakan INTERNAL.
+	ErrUnsupportedElement = errors.New("element is not supported by the engine")
 	// ErrInvalidRecord menandai record yang melanggar state saat Apply: selalu bug.
 	ErrInvalidRecord = errors.New("invalid record for current state")
 )

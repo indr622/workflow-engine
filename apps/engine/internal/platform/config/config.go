@@ -38,6 +38,26 @@ type Config struct {
 	HistoryPrunePause time.Duration `env:"ENGINE_HISTORY_PRUNE_PAUSE" envDefault:"200ms"`
 	// JanitorInterval adalah jeda antar putaran janitor (outbox, idempotensi, retensi).
 	JanitorInterval time.Duration `env:"ENGINE_JANITOR_INTERVAL" envDefault:"1m"`
+	// RPCDefaultTimeout membatasi RPC biasa; long polling memakai request_timeout + 5 s (Fase 4).
+	RPCDefaultTimeout time.Duration `env:"ENGINE_RPC_DEFAULT_TIMEOUT" envDefault:"30s"`
+	// Job mengatur protokol job worker (Fase 4, bagian 4).
+	Job Job
+	// MessageMaxTTL membatasi time_to_live PublishMessage.
+	MessageMaxTTL time.Duration `env:"ENGINE_MESSAGE_MAX_TTL" envDefault:"720h"`
+	// SweepInterval adalah jeda sweeper lease job dan message kedaluwarsa.
+	SweepInterval time.Duration `env:"ENGINE_SWEEP_INTERVAL" envDefault:"1s"`
+}
+
+// Job mengatur klem parameter ActivateJobs dan long polling. Nilai di luar batas dipotong, bukan
+// ditolak, agar worker lama tetap jalan setelah batas diturunkan.
+type Job struct {
+	MaxActivate       int32         `env:"ENGINE_JOB_MAX_ACTIVATE" envDefault:"1000"`
+	MinTimeout        time.Duration `env:"ENGINE_JOB_MIN_TIMEOUT" envDefault:"1s"`
+	MaxTimeout        time.Duration `env:"ENGINE_JOB_MAX_TIMEOUT" envDefault:"24h"`
+	MaxRequestTimeout time.Duration `env:"ENGINE_JOB_MAX_REQUEST_TIMEOUT" envDefault:"55s"`
+	MaxBackoff        time.Duration `env:"ENGINE_JOB_MAX_BACKOFF" envDefault:"24h"`
+	LongPollInterval  time.Duration `env:"ENGINE_JOB_LONG_POLL_INTERVAL" envDefault:"1s"`
+	MaxLongPolling    int           `env:"ENGINE_JOB_MAX_LONG_POLLING" envDefault:"1024"`
 }
 
 // Recovery mengatur verifikasi proyeksi saat start.
