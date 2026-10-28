@@ -12,6 +12,21 @@
 | Langkah | Status | Bukti |
 |---|---|---|
 | 13.1 Prasyarat dan branch | Selesai | Branch `feat/phase-4-job-worker` dari `main` 3ef985f; keputusan penyesuaian di 16.1 |
+| 13.2 Migrasi `00008_job_worker.sql` | Selesai | `make migrate-up` dan `make migrate-redo` bersih |
+| 13.3 Proto dan generate | Selesai | `buf lint`, `buf breaking` terhadap `main` hijau; stub Go/TS di-commit; typecheck modeler-web hijau |
+| 13.4 Domain `execution` | Selesai | Fail/ThrowError/UpdateRetries/Resolve/SetVariables, user task job-based; test domain + replay lolos; paritas deploy fixture v28 direkam |
+| 13.5 Aktivasi, lease, proyektor | Selesai | 20 worker × 2.000 job: setiap job tepat satu kali; indeks `job_activatable_idx` dipakai; rebuild mempertahankan kolom turunan record |
+| 13.6 Application dan api `execution` | Selesai | Use case + `CreateProcessInstanceWithResult` (waiter + polling 500 ms) diuji integrasi |
+| 13.7 Platform `rpc` dan `sweeper` | Selesai | Interceptor (recover, logging, timeout, authn anonim, protovalidate), `ErrorInfo`; perakitan dipindah ke `internal/app` |
+| 13.8 Modul `job` | Selesai | Long polling (notifier, polling cadangan, batas, shutdown) diuji unit; e2e: bangun < 1 s setelah job dibuat |
+| 13.9 Modul `message` | Selesai | Duplikat → `ALREADY_EXISTS` + `message_key`; TTL 0 tidak disimpan; sweeper menghapus kedaluwarsa |
+| 13.10 Handler incident/variables/result | Selesai | e2e `apps/engine/internal/e2e` untuk setiap RPC dan reason utama |
+| 13.11–13.12 SDK Go + `sdktest` | Selesai | Coverage 91,3 %; `deps_test.go` hijau |
+| 13.13 E2E SDK | Selesai | 40 instance × 50 cabang, 8 worker: selesai 9,4 s, `activation_count` = 1 untuk semua job |
+| 13.14 worker-example, `make demo` | Selesai | `make demo`: 10 instance, 10 retry, 298 ms; container profil `demo` juga lolos |
+| 13.15 Client TypeScript | Selesai | Vitest, typecheck, lint api-client dan modeler-web hijau |
+| 13.16 Paritas suite `worker` | Belum | Lanjut berikutnya; Camunda 8.8 referensi (profil `camunda`) sudah bisa dinyalakan |
+| 13.17 Benchmark, ADR-0020..0023, dokumentasi | Belum | |
 
 Kondisi awal di bawah ditulis saat Fase 1 masih berjalan; keputusan 16.1 menyesuaikannya dengan
 Fase 2 dan 3 yang sudah di-merge (key UUIDv7, outbox, idempotensi `request_id`, nomor migrasi dan
