@@ -27,6 +27,11 @@ const (
 	DBPoolAcquireWait       = "engine_db_pool_acquire_wait_seconds"
 	OutboxPendingEvents     = "engine_outbox_pending_events"
 	OutboxLagSeconds        = "engine_outbox_lag_seconds"
+	JobsActivated           = "engine_jobs_activated_total"
+	JobTimeouts             = "engine_job_timeouts_total"
+	LongPollsActive         = "engine_job_long_polls_active"
+	SweeperSwept            = "engine_sweeper_swept_total"
+	MessagesPublished       = "engine_messages_published_total"
 	instrumentationScope    = "github.com/indr622/workflow-engine/apps/engine"
 	unitSeconds, unitEvents = "s", "{event}"
 )
@@ -36,6 +41,7 @@ func Names() []string {
 	return []string{
 		OutboxDelivered, OutboxFailed, OutboxDeadLetter, RecoveryDuration, RecoveryMismatch, IdempotencyTotal,
 		CommandDuration, CommandLockWait, HistoryPrunedInstances, DBPoolAcquireWait, OutboxPendingEvents, OutboxLagSeconds,
+		JobsActivated, JobTimeouts, LongPollsActive, SweeperSwept, MessagesPublished,
 	}
 }
 
@@ -51,6 +57,11 @@ type Instruments struct {
 	CommandLockWait        metric.Float64Histogram
 	HistoryPrunedInstances metric.Int64Counter
 	DBPoolAcquireWait      metric.Float64Histogram
+	JobsActivated          metric.Int64Counter
+	JobTimeouts            metric.Int64Counter
+	LongPollsActive        metric.Int64UpDownCounter
+	SweeperSwept           metric.Int64Counter
+	MessagesPublished      metric.Int64Counter
 }
 
 var (
@@ -79,6 +90,11 @@ func build(m metric.Meter) *Instruments {
 	i.CommandLockWait, _ = m.Float64Histogram(CommandLockWait, metric.WithUnit(unitSeconds), metric.WithDescription("Time waiting for the instance row lock"))
 	i.HistoryPrunedInstances, _ = m.Int64Counter(HistoryPrunedInstances, metric.WithDescription("Finished instances deleted by retention"))
 	i.DBPoolAcquireWait, _ = m.Float64Histogram(DBPoolAcquireWait, metric.WithUnit(unitSeconds), metric.WithDescription("Time waiting for a pool connection"))
+	i.JobsActivated, _ = m.Int64Counter(JobsActivated, metric.WithDescription("Jobs leased to workers by job type"))
+	i.JobTimeouts, _ = m.Int64Counter(JobTimeouts, metric.WithDescription("Job leases that expired before completion"))
+	i.LongPollsActive, _ = m.Int64UpDownCounter(LongPollsActive, metric.WithDescription("ActivateJobs requests currently waiting"))
+	i.SweeperSwept, _ = m.Int64Counter(SweeperSwept, metric.WithDescription("Rows handled by sweeper tasks"))
+	i.MessagesPublished, _ = m.Int64Counter(MessagesPublished, metric.WithDescription("Messages published by outcome"))
 	return i
 }
 

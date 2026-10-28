@@ -14,6 +14,8 @@ func TestNamesAreStable(t *testing.T) {
 		"engine_recovery_duration_seconds", "engine_recovery_mismatch_total", "engine_idempotency_total",
 		"engine_command_duration_seconds", "engine_command_lock_wait_seconds", "engine_history_pruned_instances_total",
 		"engine_db_pool_acquire_wait_seconds", "engine_outbox_pending_events", "engine_outbox_lag_seconds",
+		"engine_jobs_activated_total", "engine_job_timeouts_total", "engine_job_long_polls_active",
+		"engine_sweeper_swept_total", "engine_messages_published_total",
 	}
 	if got := Names(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("metric names changed:\ngot  %v\nwant %v", got, want)
