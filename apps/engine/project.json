@@ -4,7 +4,7 @@
   "projectType": "application",
   "sourceRoot": "apps/engine",
   "tags": ["type:app", "lang:go", "scope:engine"],
-  "implicitDependencies": ["api-go", "bpmn-go", "feel-go"],
+  "implicitDependencies": ["api-go", "bpmn-go", "feel-go", "sdk-go"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
