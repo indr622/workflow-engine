@@ -4,14 +4,14 @@ Engine workflow BPMN 2.0 yang dibangun dari nol dengan fitur-fitur setara Camund
 Inti ditulis di Go sebagai modular monolith dengan Clean Architecture per modul; UI di React
 (shadcn/ui, Zustand, TanStack, bpmn-js untuk BPMN, React Flow untuk graf lain) dengan Clean
 Architecture per fitur; monorepo Nx; deploy lewat Docker.
-Setiap fase punya dokumen sendiri di folder ini. Fase 0 dan 1 sudah dieksekusi; rencana Fase 2
-sampai 8 berstatus draft dan menunggu review sebelum implementasi.
+Setiap fase punya dokumen sendiri di folder ini. Fase 0 dan 1 sudah dieksekusi dan di-merge; Fase 2 sudah dieksekusi di branch
+`feat/phase-2-execution`; rencana Fase 3 sampai 8 berstatus draft dan menunggu review.
 
 | Fase | Nama | Keluaran utama | Dokumen |
 |---|---|---|---|
 | 0 | Persiapan environment (✅ selesai 2026-10-28) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
 | 1 | Parser dan model BPMN (✅ selesai 2026-10-28, di-merge ke `main`) | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | [01-fase-1-parser-model-bpmn.md](01-fase-1-parser-model-bpmn.md) |
-| 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | [02-fase-2-engine-inti.md](02-fase-2-engine-inti.md) (draft, menunggu review) |
+| 2 | Engine inti (✅ selesai 2026-10-28, menunggu review) | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | [02-fase-2-engine-inti.md](02-fase-2-engine-inti.md) |
 | 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | [03-fase-3-persistensi-pemulihan.md](03-fase-3-persistensi-pemulihan.md) (draft, menunggu review) |
 | 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | [04-fase-4-api-job-worker.md](04-fase-4-api-job-worker.md) (draft, menunggu review) |
 | 5 | Timer, message, boundary event, sub-process | Scheduler timer, korelasi message, error dan escalation event | [05-fase-5-timer-message-boundary-subprocess.md](05-fase-5-timer-message-boundary-subprocess.md) (draft, menunggu review) |

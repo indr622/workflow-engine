@@ -2,15 +2,76 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** 🚧 Sedang dieksekusi di branch `feat/phase-2-execution` (mulai 2026-10-28)
+**Status:** ✅ Selesai pada 2026-10-28 di branch `feat/phase-2-execution` (menunggu review dan merge ke `main`); satu target latensi DoD belum tercapai di mesin dev, lihat bagian 0
 **Tanggal:** 2026-10-28
 
 ---
 
 ## 0. Status eksekusi
 
-Belum ada langkah yang dieksekusi. Bagian ini diisi dengan tabel yang sama seperti Fase 0
-(langkah, status, bukti) begitu pekerjaan dimulai.
+Dieksekusi 2026-10-28 atas permintaan user ("lanjut fase 2"). Keputusan atas pertanyaan terbuka
+dicatat di 11.1, termasuk keputusan user di tengah jalan untuk memakai UUID sebagai id.
+
+| Langkah | Status | Bukti / catatan |
+|---|---|---|
+| 8.1 Prasyarat | ✅ | Fase 1 di-merge ke `main`; branch `feat/phase-2-execution` |
+| 8.2 Allowlist kernel `archtest` | ✅ | `kernelAllowlist`, kasus baru di `TestCheckImportRules`, `TestKernelsArePure`; depguard deny `libs/go/sdk`; ADR-0010 |
+| 8.3 `libs/go/feel` subset | ✅ | Proyek Nx `feel-go`; 206 kasus tabel (145 evaluasi, 61 error kompilasi); `FuzzCompile` 10 menit bersih |
+| 8.4–8.6 Domain | ✅ | `Processor`, `Apply`, perilaku semua elemen matriks 4.1, inclusive join reachability; skenario domain dengan replay di setiap skenario |
+| 8.7 Property test gateway | ✅ | `TestGatewayProperties` 1.000 graf per `go test` (~3 detik); 20.000 graf sekali jalan lolos |
+| 8.8 Application | ✅ | `Commands` dan `Queries`; diuji lewat integrasi Postgres (lihat penyimpangan) |
+| 8.9 Proto | ✅ | `workflow/process/v1`, `workflow/job/v1`; `buf lint` bersih; stub Go dan TS di-commit |
+| 8.10 Migrasi, repository, proyektor | ✅ | `00004_execution.sql`; kunci + muat satu batch, semua tulisan satu batch |
+| 8.11 Interfaces dan wiring | ✅ | Handler Connect, validasi key UUID, pemetaan error; dirakit di `main.go`; dicek dengan curl ke engine yang berjalan |
+| 8.12 Skenario penuh | ✅ | Semua baris matriks 4.1 dan semua tipe incident 4.4 tercakup; daftar di README modul |
+| 8.13 Paritas eksekusi | ✅ | 20 skenario, hasil observable sama dengan Camunda 8.8.44 tanpa deviasi; rekaman `domain/testdata/parity/expectations.json` |
+| 8.14 Modeler-web `process-instance` | ✅ | Diuji manual di browser: validasi variabel, start dari halaman definition, marker aktif/selesai/incident, badge jumlah token, complete job, polling berhenti saat selesai |
+| 8.15 Benchmark dan dokumentasi | ⚠️ | `Processor` di atas target; latensi DB di atas target di Windows (lihat di bawah); ADR-0011 sampai ADR-0014; README modul |
+| 6.2 Perubahan `deployment` | ✅ | `GetByVersion`, cache metadata definition, kompilasi ekspresi saat deploy, `IO_MAPPING_NOT_SUPPORTED`, warning `INCLUSIVE_JOIN_IN_CYCLE` |
+
+**Hasil benchmark** (i5-1145G7, Windows 11, Postgres 18 di Docker Desktop):
+
+| Ukuran | Hasil | Target |
+|---|---|---|
+| `Processor` linear 20 service task | ~160.000–200.000 element instance/detik | > 50.000 |
+| `Processor` fork 50 cabang | ~95.000 element instance/detik | > 50.000 |
+| `Processor` inclusive join | ~120.000 element instance/detik | > 50.000 |
+| Create + 20 `CompleteJob`, p50 | 190–235 ms | < 50 ms |
+| Round trip `SELECT 1` ke Postgres | ~1,2 ms | — |
+
+Target latensi 50 ms mengandaikan Postgres native dengan round trip sekitar 0,1 ms. Satu command
+kini butuh sekitar lima round trip (turun dari sekitar 22), jadi di mesin ini angkanya dibatasi
+round trip Docker Desktop dan fsync saat commit. `TestLinear20Latency` mencetak p50 di job
+integrasi CI yang berjalan di Linux; target dikunci setelah angka itu terlihat.
+
+**Penyimpangan dari rencana:**
+
+- **Key UUIDv7, bukan `int64` dari sequence** (keputusan user). Semua key termasuk deployment Fase 1;
+  migrasi `00003_uuid_keys.sql` mengonversi data lama secara deterministik dan satu arah. Mekanisme
+  blok key dan `ErrKeysExhausted` dihapus. Proto deployment berubah breaking (`int64` menjadi
+  `string`). ADR-0011.
+- **ADR bergeser satu nomor**: model eksekusi ADR-0012, join ADR-0013, subset FEEL ADR-0014.
+- **`execution_record` tanpa kolom `position` identity**: urutan per instance memakai `sequence`
+  dengan primary key `(process_instance_key, sequence)`. Urutan global untuk exporter diputuskan Fase 3.
+- **`FeelEvaluator` ada di domain**, bukan infrastructure, karena ADR-0010 mengizinkan domain
+  memakai kernel `feel`. Port `ExpressionEvaluator` tetap ada.
+- **Port repository berubah**: `LockAndLoad` (kunci + muat dalam satu batch), `JobRef` dan
+  `DefinitionKeyOf` di luar transaksi agar model proses dimuat sebelum row lock. Statement proyeksi
+  ditulis tangan dalam satu `pgx.Batch`; sqlc hanya untuk query baca.
+- **Dua bug ditemukan test integrasi dan diperbaiki**: pool habis saat model proses dimuat sambil
+  memegang row lock, dan state basi saat kunci dan muat digabung dalam satu statement.
+- **Application diuji lewat integrasi Postgres**, bukan repository fake.
+- **`CreateProcessInstanceResponse` menambah field `state`.**
+- **Paritas membandingkan selesai/tidak, multiset tipe job, job terbuka, dan variabel akhir**; jalur
+  elemen tidak dibandingkan karena profil Camunda tanpa secondary storage. Paritas mengonfirmasi
+  keputusan 11.1 #13: kondisi bernilai null menjadi incident di Camunda, bahkan dengan default flow.
+  Camunda mengembalikan angka dalam bentuk kanonik (`1.50` menjadi `1.5`); pembanding memakai
+  desimal eksak.
+- **Batas record per command** membuang token lain yang masih di antrean command itu.
+- **Target `fuzz` dan `prop` di Makefile memanggil `go test` langsung**, karena sintaks
+  `${VAR:-default}` di target Nx tidak diekspansi di Windows.
+- **Commit**: perubahan `GetByVersion` di deployment ikut masuk commit modul eksekusi karena
+  commit terpisahnya ditolak commitlint; commit itu sudah di-push sehingga tidak di-amend.
 
 **Kondisi repo yang menjadi titik awal (dicek 2026-10-28, Fase 1 sedang dieksekusi):**
 
@@ -69,23 +130,23 @@ event, sub-process, call activity, multi-instance, error/escalation (Fase 5); Op
 
 ## 2. Definition of Done Fase 2
 
-- [ ] `archtest` mengizinkan `domain` meng-import tepat `libs/go/bpmn` dan `libs/go/feel` (allowlist), dibuktikan dengan kasus di `TestCheckImportRules`; ADR-0010 tersimpan.
-- [ ] Modul `execution` lima lapisan lolos `archtest`; `execution/domain` tidak meng-import apa pun selain stdlib dan kedua kernel.
-- [ ] `libs/go/feel` adalah proyek Nx (`feel-go`) dengan target `build`, `test`, `lint`, `fuzz`; hanya stdlib; seluruh tabel uji subset (≥ 80 kasus, termasuk semantik `null`) lolos; `FuzzCompile` 10 menit bersih.
-- [ ] `CreateProcessInstance` (dengan `process_definition_key`, atau `bpmn_process_id` + versi/terbaru, plus variabel JSON) mengembalikan `process_instance_key`; instance tanpa wait state langsung `COMPLETED` dalam satu panggilan.
-- [ ] Setiap pola di matriks 4.1 punya minimal satu skenario tabel yang lolos: urutan record, element instance akhir, variabel akhir, job, dan incident sesuai ekspektasi.
-- [ ] Parallel join: property test atas ≥ 1.000 graf blok acak (fork/join bersarang, urutan penyelesaian job acak) selalu berakhir `COMPLETED`, setiap join aktif tepat sekali per fork, tidak ada sisa counter flow.
-- [ ] Inclusive join: property test yang sama untuk graf blok inclusive dengan kondisi acak; skenario batas (cabang tidak diambil, cabang menunggu job, default flow) lolos; keterbatasan algoritma (siklus) tercatat di ADR-0013 dan diuji sebagai perilaku yang terdokumentasi.
-- [ ] Determinisme: menerapkan ulang (`Apply`) seluruh record sebuah instance ke state kosong menghasilkan state identik dengan proyeksi di database (test untuk semua skenario; fondasi replay Fase 3).
-- [ ] Service task membuat job (`CREATED`) dengan `type`, `retries`, header; `CompleteJob` dengan variabel menggabungkan variabel ke scope process instance dan melanjutkan token; job yang sudah selesai atau dibatalkan ditolak `FailedPrecondition`/`NotFound`.
-- [ ] Kondisi gagal dievaluasi atau tidak ada flow yang cocok di exclusive/inclusive gateway tanpa default membuat incident dengan tipe dan pesan yang jelas; instance tetap `ACTIVE` dengan `has_incident = true`.
-- [ ] `CancelProcessInstance` menghentikan semua element instance aktif (anak dahulu), membatalkan job terbuka, dan menandai instance `TERMINATED`.
-- [ ] Single writer per instance: integration test 50 `CompleteJob` paralel pada satu instance (fork 50 cabang) menghasilkan join tepat sekali dan instance `COMPLETED`, tanpa deadlock dan tanpa record ganda.
-- [ ] Integration test (`-tags=integration`) terhadap Postgres 18 untuk repository, proyeksi, dan alur end-to-end lewat handler Connect (`httptest`).
-- [ ] Uji paritas eksekusi: semua skenario bertanda `parity` memberi hasil observable yang sama dengan Camunda 8.8 referensi (selesai/incident, multiset tipe job yang diaktifkan, variabel akhir); deviasi disengaja tercatat di `expectations.json` dengan alasan.
-- [ ] Modeler-web: dari daftar definition, mulai instance dengan variabel JSON, lihat token aktif/selesai/incident sebagai marker di viewer bpmn-js, selesaikan job dari UI; uji manual tercatat di PR.
-- [ ] Benchmark: proses linear 20 service task, create + 20 `CompleteJob` < 50 ms p50 total di mesin dev dengan Postgres lokal (angka awal, dikunci setelah pengukuran pertama); `Processor` murni (tanpa DB) > 50.000 element instance/detik.
-- [ ] ADR-0010 sampai ADR-0014 tersimpan di `docs/adr/`; `docs/plan/README.md` menautkan dokumen ini.
+- [x] `archtest` mengizinkan `domain` meng-import tepat `libs/go/bpmn` dan `libs/go/feel` (allowlist), dibuktikan dengan kasus di `TestCheckImportRules`; ADR-0010 tersimpan.
+- [x] Modul `execution` lima lapisan lolos `archtest`; `execution/domain` tidak meng-import apa pun selain stdlib dan kedua kernel.
+- [x] `libs/go/feel` adalah proyek Nx (`feel-go`) dengan target `build`, `test`, `lint`, `fuzz`; hanya stdlib; seluruh tabel uji subset (≥ 80 kasus, termasuk semantik `null`) lolos; `FuzzCompile` 10 menit bersih.
+- [x] `CreateProcessInstance` (dengan `process_definition_key`, atau `bpmn_process_id` + versi/terbaru, plus variabel JSON) mengembalikan `process_instance_key`; instance tanpa wait state langsung `COMPLETED` dalam satu panggilan.
+- [x] Setiap pola di matriks 4.1 punya minimal satu skenario tabel yang lolos: urutan record, element instance akhir, variabel akhir, job, dan incident sesuai ekspektasi.
+- [x] Parallel join: property test atas ≥ 1.000 graf blok acak (fork/join bersarang, urutan penyelesaian job acak) selalu berakhir `COMPLETED`, setiap join aktif tepat sekali per fork, tidak ada sisa counter flow.
+- [x] Inclusive join: property test yang sama untuk graf blok inclusive dengan kondisi acak; skenario batas (cabang tidak diambil, cabang menunggu job, default flow) lolos; keterbatasan algoritma (siklus) tercatat di ADR-0013 dan diuji sebagai perilaku yang terdokumentasi.
+- [x] Determinisme: menerapkan ulang (`Apply`) seluruh record sebuah instance ke state kosong menghasilkan state identik dengan proyeksi di database (test untuk semua skenario; fondasi replay Fase 3).
+- [x] Service task membuat job (`CREATED`) dengan `type`, `retries`, header; `CompleteJob` dengan variabel menggabungkan variabel ke scope process instance dan melanjutkan token; job yang sudah selesai atau dibatalkan ditolak `FailedPrecondition`/`NotFound`.
+- [x] Kondisi gagal dievaluasi atau tidak ada flow yang cocok di exclusive/inclusive gateway tanpa default membuat incident dengan tipe dan pesan yang jelas; instance tetap `ACTIVE` dengan `has_incident = true`.
+- [x] `CancelProcessInstance` menghentikan semua element instance aktif (anak dahulu), membatalkan job terbuka, dan menandai instance `TERMINATED`.
+- [x] Single writer per instance: integration test 50 `CompleteJob` paralel pada satu instance (fork 50 cabang) menghasilkan join tepat sekali dan instance `COMPLETED`, tanpa deadlock dan tanpa record ganda.
+- [x] Integration test (`-tags=integration`) terhadap Postgres 18 untuk repository, proyeksi, dan alur end-to-end lewat handler Connect (`httptest`).
+- [x] Uji paritas eksekusi: semua skenario bertanda `parity` memberi hasil observable yang sama dengan Camunda 8.8 referensi (selesai/incident, multiset tipe job yang diaktifkan, variabel akhir); deviasi disengaja tercatat di `expectations.json` dengan alasan.
+- [x] Modeler-web: dari daftar definition, mulai instance dengan variabel JSON, lihat token aktif/selesai/incident sebagai marker di viewer bpmn-js, selesaikan job dari UI; uji manual tercatat di PR. Uji manual tercatat di bagian 0 (belum ada PR).
+- [ ] Benchmark: proses linear 20 service task, create + 20 `CompleteJob` < 50 ms p50 total di mesin dev dengan Postgres lokal (angka awal, dikunci setelah pengukuran pertama); `Processor` murni (tanpa DB) > 50.000 element instance/detik. **Sebagian:** `Processor` di atas target; latensi DB 190–235 ms di Docker Desktop Windows (lihat bagian 0).
+- [x] ADR-0010 sampai ADR-0014 tersimpan di `docs/adr/`; `docs/plan/README.md` menautkan dokumen ini.
 
 ## 3. Keputusan teknis
 
