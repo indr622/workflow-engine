@@ -45,7 +45,13 @@ func setup(t *testing.T) (*pgxpool.Pool, *outbox.Writer, string) {
 		received_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp(), PRIMARY KEY (consumer, event_id))`); err != nil {
 		t.Fatal(err)
 	}
-	return pool, outbox.NewWriter(keygen.New()), fmt.Sprintf("test.%d", time.Now().UnixNano())
+	prefix := fmt.Sprintf("test.%d", time.Now().UnixNano())
+	// Kursor consumer uji dihapus agar tidak menahan prune outbox di database bersama.
+	t.Cleanup(func() {
+		_, _ = pool.Exec(context.Background(), `DELETE FROM outbox_cursor WHERE consumer LIKE $1`, prefix+"%")
+		_, _ = pool.Exec(context.Background(), `DELETE FROM outbox_dead_letter WHERE consumer LIKE $1`, prefix+"%")
+	})
+	return pool, outbox.NewWriter(keygen.New()), prefix
 }
 
 // recorder mencatat event ke tabel uji di dalam transaksi relay; duplikat dihitung.
