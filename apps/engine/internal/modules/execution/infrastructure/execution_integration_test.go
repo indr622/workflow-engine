@@ -65,7 +65,7 @@ func setup(t *testing.T) *fixture {
 		t.Skip("DATABASE_URL not set")
 	}
 	ctx := context.Background()
-	pool, err := platformdb.Connect(ctx, url)
+	pool, err := platformdb.Connect(ctx, platformdb.ConfigFromURL(url))
 	if err != nil {
 		t.Fatal(err)
 	}

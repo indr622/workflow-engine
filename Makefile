@@ -26,6 +26,24 @@ COMPOSE_PROD := docker compose -f infra/docker/docker-compose.prod.yml
 PROFILE_FLAGS := $(foreach p,$(PROFILES),--profile $(p))
 MIGRATIONS   := apps/engine/internal/platform/db/migrations
 
+# Backup/restore (docs/ops/backup-restore.md). BACKUP_ENV=prod memakai compose produksi;
+# BACKUP_ENV=dev memakai compose dev agar runbook bisa dilatih lokal. File compose, nama service,
+# dan perintah verifikasi bisa dioverride satu per satu.
+BACKUP_ENV          ?= prod
+TARGET_DB           ?= workflow_restore
+BACKUP_SERVICE      ?= postgres
+ifeq ($(BACKUP_ENV),dev)
+  COMPOSE_FILE_BACKUP ?= infra/docker/docker-compose.yml
+  # Compose dev tidak punya service engine: verifikasi dijalankan native lewat port host.
+  RESTORE_URL         ?= postgres://workflow:workflow@localhost:5433/$(TARGET_DB)?sslmode=disable
+  RESTORE_VERIFY_CMD  ?= DATABASE_URL="$(RESTORE_URL)" ENGINE_MIGRATE=false go run ./apps/engine/cmd/engine verify --all
+else
+  COMPOSE_FILE_BACKUP ?= infra/docker/docker-compose.prod.yml
+  RESTORE_VERIFY_CMD  ?= $(COMPOSE_BACKUP) run --rm --no-deps -e ENGINE_MIGRATE=false -e DATABASE_URL="postgres://$${POSTGRES_USER:-workflow}:$${POSTGRES_PASSWORD}@postgres:5432/$(TARGET_DB)?sslmode=disable" engine verify --all
+endif
+# MSYS_NO_PATHCONV mencegah Git Bash di Windows mengubah /backups menjadi path Windows.
+COMPOSE_BACKUP      := MSYS_NO_PATHCONV=1 docker compose -f $(COMPOSE_FILE_BACKUP)
+
 # Versi tool Go yang dipin agar lokal dan CI identik.
 BUF_VERSION           := v1.75.0
 PROTOC_GEN_GO_VERSION := v1.36.12
@@ -38,7 +56,8 @@ GOLANGCI_LINT_VERSION := v2.15.0
 
 .PHONY: help setup tools up down logs dev gen lint test build typecheck check test-integration \
         test-race fuzz bench prop parity \
-        migrate-up migrate-down migrate-status migrate-new docker-build docker-push \
+        migrate-up migrate-down migrate-status migrate-new migrate-redo docker-build docker-push \
+        db-backup db-backup-list db-restore \
         deploy-local deploy-local-down clean
 
 help: ## Tampilkan daftar target
@@ -117,6 +136,27 @@ migrate-status: ## Tampilkan status migrasi
 migrate-new: ## Buat migrasi baru: make migrate-new name=add_jobs
 	@if [ -z "$(name)" ]; then echo "usage: make migrate-new name=<snake_case>"; exit 1; fi
 	goose -dir $(MIGRATIONS) -s create $(name) sql
+
+migrate-redo: ## Uji down migration terakhir: goose down lalu up ke DATABASE_URL (jangan di produksi)
+	goose -dir $(MIGRATIONS) postgres "$(DATABASE_URL)" down
+	goose -dir $(MIGRATIONS) postgres "$(DATABASE_URL)" up
+
+db-backup: ## pg_dump -Fc ke volume postgres-backups (BACKUP_ENV=prod|dev, default prod)
+	$(COMPOSE_BACKUP) exec -T $(BACKUP_SERVICE) sh -c 'set -e; f=/backups/workflow-$$(date -u +%Y%m%dT%H%M%SZ).dump; pg_dump -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -Fc -Z 6 -f "$$f"; ls -l "$$f"'
+
+db-backup-list: ## Daftar file backup di volume postgres-backups (BACKUP_ENV=prod|dev)
+	$(COMPOSE_BACKUP) exec -T $(BACKUP_SERVICE) ls -lh /backups
+
+db-restore: ## Restore ke database baru lalu engine verify --all: FILE=workflow-<ts>.dump [TARGET_DB=...]
+	@if [ -z "$(FILE)" ]; then echo "usage: make db-restore FILE=workflow-<ts>.dump [TARGET_DB=workflow_restore] [BACKUP_ENV=prod|dev]"; exit 1; fi
+	$(COMPOSE_BACKUP) exec -T $(BACKUP_SERVICE) sh -c 'set -e; \
+		if [ "$(TARGET_DB)" = "$$POSTGRES_DB" ]; then echo "refusing to restore into the live database $$POSTGRES_DB"; exit 1; fi; \
+		test -f "/backups/$(FILE)"; \
+		createdb -U "$$POSTGRES_USER" "$(TARGET_DB)"; \
+		pg_restore -U "$$POSTGRES_USER" -d "$(TARGET_DB)" --no-owner --exit-on-error "/backups/$(FILE)"; \
+		echo "restored /backups/$(FILE) into $(TARGET_DB)"'
+	@echo "verifying restored database $(TARGET_DB) (needs the engine verify subcommand)"
+	$(RESTORE_VERIFY_CMD)
 
 docker-build: ## Build image engine dan web dengan tag VERSION
 	docker build -f infra/docker/engine.Dockerfile --build-arg VERSION=$(VERSION) -t $(REGISTRY)/engine:$(VERSION) .

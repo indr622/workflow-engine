@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
 )
 
 // Config adalah seluruh konfigurasi runtime engine.
@@ -20,6 +22,33 @@ type Config struct {
 	MaxRecordsPerCommand int `env:"ENGINE_MAX_RECORDS_PER_COMMAND" envDefault:"10000"`
 	// MaxVariablesBytes membatasi dokumen variabel per request (1 MiB).
 	MaxVariablesBytes int `env:"ENGINE_MAX_VARIABLES_BYTES" envDefault:"1048576"`
+	// DB adalah grup ENGINE_DB_*: ukuran pool dan timeout sesi Postgres (rencana Fase 3, 9.1).
+	DB DB
+}
+
+// DB mengatur pool pgx dan timeout sesi. MaxConns 0 berarti max(4, 2*NumCPU).
+type DB struct {
+	MaxConns         int32         `env:"ENGINE_DB_MAX_CONNS" envDefault:"0"`
+	MinConns         int32         `env:"ENGINE_DB_MIN_CONNS" envDefault:"2"`
+	MaxConnLifetime  time.Duration `env:"ENGINE_DB_MAX_CONN_LIFETIME" envDefault:"30m"`
+	MaxConnIdleTime  time.Duration `env:"ENGINE_DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
+	StatementTimeout time.Duration `env:"ENGINE_DB_STATEMENT_TIMEOUT" envDefault:"10s"`
+	LockTimeout      time.Duration `env:"ENGINE_DB_LOCK_TIMEOUT" envDefault:"5s"`
+	IdleInTxTimeout  time.Duration `env:"ENGINE_DB_IDLE_IN_TX_TIMEOUT" envDefault:"15s"`
+}
+
+// DBConfig menggabungkan DATABASE_URL dan grup ENGINE_DB_* menjadi konfigurasi db.Connect.
+func (c Config) DBConfig() db.Config {
+	return db.Config{
+		URL:              c.DatabaseURL,
+		MaxConns:         c.DB.MaxConns,
+		MinConns:         c.DB.MinConns,
+		MaxConnLifetime:  c.DB.MaxConnLifetime,
+		MaxConnIdleTime:  c.DB.MaxConnIdleTime,
+		StatementTimeout: c.DB.StatementTimeout,
+		LockTimeout:      c.DB.LockTimeout,
+		IdleInTxTimeout:  c.DB.IdleInTxTimeout,
+	}
 }
 
 // Load membaca konfigurasi dari environment.
