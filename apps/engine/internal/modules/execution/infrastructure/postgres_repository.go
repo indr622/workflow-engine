@@ -19,6 +19,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure/db"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/faultpoint"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
@@ -83,6 +84,9 @@ func (r *PostgresRepository) Do(ctx context.Context, fn func(ctx context.Context
 		if err := r.outbox.Enqueue(ctx, tx, events...); err != nil {
 			return err
 		}
+	}
+	if err := faultpoint.Hit(ctx, faultpoint.CommandBeforeCommit); err != nil {
+		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit: %w", err)
@@ -403,6 +407,9 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 	// Snapshot state runtime instance aktif setiap kali last_sequence melewati kelipatan interval.
 	newLast := t.lastSequence + int32(n) //nolint:gosec // dibatasi Limits
 	if t.snapshotInterval > 0 && st.Status == domain.InstanceActive && newLast/t.snapshotInterval > t.lastSequence/t.snapshotInterval {
+		if err := faultpoint.Hit(ctx, faultpoint.SnapshotBeforeWrite); err != nil {
+			return err
+		}
 		data, err := json.Marshal(st.Snapshot(newLast))
 		if err != nil {
 			return fmt.Errorf("encode snapshot: %w", err)

@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/faultpoint"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
@@ -93,6 +94,9 @@ VALUES ($1, $2, $3, now() + make_interval(secs => $4)) ON CONFLICT (scope, key) 
 		}
 		if tag.RowsAffected() == 1 {
 			metrics.Get().Idempotency.Add(ctx, 1, metrics.Attr("rpc", c.Scope, "outcome", "claimed"))
+			if err := faultpoint.Hit(ctx, faultpoint.IdempotencyAfterClaim); err != nil {
+				return Result{}, err
+			}
 			return Result{Outcome: Claimed}, nil
 		}
 		var (

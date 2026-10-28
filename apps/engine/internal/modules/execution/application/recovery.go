@@ -13,6 +13,7 @@ import (
 
 	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/faultpoint"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/recovery"
 )
 
@@ -238,6 +239,9 @@ func (r *Recovery) RebuildInstance(ctx context.Context, key string, full bool) (
 			}
 		}
 		res.Records = len(records)
+		if err := faultpoint.Hit(ctx, faultpoint.RebuildMidStream); err != nil {
+			return err
+		}
 		if !res.FromSnapshot {
 			if err := scope.ResetProjection(ctx, key); err != nil {
 				return err

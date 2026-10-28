@@ -15,6 +15,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/faultpoint"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
@@ -105,10 +106,16 @@ func (c *Commands) CreateProcessInstance(ctx context.Context, req api.CreateInst
 			tx.StoreIdempotent(*claim, stored)
 		}
 		tx.EnqueueForRecords(outboxEvents(st, records))
-		return tx.AppendAndProject(ctx, records, st)
+		if err := tx.AppendAndProject(ctx, records, st); err != nil {
+			return err
+		}
+		return faultpoint.Hit(ctx, faultpoint.CommandAfterAppend)
 	})
 	if err != nil {
 		return api.CreateInstanceResult{}, fmt.Errorf("create process instance: %w", err)
+	}
+	if err := faultpoint.Hit(ctx, faultpoint.CommandAfterCommit); err != nil {
+		return result, err
 	}
 	if !result.Replayed {
 		c.publish(ctx, st, records)
@@ -179,6 +186,9 @@ func (c *Commands) runOnInstance(ctx context.Context, op, piKey string, proc *bp
 		if err != nil {
 			return err
 		}
+		if err := faultpoint.Hit(ctx, faultpoint.CommandAfterLock); err != nil {
+			return err
+		}
 		claim, replay, err := c.begin(ctx, tx, idem)
 		if err != nil {
 			return err
@@ -195,10 +205,16 @@ func (c *Commands) runOnInstance(ctx context.Context, op, piKey string, proc *bp
 			tx.StoreIdempotent(*claim, []byte{})
 		}
 		tx.EnqueueForRecords(outboxEvents(st, records))
-		return tx.AppendAndProject(ctx, records, st)
+		if err := tx.AppendAndProject(ctx, records, st); err != nil {
+			return err
+		}
+		return faultpoint.Hit(ctx, faultpoint.CommandAfterAppend)
 	})
 	if err != nil {
 		return false, fmt.Errorf("%s: %w", op, err)
+	}
+	if err := faultpoint.Hit(ctx, faultpoint.CommandAfterCommit); err != nil {
+		return replayed, err
 	}
 	if !replayed {
 		c.publish(ctx, st, records)

@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/faultpoint"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/metrics"
 )
 
@@ -330,7 +331,11 @@ func (r *Relay) processBatch(ctx context.Context, c *Consumer, limit int) (int, 
 		return 0, false, nil
 	}
 	for i, p := range batch {
-		if herr := r.handle(ctx, c, tx, p.ev); herr != nil {
+		herr := r.handle(ctx, c, tx, p.ev)
+		if herr == nil {
+			herr = faultpoint.Hit(ctx, faultpoint.OutboxAfterHandle)
+		}
+		if herr != nil {
 			_ = tx.Rollback(ctx)
 			if i > 0 {
 				// Commit kemajuan event sebelum i; event bermasalah kini di depan kursor, jadi
@@ -345,6 +350,9 @@ func (r *Relay) processBatch(ctx context.Context, c *Consumer, limit int) (int, 
 		}
 	}
 	last := batch[len(batch)-1]
+	if err := faultpoint.Hit(ctx, faultpoint.OutboxBeforeCursorCommit); err != nil {
+		return 0, false, err
+	}
 	if _, err := tx.Exec(ctx, `UPDATE outbox_cursor SET tx_id = $2::xid8, event_id = $3::uuid, attempts = 0, last_error = NULL, updated_at = now() WHERE consumer = $1`,
 		c.Name, last.txID, last.ev.ID); err != nil {
 		return 0, false, err
