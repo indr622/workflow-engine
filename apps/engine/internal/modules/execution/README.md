@@ -3,7 +3,9 @@
 Menjalankan process instance: membuat instance dari process definition yang sudah di-deploy,
 menggerakkan token lewat sequence flow dan gateway, berhenti di service task sebagai job, dan
 melanjutkan setelah job diselesaikan. Keputusan desain: ADR-0012 (model eksekusi), ADR-0013
-(algoritma join), ADR-0014 (subset FEEL), ADR-0011 (key UUIDv7).
+(algoritma join), ADR-0014 (subset FEEL), ADR-0011 (key UUIDv7). Fase 3: ADR-0015 (outbox),
+ADR-0016 (verify dan rebuild), ADR-0017 (idempotensi), ADR-0018 (contention), ADR-0019 (snapshot
+dan retensi).
 
 ## Lapisan
 
@@ -56,3 +58,16 @@ Element instance: `ACTIVATING` → `ACTIVATED` → `COMPLETING` → `COMPLETED`,
 | `domain/parity_test.go` | 20 skenario dibandingkan dengan rekaman Camunda 8.8 (`make parity SUITE=execution [LIVE=1]`) |
 | `domain/bench_test.go` | Throughput `Processor` (`make bench`) |
 | `infrastructure/execution_integration_test.go` | End-to-end lewat Connect, 50 `CompleteJob` paralel, 200 create paralel, replay vs proyeksi, latensi (`make test-integration`) |
+
+## Persistensi dan pemulihan (Fase 3)
+
+| Fitur | Ringkasan |
+|---|---|
+| Outbox | Event `execution.*` ditulis dalam batch command; `aggregate_seq` = sequence record pemicu |
+| Verify | Saat start: SQL cepat atas semua instance + replay dalam atas instance yang baru berubah; `engine verify --all` |
+| Rebuild | `engine rebuild --instance K` (dari snapshot bila ada) atau `--full`; perbaikan otomatis saat start memakai mode penuh |
+| Snapshot | State runtime setiap `ENGINE_SNAPSHOT_INTERVAL_RECORDS` record untuk instance aktif |
+| Idempotensi | `request_id` pada create, complete job, cancel; klaim setelah row lock |
+| Riwayat | `ListProcessInstanceRecords`, `ListElementInstances` berhalaman; detail dipotong di 1.000 elemen |
+| Retensi | `ENGINE_HISTORY_RETENTION_DAYS` (default mati), `engine prune` |
+| Fault point | Tag `faultinject`: `command.*`, `outbox.*`, `idempotency.after_claim`, `rebuild.mid_stream`, `snapshot.before_write` |
