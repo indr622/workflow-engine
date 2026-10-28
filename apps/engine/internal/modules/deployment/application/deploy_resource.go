@@ -61,6 +61,9 @@ func parseAndValidate(inputs []domain.ResourceInput, profile bpmn.Profile) ([]pa
 		if err != nil {
 			continue
 		}
+		if profile.Name() == bpmn.ProfileExecutable.Name() {
+			violations = append(violations, checkExpressions(r.Name, defs)...)
+		}
 		pr := parsedResource{resource: r, defs: defs}
 		for _, p := range defs.ExecutableProcesses() {
 			c := domain.ProcessCandidate{
