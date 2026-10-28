@@ -1,0 +1,464 @@
+{
+  "reference": "camunda/zeebe:8.8.44 (REST v2, no secondary storage)",
+  "updatedAt": "2026-10-28T07:34:17Z",
+  "entries": [
+    {
+      "scenario": "linear-service-task",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 1,
+          "y": 2
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 1,
+          "y": 2
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-condition",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 500
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 500
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-default",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "small"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 50
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "small"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 50
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-second-condition",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "small"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 5
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "small"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 5
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-no-match",
+      "camunda": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      },
+      "ours": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      }
+    },
+    {
+      "scenario": "exclusive-null-condition",
+      "camunda": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      },
+      "ours": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      }
+    },
+    {
+      "scenario": "exclusive-null-condition-with-default",
+      "camunda": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      },
+      "ours": {
+        "completed": false,
+        "jobs": [],
+        "openJobs": []
+      }
+    },
+    {
+      "scenario": "exclusive-string-equality",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "status": "vip"
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "status": "vip"
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-big-number",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 9007199254740993
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "amount": 9007199254740993
+        }
+      }
+    },
+    {
+      "scenario": "exclusive-nested-path",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "order": {
+            "total": 150,
+            "paid": true
+          }
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "big"
+        ],
+        "openJobs": [],
+        "variables": {
+          "order": {
+            "total": 150,
+            "paid": true
+          }
+        }
+      }
+    },
+    {
+      "scenario": "parallel-fork-join",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "after",
+          "b",
+          "c"
+        ],
+        "openJobs": [],
+        "variables": {
+          "a": 1,
+          "b": 1,
+          "c": 1
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "after",
+          "b",
+          "c"
+        ],
+        "openJobs": [],
+        "variables": {
+          "a": 1,
+          "b": 1,
+          "c": 1
+        }
+      }
+    },
+    {
+      "scenario": "inclusive-some-branches",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "b"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 50
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "b"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 50
+        }
+      }
+    },
+    {
+      "scenario": "inclusive-all-branches",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "b",
+          "c"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 500
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a",
+          "b",
+          "c"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": 500
+        }
+      }
+    },
+    {
+      "scenario": "inclusive-default",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "d"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": -1
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "d"
+        ],
+        "openJobs": [],
+        "variables": {
+          "x": -1
+        }
+      }
+    },
+    {
+      "scenario": "inclusive-join-waits",
+      "camunda": {
+        "completed": false,
+        "jobs": [
+          "a",
+          "b"
+        ],
+        "openJobs": [
+          "b"
+        ]
+      },
+      "ours": {
+        "completed": false,
+        "jobs": [
+          "a",
+          "b"
+        ],
+        "openJobs": [
+          "b"
+        ]
+      }
+    },
+    {
+      "scenario": "loop-through-exclusive",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "work",
+          "work",
+          "work"
+        ],
+        "openJobs": [],
+        "variables": {
+          "i": 3
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "work",
+          "work",
+          "work"
+        ],
+        "openJobs": [],
+        "variables": {
+          "i": 3
+        }
+      }
+    },
+    {
+      "scenario": "job-type-expression",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "dynamic-type"
+        ],
+        "openJobs": [],
+        "variables": {
+          "jobType": "dynamic-type"
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "dynamic-type"
+        ],
+        "openJobs": [],
+        "variables": {
+          "jobType": "dynamic-type"
+        }
+      }
+    },
+    {
+      "scenario": "implicit-end",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": []
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": []
+      }
+    },
+    {
+      "scenario": "variables-top-level-replace",
+      "camunda": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": [],
+        "variables": {
+          "added": [
+            1,
+            2
+          ],
+          "keep": "x",
+          "n": 1.5,
+          "obj": {
+            "d": 2
+          }
+        }
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [
+          "a"
+        ],
+        "openJobs": [],
+        "variables": {
+          "added": [
+            1,
+            2
+          ],
+          "keep": "x",
+          "n": 1.50,
+          "obj": {
+            "d": 2
+          }
+        }
+      }
+    },
+    {
+      "scenario": "parallel-without-wait-states",
+      "camunda": {
+        "completed": true,
+        "jobs": [],
+        "openJobs": []
+      },
+      "ours": {
+        "completed": true,
+        "jobs": [],
+        "openJobs": []
+      }
+    }
+  ]
+}

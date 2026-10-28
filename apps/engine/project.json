@@ -4,7 +4,7 @@
   "projectType": "application",
   "sourceRoot": "apps/engine",
   "tags": ["type:app", "lang:go", "scope:engine"],
-  "implicitDependencies": ["api-go", "bpmn-go"],
+  "implicitDependencies": ["api-go", "bpmn-go", "feel-go"],
   "targets": {
     "build": {
       "executor": "nx:run-commands",
@@ -24,22 +24,68 @@
     "serve": {
       "executor": "nx:run-commands",
       "continuous": true,
-      "options": { "command": "go run ./apps/engine/cmd/engine", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "go run ./apps/engine/cmd/engine",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "test": {
       "executor": "nx:run-commands",
-      "inputs": ["{projectRoot}/**/*.go", "goMod", "^production"],
-      "options": { "command": "go test ./apps/engine/...", "cwd": "{workspaceRoot}" }
+      "inputs": [
+        "{projectRoot}/**/*.go",
+        "{projectRoot}/**/*.sql",
+        "{projectRoot}/**/testdata/**",
+        "goMod",
+        "^production"
+      ],
+      "options": {
+        "command": "go test ./apps/engine/...",
+        "cwd": "{workspaceRoot}"
+      }
     },
     "lint": {
       "executor": "nx:run-commands",
       "inputs": ["{projectRoot}/**/*.go", "goMod", "{workspaceRoot}/.golangci.yml"],
-      "options": { "command": "golangci-lint run ./apps/engine/...", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "golangci-lint run ./apps/engine/...",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "prop": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "go test -run=TestGatewayProperties -count=1 ./apps/engine/internal/modules/execution/domain",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "bench": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "go test -run=^$ -bench=. -benchmem ./apps/engine/internal/modules/execution/...",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "sqlc": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "commands": [
+          "sqlc generate -f apps/engine/internal/modules/deployment/infrastructure/sqlc.yaml",
+          "sqlc generate -f apps/engine/internal/modules/execution/infrastructure/sqlc.yaml"
+        ],
+        "parallel": false,
+        "cwd": "{workspaceRoot}"
+      }
     },
     "tidy": {
       "executor": "nx:run-commands",
       "cache": false,
-      "options": { "command": "go mod tidy", "cwd": "{workspaceRoot}" }
+      "options": {
+        "command": "go mod tidy",
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }

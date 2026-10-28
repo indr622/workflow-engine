@@ -37,7 +37,7 @@ GOLANGCI_LINT_VERSION := v2.15.0
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools up down logs dev gen lint test build typecheck check test-integration \
-        test-race fuzz bench parity \
+        test-race fuzz bench prop parity \
         migrate-up migrate-down migrate-status migrate-new docker-build docker-push \
         deploy-local deploy-local-down clean
 
@@ -93,14 +93,17 @@ test-integration: ## Test integrasi Go terhadap Postgres di DATABASE_URL
 test-race: ## Test Go dengan race detector (butuh cgo; dijalankan CI di Linux)
 	go test -race -count=1 ./libs/go/... ./apps/engine/...
 
-fuzz: ## Fuzz parser BPMN (FUZZTIME=10m untuk sesi panjang)
-	$(NX) run bpmn-go:fuzz
+fuzz: ## Fuzz kernel Go: TARGET=bpmn|feel (default bpmn), FUZZTIME=10m untuk sesi panjang
+	@case "$(or $(TARGET),bpmn)" in 		bpmn) go test -run='^$$' -fuzz=FuzzParse -fuzztime=$(or $(FUZZTIME),60s) ./libs/go/bpmn ;; 		feel) go test -run='^$$' -fuzz=FuzzCompile -fuzztime=$(or $(FUZZTIME),60s) ./libs/go/feel ;; 		*) echo "unknown TARGET=$(TARGET) (bpmn|feel)"; exit 1 ;; 	esac
 
-bench: ## Benchmark parser BPMN
-	$(NX) run bpmn-go:bench
+bench: ## Benchmark parser BPMN dan Processor eksekusi
+	$(NX) run-many -t bench -p bpmn-go engine
 
-parity: ## Bandingkan keputusan validasi dengan Camunda 8.8 (LIVE=1 untuk deploy ulang ke Camunda)
-	@if [ "$(LIVE)" = "1" ]; then go run ./tools/scripts/parity -live; else go run ./tools/scripts/parity; fi
+prop: ## Property test gateway: PROP_ITER=100000 (default), PROP_SEED=... untuk mengulang kasus gagal
+	PROP_ITER=$(or $(PROP_ITER),100000) PROP_SEED=$(PROP_SEED) go test -run=TestGatewayProperties -count=1 -timeout 30m ./apps/engine/internal/modules/execution/domain
+
+parity: ## Paritas dengan Camunda 8.8: SUITE=deploy|execution|all (default all), LIVE=1 merekam ulang dari Camunda
+	@suite="$(or $(SUITE),all)"; 	if [ "$$suite" = "deploy" ] || [ "$$suite" = "all" ]; then 		if [ "$(LIVE)" = "1" ]; then go run ./tools/scripts/parity -live; else go run ./tools/scripts/parity; fi || exit 1; 	fi; 	if [ "$$suite" = "execution" ] || [ "$$suite" = "all" ]; then 		if [ "$(LIVE)" = "1" ]; then 			go test -count=1 -tags=parity -run TestExecutionParityLive -timeout 15m ./apps/engine/internal/modules/execution/domain; 		else 			go test -count=1 -run TestExecutionParity ./apps/engine/internal/modules/execution/domain; 		fi; 	fi
 
 migrate-up: ## Jalankan migrasi ke DATABASE_URL
 	goose -dir $(MIGRATIONS) postgres "$(DATABASE_URL)" up

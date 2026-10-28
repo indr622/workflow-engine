@@ -166,6 +166,13 @@ func TestGatewayProperties(t *testing.T) {
 		seed = v
 	}
 	iterations := *propIter
+	if v := os.Getenv("PROP_ITER"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n <= 0 {
+			t.Fatalf("PROP_ITER must be a positive integer, got %q", v)
+		}
+		iterations = n
+	}
 	if testing.Short() {
 		iterations = 100
 	}
