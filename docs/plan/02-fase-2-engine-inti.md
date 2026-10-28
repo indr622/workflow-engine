@@ -2,7 +2,7 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Draft rencana — belum dieksekusi
+**Status:** 🚧 Sedang dieksekusi di branch `feat/phase-2-execution` (mulai 2026-10-28)
 **Tanggal:** 2026-10-28
 
 ---
@@ -1101,7 +1101,24 @@ Setiap pertanyaan diberi rekomendasi. Keputusan final dicatat di 11.1 setelah re
 
 ### 11.1 Keputusan
 
-Belum ada. Diisi dengan tabel yang sama seperti 9.1 dokumen Fase 1.
+Dicatat 2026-10-28. User meminta Fase 2 dimulai tanpa review terpisah; seperti di Fase 1, setiap
+pertanyaan memakai rekomendasi dokumen ini.
+
+| # | Keputusan |
+|---|---|
+| 1 | Allowlist kernel `libs/go/bpmn` dan `libs/go/feel` untuk `domain`, paket `internal` kernel tetap terlarang, dijaga `TestKernelsArePure` (ADR-0010) |
+| 2 | Record log append-only + proyeksi dalam satu transaksi |
+| 3 | Row lock `FOR UPDATE` per instance; partisi ditinjau di Fase 3 |
+| 4 | Subset FEEL di `libs/go/feel`; ekspresi di luar subset ditolak saat deploy |
+| 5 | `conditionExpression` tanpa prefix `=` ditolak saat deploy (`EXPRESSION_NOT_SUPPORTED`) |
+| 6 | State job dimiliki modul `execution`; modul `job` Fase 4 menjadi protokol worker |
+| 7 | `state` job di proto berupa string di Fase 2; enum di Fase 4 |
+| 8 | I/O mapping ditolak saat deploy (`IO_MAPPING_NOT_SUPPORTED`) sampai Fase 7 |
+| 9 | Satu tabel `element_instance` dengan indeks parsial |
+| 10 | Fitur `process-instance` minimal di modeler-web |
+| 11 | Create instance "with result" ditunda ke Fase 4 |
+| 12 | Default `retries` job = 3 |
+| 13 | Kondisi bernilai `null` menghasilkan incident `CONDITION_ERROR` |
 
 ### 11.2 Pertanyaan dan rekomendasi
 
