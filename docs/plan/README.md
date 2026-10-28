@@ -10,7 +10,7 @@ sampai 8 berstatus draft dan menunggu review sebelum implementasi.
 | Fase | Nama | Keluaran utama | Dokumen |
 |---|---|---|---|
 | 0 | Persiapan environment (✅ selesai 2026-10-28) | Monorepo Nx + Go + React jalan, Compose, proto toolchain, CI hijau | [00-fase-0-persiapan-environment.md](00-fase-0-persiapan-environment.md) |
-| 1 | Parser dan model BPMN (✅ selesai 2026-10-28, menunggu review) | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | [01-fase-1-parser-model-bpmn.md](01-fase-1-parser-model-bpmn.md) |
+| 1 | Parser dan model BPMN (✅ selesai 2026-10-28, di-merge ke `main`) | `libs/go/bpmn`: parse XML BPMN 2.0 ke model in-memory, validasi elemen yang didukung | [01-fase-1-parser-model-bpmn.md](01-fase-1-parser-model-bpmn.md) |
 | 2 | Engine inti | modul `execution`: eksekusi token, sequence flow, gateway (exclusive, parallel, inclusive), start/end event, service task sebagai job | [02-fase-2-engine-inti.md](02-fase-2-engine-inti.md) (draft, menunggu review) |
 | 3 | Persistensi dan pemulihan | State instance di PostgreSQL, event log, replay setelah restart, idempotensi | [03-fase-3-persistensi-pemulihan.md](03-fase-3-persistensi-pemulihan.md) (draft, menunggu review) |
 | 4 | API dan job worker | gRPC/Connect: deploy, create instance, activate jobs, complete/fail job, publish message; SDK worker Go | [04-fase-4-api-job-worker.md](04-fase-4-api-job-worker.md) (draft, menunggu review) |
