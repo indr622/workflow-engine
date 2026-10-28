@@ -28,6 +28,8 @@ type Config struct {
 	Recovery Recovery
 	// Outbox mengatur relay outbox (Fase 3, 4.3).
 	Outbox Outbox
+	// SnapshotIntervalRecords: snapshot state runtime instance aktif setiap N record (0 = mati).
+	SnapshotIntervalRecords int `env:"ENGINE_SNAPSHOT_INTERVAL_RECORDS" envDefault:"5000"`
 	// JanitorInterval adalah jeda antar putaran janitor (outbox, idempotensi, retensi).
 	JanitorInterval time.Duration `env:"ENGINE_JANITOR_INTERVAL" envDefault:"1m"`
 }

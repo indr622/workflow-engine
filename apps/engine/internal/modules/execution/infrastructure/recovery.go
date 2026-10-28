@@ -3,6 +3,7 @@ package infrastructure
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -52,16 +53,38 @@ func loadRecords(ctx context.Context, q interface {
 	return out, rows.Err()
 }
 
-// LoadRecords memenuhi application.TxScope.
-func (t *txRepository) LoadRecords(ctx context.Context, key string) ([]domain.Record, error) {
-	return loadRecords(ctx, t.tx, key, 0)
+// LoadRecords memenuhi application.RebuildScope: record dengan sequence > after.
+func (t *txRepository) LoadRecords(ctx context.Context, key string, after int32) ([]domain.Record, error) {
+	return loadRecords(ctx, t.tx, key, after)
+}
+
+// LoadSnapshot memenuhi application.RebuildScope; ok false bila instance belum punya snapshot.
+func (t *txRepository) LoadSnapshot(ctx context.Context, key string) (*domain.Snapshot, bool, error) {
+	var data []byte
+	var format int
+	err := t.tx.QueryRow(ctx, "SELECT state, format_version FROM execution_snapshot WHERE process_instance_key = $1", key).Scan(&data, &format)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("load snapshot of %s: %w", key, err)
+	}
+	var snap domain.Snapshot
+	if format == domain.SnapshotFormatVersion {
+		if err := json.Unmarshal(data, &snap); err != nil {
+			return nil, false, fmt.Errorf("decode snapshot of %s: %w", key, err)
+		}
+	}
+	// Kolom format_version adalah acuan; isi state hanya di-decode bila formatnya dikenal.
+	snap.FormatVersion = format
+	return &snap, true, nil
 }
 
 // ResetProjection menghapus proyeksi turunan instance (bukan baris process_instance, yang menjadi
 // jangkar lock dan di-upsert ulang oleh record pertama).
 func (t *txRepository) ResetProjection(ctx context.Context, key string) error {
 	b := &pgx.Batch{}
-	for _, table := range []string{"incident", "job", "variable", "taken_sequence_flow", "element_instance", "execution_snapshot"} {
+	for _, table := range []string{"incident", "job", "variable", "taken_sequence_flow", "element_instance"} {
 		b.Queue("DELETE FROM "+table+" WHERE process_instance_key = $1", key)
 	}
 	if err := t.tx.SendBatch(ctx, b).Close(); err != nil {
@@ -70,18 +93,16 @@ func (t *txRepository) ResetProjection(ctx context.Context, key string) error {
 	return nil
 }
 
-// Reproject memproyeksikan ulang semua record (tanpa menulis record) lalu nilai turunan state akhir.
-func (t *txRepository) Reproject(ctx context.Context, records []domain.Record, st *domain.InstanceState) error {
-	if len(records) == 0 {
-		return nil
-	}
+// Reproject memproyeksikan ulang record (tanpa menulis record) lalu nilai turunan state akhir;
+// lastSequence adalah sequence record terakhir instance.
+func (t *txRepository) Reproject(ctx context.Context, records []domain.Record, st *domain.InstanceState, lastSequence int32, lastAt time.Time) error {
 	b := &pgx.Batch{}
 	for i := range records {
 		if err := project(b, &records[i]); err != nil {
 			return err
 		}
 	}
-	queueFinalize(b, st, int32(len(records)), records[len(records)-1].Timestamp) //nolint:gosec // jumlah record per instance < 2^31
+	queueFinalize(b, st, lastSequence, lastAt)
 	if err := t.tx.SendBatch(ctx, b).Close(); err != nil {
 		return fmt.Errorf("reproject %s: %w", st.Key, err)
 	}

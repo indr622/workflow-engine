@@ -26,14 +26,24 @@ import (
 
 // PostgresRepository mengimplementasikan application.UnitOfWork di atas pgx dan sqlc.
 type PostgresRepository struct {
-	pool   *pgxpool.Pool
-	q      *db.Queries
-	outbox *outbox.Writer
+	pool             *pgxpool.Pool
+	q                *db.Queries
+	outbox           *outbox.Writer
+	snapshotInterval int32
 }
+
+// DefaultSnapshotInterval adalah jumlah record antar snapshot instance aktif.
+const DefaultSnapshotInterval = 5000
 
 // NewPostgresRepository membuat repository untuk pool yang diberikan.
 func NewPostgresRepository(pool *pgxpool.Pool, writer *outbox.Writer) *PostgresRepository {
-	return &PostgresRepository{pool: pool, q: db.New(pool), outbox: writer}
+	return &PostgresRepository{pool: pool, q: db.New(pool), outbox: writer, snapshotInterval: DefaultSnapshotInterval}
+}
+
+// WithSnapshotInterval mengubah interval snapshot (record); 0 atau negatif mematikan snapshot.
+func (r *PostgresRepository) WithSnapshotInterval(n int) *PostgresRepository {
+	r.snapshotInterval = int32(min(max(n, 0), 1<<30)) //nolint:gosec // dibatasi di atas
+	return r
 }
 
 var _ application.UnitOfWork = (*PostgresRepository)(nil)
@@ -46,7 +56,7 @@ func (r *PostgresRepository) Do(ctx context.Context, fn func(ctx context.Context
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	scope := &txRepository{tx: tx, outbox: r.outbox}
+	scope := &txRepository{tx: tx, outbox: r.outbox, snapshotInterval: r.snapshotInterval}
 	if err := fn(ctx, scope); err != nil {
 		return err
 	}
@@ -90,8 +100,9 @@ func (r *PostgresRepository) DefinitionKeyOf(ctx context.Context, instanceKey st
 }
 
 type txRepository struct {
-	tx     pgx.Tx
-	outbox *outbox.Writer
+	tx               pgx.Tx
+	outbox           *outbox.Writer
+	snapshotInterval int32
 	// lastSequence adalah sequence record terakhir instance yang dimuat (0 untuk instance baru).
 	lastSequence int32
 	pending      []application.RecordEvent
@@ -306,6 +317,10 @@ SELECT $1, unnest($2::uuid[]), unnest($3::text[]), unnest($4::text[]), unnest($5
 SET last_sequence = $2::int, version = $2::int, updated_at = $3,
     has_incident = EXISTS (SELECT 1 FROM incident i WHERE i.process_instance_key = $1 AND i.state = 'CREATED')
 WHERE key = $1`
+	sqlUpsertSnapshot = `INSERT INTO execution_snapshot (process_instance_key, sequence, format_version, state)
+VALUES ($1, $2, $3, $4::jsonb)
+ON CONFLICT (process_instance_key) DO UPDATE SET sequence = EXCLUDED.sequence,
+    format_version = EXCLUDED.format_version, state = EXCLUDED.state, created_at = now()`
 	sqlInsertRecords = `INSERT INTO execution_record
     (process_instance_key, sequence, record_key, value_type, intent, element_id, payload, created_at)
 SELECT $1, unnest($2::int[]), unnest($3::uuid[]), unnest($4::text[]), unnest($5::text[]),
@@ -343,6 +358,16 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 		}
 	}
 	b.Queue(sqlInsertRecords, st.Key, seqs, keys, types, intents, elementIDs, payloads, times)
+
+	// Snapshot state runtime instance aktif setiap kali last_sequence melewati kelipatan interval.
+	newLast := t.lastSequence + int32(n) //nolint:gosec // dibatasi Limits
+	if t.snapshotInterval > 0 && st.Status == domain.InstanceActive && newLast/t.snapshotInterval > t.lastSequence/t.snapshotInterval {
+		data, err := json.Marshal(st.Snapshot(newLast))
+		if err != nil {
+			return fmt.Errorf("encode snapshot: %w", err)
+		}
+		b.Queue(sqlUpsertSnapshot, st.Key, newLast, domain.SnapshotFormatVersion, string(data))
+	}
 
 	// Event outbox ikut batch yang sama; aggregate_seq = sequence record pemicu.
 	if len(t.pending) > 0 {

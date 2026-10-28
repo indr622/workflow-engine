@@ -103,7 +103,7 @@ func TestRebuildRestoresIdenticalProjection(t *testing.T) {
 		if m, err := rec.DeepVerify(ctx, key); err != nil || len(m) != 0 {
 			t.Fatalf("instance %s does not verify before rebuild: %v %+v", key, err, m)
 		}
-		res, err := rec.RebuildInstance(ctx, key)
+		res, err := rec.RebuildInstance(ctx, key, true)
 		if err != nil {
 			t.Fatal(err)
 		}

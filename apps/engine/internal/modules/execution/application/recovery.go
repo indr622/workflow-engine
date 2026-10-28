@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"reflect"
@@ -28,9 +29,11 @@ type InstanceReading struct {
 // RebuildScope adalah operasi transaksional untuk rebuild proyeksi.
 type RebuildScope interface {
 	TxScope
-	LoadRecords(ctx context.Context, key string) ([]domain.Record, error)
+	// LoadRecords mengembalikan record dengan sequence > after, urut sequence.
+	LoadRecords(ctx context.Context, key string, after int32) ([]domain.Record, error)
+	LoadSnapshot(ctx context.Context, key string) (*domain.Snapshot, bool, error)
 	ResetProjection(ctx context.Context, key string) error
-	Reproject(ctx context.Context, records []domain.Record, st *domain.InstanceState) error
+	Reproject(ctx context.Context, records []domain.Record, st *domain.InstanceState, lastSequence int32, lastAt time.Time) error
 }
 
 // RecoveryStore adalah port baca dan tulis untuk verify dan rebuild (ADR-0016).
@@ -178,11 +181,16 @@ func (r *Recovery) DeepVerify(ctx context.Context, key string) ([]Mismatch, erro
 type RebuildResult struct {
 	ProcessInstanceKey string
 	Records            int
+	// FromSnapshot bernilai true bila rebuild mulai dari snapshot (hanya record sesudahnya).
+	FromSnapshot bool
 }
 
-// RebuildInstance menghapus proyeksi instance lalu menerapkan dan memproyeksikan ulang seluruh
-// record di bawah row lock. Rebuild tidak menulis outbox: rebuild bukan eksekusi ulang.
-func (r *Recovery) RebuildInstance(ctx context.Context, key string) (RebuildResult, error) {
+// RebuildInstance membangun ulang proyeksi instance dari record di bawah row lock. full = true
+// menghapus proyeksi lalu memutar ulang semua record (memperbaiki kerusakan di mana pun). full =
+// false memulai dari snapshot bila ada dan hanya memproyeksikan ulang record sesudahnya di atas
+// proyeksi yang ada (proyektor idempoten); cocok untuk instance berloop panjang yang proyeksinya
+// sebelum snapshot masih utuh. Rebuild tidak menulis outbox: rebuild bukan eksekusi ulang.
+func (r *Recovery) RebuildInstance(ctx context.Context, key string, full bool) (RebuildResult, error) {
 	defKey, err := r.store.DefinitionKeyOf(ctx, key)
 	if err != nil {
 		return RebuildResult{}, err
@@ -200,21 +208,46 @@ func (r *Recovery) RebuildInstance(ctx context.Context, key string) (RebuildResu
 		if _, err := scope.LockAndLoad(ctx, key); err != nil {
 			return err
 		}
-		records, err := scope.LoadRecords(ctx, key)
+		st := domain.NewInstanceState(domain.DefinitionRef{}, proc)
+		from := int32(0)
+		if !full {
+			snap, ok, err := scope.LoadSnapshot(ctx, key)
+			if err != nil {
+				return err
+			}
+			if ok {
+				restored, err := domain.RestoreSnapshot(proc, snap)
+				switch {
+				case err == nil:
+					st, from, res.FromSnapshot = restored, snap.Sequence, true
+				case errors.Is(err, domain.ErrSnapshotFormat):
+					r.log.Warn("snapshot format not supported, rebuilding from the first record",
+						slog.String("process_instance_key", key), slog.Any("error", err))
+				default:
+					return err
+				}
+			}
+		}
+		records, err := scope.LoadRecords(ctx, key, from)
 		if err != nil {
 			return err
 		}
-		st := domain.NewInstanceState(domain.DefinitionRef{}, proc)
 		for i := range records {
 			if err := domain.Apply(st, &records[i]); err != nil {
-				return fmt.Errorf("replay record %d of %s: %w", i+1, key, err)
+				return fmt.Errorf("replay record %d of %s: %w", int(from)+i+1, key, err)
 			}
 		}
-		if err := scope.ResetProjection(ctx, key); err != nil {
-			return err
-		}
 		res.Records = len(records)
-		return scope.Reproject(ctx, records, st)
+		if !res.FromSnapshot {
+			if err := scope.ResetProjection(ctx, key); err != nil {
+				return err
+			}
+		}
+		if len(records) == 0 {
+			return nil
+		}
+		last := from + int32(len(records)) //nolint:gosec // jumlah record per instance < 2^31
+		return scope.Reproject(ctx, records, st, last, records[len(records)-1].Timestamp)
 	})
 	if err != nil {
 		return res, fmt.Errorf("rebuild %s: %w", key, err)
@@ -226,7 +259,7 @@ func (r *Recovery) RebuildInstance(ctx context.Context, key string) (RebuildResu
 // Repair memenuhi recovery.Verifier: rebuild setiap instance yang menyimpang.
 func (r *Recovery) Repair(ctx context.Context, subjects []string) error {
 	for _, k := range subjects {
-		if _, err := r.RebuildInstance(ctx, k); err != nil {
+		if _, err := r.RebuildInstance(ctx, k, true); err != nil {
 			return err
 		}
 	}
@@ -234,7 +267,7 @@ func (r *Recovery) Repair(ctx context.Context, subjects []string) error {
 }
 
 // RebuildAll membangun ulang semua instance berurutan key.
-func (r *Recovery) RebuildAll(ctx context.Context, progress func(RebuildResult)) (int, error) {
+func (r *Recovery) RebuildAll(ctx context.Context, full bool, progress func(RebuildResult)) (int, error) {
 	after, n := "", 0
 	for {
 		keys, err := r.store.InstanceKeys(ctx, after, 500)
@@ -245,7 +278,7 @@ func (r *Recovery) RebuildAll(ctx context.Context, progress func(RebuildResult))
 			return n, nil
 		}
 		for _, k := range keys {
-			res, err := r.RebuildInstance(ctx, k)
+			res, err := r.RebuildInstance(ctx, k, full)
 			if err != nil {
 				return n, err
 			}

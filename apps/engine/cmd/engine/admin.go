@@ -110,6 +110,7 @@ func runRebuild(ctx context.Context, cfg config.Config, log *slog.Logger, args [
 	fs := flag.NewFlagSet("rebuild", flag.ContinueOnError)
 	all := fs.Bool("all", false, "rebuild every instance")
 	instance := fs.String("instance", "", "rebuild one process instance key")
+	full := fs.Bool("full", false, "ignore snapshots and replay every record after clearing the projection")
 	if err := fs.Parse(args); err != nil {
 		return exitUsage
 	}
@@ -127,14 +128,14 @@ func runRebuild(ctx context.Context, cfg config.Config, log *slog.Logger, args [
 			fmt.Fprintln(os.Stderr, "engine rebuild: --instance must be a canonical uuid")
 			return exitUsage
 		}
-		res, err := app.recovery.RebuildInstance(ctx, *instance)
+		res, err := app.recovery.RebuildInstance(ctx, *instance, *full)
 		if err != nil {
 			return exitCode(err)
 		}
-		fmt.Printf("rebuilt %s from %d records\n", res.ProcessInstanceKey, res.Records)
+		fmt.Printf("rebuilt %s from %d records (from snapshot: %v)\n", res.ProcessInstanceKey, res.Records, res.FromSnapshot)
 		return exitOK
 	}
-	n, err := app.recovery.RebuildAll(ctx, func(res executionapp.RebuildResult) {
+	n, err := app.recovery.RebuildAll(ctx, *full, func(res executionapp.RebuildResult) {
 		fmt.Printf("rebuilt %s from %d records\n", res.ProcessInstanceKey, res.Records)
 	})
 	fmt.Printf("rebuilt %d instances\n", n)

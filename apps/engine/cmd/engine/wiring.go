@@ -78,7 +78,7 @@ func assemble(ctx context.Context, cfg config.Config, log *slog.Logger) (*applic
 	var _ deploymentapi.ProcessDefinitions = processCache
 
 	// Modul execution: hanya bergantung pada deployment lewat api.ProcessDefinitions.
-	executionRepo := executioninfra.NewPostgresRepository(pool, writer)
+	executionRepo := executioninfra.NewPostgresRepository(pool, writer).WithSnapshotInterval(cfg.SnapshotIntervalRecords)
 	processor := executiondomain.NewProcessor(executiondomain.NewFeelEvaluator(), systemClock{},
 		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
 	commands := executionapp.NewCommands(executionRepo, processCache, processor,
