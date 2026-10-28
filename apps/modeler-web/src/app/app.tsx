@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { DeploymentRepositoryProvider } from '../features/deployment';
 import { HealthRepositoryProvider } from '../features/health';
+import { ProcessInstanceRepositoryProvider } from '../features/process-instance';
 import { createDependencies } from './dependencies';
 import { createAppRouter } from './router';
 
@@ -16,7 +17,9 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <HealthRepositoryProvider repository={dependencies.healthRepository}>
         <DeploymentRepositoryProvider repository={dependencies.deploymentRepository}>
-          <RouterProvider router={router} />
+          <ProcessInstanceRepositoryProvider repository={dependencies.processInstanceRepository}>
+            <RouterProvider router={router} />
+          </ProcessInstanceRepositoryProvider>
         </DeploymentRepositoryProvider>
       </HealthRepositoryProvider>
     </QueryClientProvider>

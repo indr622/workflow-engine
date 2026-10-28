@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { Badge, Button, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@workflow/ui';
@@ -7,8 +7,16 @@ import type { ProcessDefinition } from '../domain/deployment';
 
 const columns = createColumnHelper<ProcessDefinition>();
 
+export interface DefinitionsTableProps {
+  /**
+   * Aksi per baris yang disisipkan route (misalnya tombol "Start" dari fitur process-instance),
+   * agar fitur deployment tidak bergantung pada fitur lain.
+   */
+  rowActions?: (definition: ProcessDefinition) => ReactNode;
+}
+
 /** DefinitionsTable: daftar process definition dengan filter, toggle latest-only, dan pagination. */
-export function DefinitionsTable() {
+export function DefinitionsTable({ rowActions }: DefinitionsTableProps = {}) {
   const [filter, setFilter] = useState('');
   const [latestOnly, setLatestOnly] = useState(true);
   const [pageToken, setPageToken] = useState('');
@@ -47,6 +55,7 @@ export function DefinitionsTable() {
         cell: (c) => <span className="font-mono text-xs">{c.getValue()}</span>,
       }),
       columns.accessor('createdAt', { header: 'Deployed', cell: (c) => c.getValue().toLocaleString() }),
+      ...(rowActions ? [columns.display({ id: 'actions', header: '', cell: (c) => rowActions(c.row.original) })] : []),
     ],
     getCoreRowModel: getCoreRowModel(),
   });
@@ -93,14 +102,14 @@ export function DefinitionsTable() {
         <TableBody>
           {isPending && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={table.getVisibleLeafColumns().length} className="text-muted-foreground">
                 Loading…
               </TableCell>
             </TableRow>
           )}
           {!isPending && table.getRowModel().rows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground">
+              <TableCell colSpan={table.getVisibleLeafColumns().length} className="text-muted-foreground">
                 No process definitions deployed yet.
               </TableCell>
             </TableRow>

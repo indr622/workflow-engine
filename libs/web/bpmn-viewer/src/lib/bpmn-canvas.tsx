@@ -29,7 +29,20 @@ export const EMPTY_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>`;
 
 /** Class marker yang disediakan tema kanvas. */
-export type MarkerClass = 'issue-error' | 'issue-warning';
+export type MarkerClass = 'issue-error' | 'issue-warning' | 'token-active' | 'token-completed' | 'token-incident';
+
+const MARKER_CLASSES: MarkerClass[] = [
+  'issue-error',
+  'issue-warning',
+  'token-active',
+  'token-completed',
+  'token-incident',
+];
+
+/** Jenis badge overlay yang disediakan tema kanvas. */
+export type BadgeType = 'token-count';
+
+const BADGE_TYPES: BadgeType[] = ['token-count'];
 
 /** BpmnCanvasHandle adalah API imperatif kanvas untuk fitur di sekitarnya. */
 export interface BpmnCanvasHandle {
@@ -39,6 +52,8 @@ export interface BpmnCanvasHandle {
   importXML(xml: string): Promise<void>;
   /** Mengganti seluruh marker kelas tertentu dengan daftar id elemen baru. */
   setMarkers(markerClass: MarkerClass, elementIds: string[]): void;
+  /** Mengganti seluruh badge overlay jenis tertentu; key = id elemen, value = teks badge. */
+  setBadges(badgeType: BadgeType, badges: Record<string, string | number>): void;
   /** Memilih elemen dan menggesernya ke tengah kanvas; aman bila id tidak ada. */
   selectElement(elementId: string): void;
 }
@@ -52,10 +67,62 @@ export interface BpmnCanvasProps {
   onError?: (error: Error) => void;
   /** Dipanggil setelah import; hasLayout=false bila XML tidak punya diagram interchange (BPMNDI). */
   onImported?: (info: { hasLayout: boolean; warnings: number }) => void;
+  /** Dipanggil saat pengguna mengklik elemen diagram (bukan root plane). */
+  onElementClick?: (elementId: string) => void;
   ref?: Ref<BpmnCanvasHandle>;
 }
 
 type Instance = InstanceType<typeof BpmnModeler> | InstanceType<typeof BpmnViewer>;
+
+interface CanvasService {
+  addMarker(id: string, cls: string): void;
+  removeMarker(id: string, cls: string): void;
+  getRootElement(): { id: string };
+}
+interface RegistryService {
+  get(id: string): unknown;
+  getAll(): unknown[];
+}
+interface OverlaysService {
+  add(id: string, type: string, overlay: { position: Record<string, number>; html: HTMLElement }): string;
+  remove(filter: { type: string }): void;
+}
+
+/** applyMarkers memasang marker untuk id yang ada di diagram; id yang tidak dikenal diabaikan. */
+function applyMarkers(instance: Instance, markerClass: MarkerClass, add: string[], remove: string[]) {
+  const canvas = instance.get('canvas') as CanvasService;
+  const registry = instance.get('elementRegistry') as RegistryService;
+  for (const id of remove) {
+    if (registry.get(id)) canvas.removeMarker(id, markerClass);
+  }
+  for (const id of add) {
+    if (registry.get(id)) canvas.addMarker(id, markerClass);
+  }
+}
+
+/** applyBadges mengganti semua overlay jenis tertentu dengan badge baru. */
+function applyBadges(instance: Instance, badgeType: BadgeType, badges: Record<string, string | number>) {
+  const overlays = instance.get('overlays') as OverlaysService;
+  const registry = instance.get('elementRegistry') as RegistryService;
+  overlays.remove({ type: badgeType });
+  for (const [id, text] of Object.entries(badges)) {
+    if (!registry.get(id)) continue;
+    const html = document.createElement('span');
+    html.className = `bpmn-badge bpmn-badge-${badgeType}`;
+    html.textContent = String(text);
+    overlays.add(id, badgeType, { position: { bottom: 12, left: -8 }, html });
+  }
+}
+
+/** reapplyAll memasang ulang semua marker dan badge yang diminta, dipakai setelah import. */
+function reapplyAll(
+  instance: Instance,
+  markers: Record<MarkerClass, string[]>,
+  badges: Record<BadgeType, Record<string, string | number>>,
+) {
+  for (const cls of MARKER_CLASSES) applyMarkers(instance, cls, markers[cls], []);
+  for (const type of BADGE_TYPES) applyBadges(instance, type, badges[type]);
+}
 
 /**
  * BpmnCanvas membungkus bpmn-js untuk React.
@@ -67,11 +134,22 @@ export function BpmnCanvas({
   className,
   onError,
   onImported,
+  onElementClick,
   ref,
 }: BpmnCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<Instance | null>(null);
-  const markersRef = useRef<Record<MarkerClass, string[]>>({ 'issue-error': [], 'issue-warning': [] });
+  // Marker dan badge yang diminta disimpan agar bisa dipasang ulang setelah import (XML berubah).
+  const markersRef = useRef<Record<MarkerClass, string[]>>(
+    Object.fromEntries(MARKER_CLASSES.map((c) => [c, [] as string[]])) as Record<MarkerClass, string[]>,
+  );
+  const badgesRef = useRef<Record<BadgeType, Record<string, string | number>>>(
+    Object.fromEntries(BADGE_TYPES.map((t) => [t, {}])) as Record<BadgeType, Record<string, string | number>>,
+  );
+  const onElementClickRef = useRef(onElementClick);
+  useEffect(() => {
+    onElementClickRef.current = onElementClick;
+  }, [onElementClick]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -80,11 +158,19 @@ export function BpmnCanvas({
     const Ctor = mode === 'modeler' ? BpmnModeler : BpmnViewer;
     const instance = new Ctor({ container });
     instanceRef.current = instance;
+    const eventBus = instance.get('eventBus') as {
+      on(event: string, cb: (e: { element: { id: string } }) => void): void;
+    };
+    eventBus.on('element.click', (e) => {
+      const root = (instance.get('canvas') as CanvasService).getRootElement();
+      if (e.element.id !== root.id) onElementClickRef.current?.(e.element.id);
+    });
     instance
       .importXML(xml)
       .then(({ warnings }) => {
         // Tanpa BPMNDI, registry hanya berisi root plane: tidak ada shape yang bisa digambar.
-        const registry = instance.get('elementRegistry') as { getAll(): unknown[] };
+        const registry = instance.get('elementRegistry') as RegistryService;
+        reapplyAll(instance, markersRef.current, badgesRef.current);
         onImported?.({ hasLayout: registry.getAll().length > 1, warnings: warnings.length });
       })
       .catch((e: unknown) => onError?.(e instanceof Error ? e : new Error(String(e))));
@@ -105,27 +191,21 @@ export function BpmnCanvas({
         return out ?? '';
       },
       async importXML(next: string) {
-        await instanceRef.current?.importXML(next);
-      },
-      setMarkers(markerClass, elementIds) {
         const instance = instanceRef.current;
         if (!instance) return;
-        const canvas = instance.get('canvas') as {
-          addMarker(id: string, cls: string): void;
-          removeMarker(id: string, cls: string): void;
-        };
-        const registry = instance.get('elementRegistry') as { get(id: string): unknown };
-        for (const id of markersRef.current[markerClass]) {
-          if (registry.get(id)) canvas.removeMarker(id, markerClass);
-        }
-        const applied: string[] = [];
-        for (const id of elementIds) {
-          if (registry.get(id)) {
-            canvas.addMarker(id, markerClass);
-            applied.push(id);
-          }
-        }
-        markersRef.current[markerClass] = applied;
+        await instance.importXML(next);
+        reapplyAll(instance, markersRef.current, badgesRef.current);
+      },
+      setMarkers(markerClass, elementIds) {
+        const previous = markersRef.current[markerClass];
+        markersRef.current[markerClass] = [...elementIds];
+        const instance = instanceRef.current;
+        if (instance) applyMarkers(instance, markerClass, elementIds, previous);
+      },
+      setBadges(badgeType, badges) {
+        badgesRef.current[badgeType] = { ...badges };
+        const instance = instanceRef.current;
+        if (instance) applyBadges(instance, badgeType, badges);
       },
       selectElement(elementId) {
         const instance = instanceRef.current;

@@ -8,3 +8,39 @@
   stroke: oklch(0.769 0.188 70.08) !important;
   stroke-width: 3px !important;
 }
+
+/* Marker status token instance (fitur process-instance). */
+.bpmn-canvas .token-active .djs-visual > :nth-child(1) {
+  stroke: oklch(0.627 0.194 149.214) !important;
+  stroke-width: 3px !important;
+  fill: oklch(0.962 0.044 156.743) !important;
+}
+
+.bpmn-canvas .token-completed .djs-visual > :nth-child(1) {
+  stroke: oklch(0.556 0 0) !important;
+  fill: oklch(0.97 0 0) !important;
+}
+
+.bpmn-canvas .token-incident .djs-visual > :nth-child(1) {
+  stroke: oklch(0.577 0.245 27.325) !important;
+  stroke-width: 3px !important;
+  fill: oklch(0.936 0.032 17.717) !important;
+}
+
+/* Badge overlay, misalnya jumlah token aktif per elemen. */
+.bpmn-canvas .bpmn-badge {
+  display: inline-block;
+  min-width: 1.25rem;
+  padding: 0 0.375rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+  color: white;
+  white-space: nowrap;
+}
+
+.bpmn-canvas .bpmn-badge-token-count {
+  background: oklch(0.627 0.194 149.214);
+}

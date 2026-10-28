@@ -3,6 +3,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { Badge, Button, Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@workflow/ui';
 import { BpmnCanvas } from '@workflow/bpmn-viewer';
 import { definitionQuery, useProcessDefinition } from '../features/deployment';
+import { StartInstanceDialog } from '../features/process-instance';
 
 export const Route = createFileRoute('/definitions/$key')({
   loader: ({ context, params }) =>
@@ -30,7 +31,12 @@ function DefinitionPage() {
         <CardDescription>
           {definition.resourceName} · key {definition.key} · deployed {definition.createdAt.toLocaleString()}
         </CardDescription>
-        <CardAction>
+        <CardAction className="flex gap-2">
+          <StartInstanceDialog
+            definitionKey={definition.key}
+            bpmnProcessId={definition.bpmnProcessId}
+            version={definition.version}
+          />
           <Button variant="outline" size="sm" asChild>
             <Link to="/definitions">Back</Link>
           </Button>

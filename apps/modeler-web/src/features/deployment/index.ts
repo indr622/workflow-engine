@@ -1,5 +1,5 @@
 // API publik fitur deployment untuk route, composition root, dan fitur lain.
-export type { DeploymentRepository, ValidationIssue } from './domain/deployment';
+export type { DeploymentRepository, ProcessDefinition, ValidationIssue } from './domain/deployment';
 export { elementIdsWithIssues } from './domain/deployment';
 export { DeploymentRepositoryProvider } from './application/deployment-repository.context';
 export { definitionsQuery, definitionQuery, useProcessDefinition } from './application/deployment.queries';

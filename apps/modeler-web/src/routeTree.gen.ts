@@ -12,6 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DefinitionsIndexRouteImport } from './routes/definitions.index'
 import { Route as DefinitionsKeyRouteImport } from './routes/definitions.$key'
+import { Route as InstancesIndexRouteImport } from './routes/instances.index'
+import { Route as InstancesKeyRouteImport } from './routes/instances.$key'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +30,69 @@ const DefinitionsKeyRoute = DefinitionsKeyRouteImport.update({
   path: '/definitions/$key',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InstancesIndexRoute = InstancesIndexRouteImport.update({
+  id: '/instances/',
+  path: '/instances/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstancesKeyRoute = InstancesKeyRouteImport.update({
+  id: '/instances/$key',
+  path: '/instances/$key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/definitions/$key': typeof DefinitionsKeyRoute
+  '/instances/$key': typeof InstancesKeyRoute
   '/definitions/': typeof DefinitionsIndexRoute
+  '/instances/': typeof InstancesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/definitions/$key': typeof DefinitionsKeyRoute
+  '/instances/$key': typeof InstancesKeyRoute
   '/definitions': typeof DefinitionsIndexRoute
+  '/instances': typeof InstancesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/definitions/$key': typeof DefinitionsKeyRoute
+  '/instances/$key': typeof InstancesKeyRoute
   '/definitions/': typeof DefinitionsIndexRoute
+  '/instances/': typeof InstancesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/definitions/$key' | '/definitions/'
+  fullPaths:
+    | '/'
+    | '/definitions/$key'
+    | '/instances/$key'
+    | '/definitions/'
+    | '/instances/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/definitions/$key' | '/definitions'
-  id: '__root__' | '/' | '/definitions/$key' | '/definitions/'
+  to:
+    | '/'
+    | '/definitions/$key'
+    | '/instances/$key'
+    | '/definitions'
+    | '/instances'
+  id:
+    | '__root__'
+    | '/'
+    | '/definitions/$key'
+    | '/instances/$key'
+    | '/definitions/'
+    | '/instances/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DefinitionsKeyRoute: typeof DefinitionsKeyRoute
+  InstancesKeyRoute: typeof InstancesKeyRoute
   DefinitionsIndexRoute: typeof DefinitionsIndexRoute
+  InstancesIndexRoute: typeof InstancesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,13 +118,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DefinitionsKeyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/instances/': {
+      id: '/instances/'
+      path: '/instances'
+      fullPath: '/instances/'
+      preLoaderRoute: typeof InstancesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/instances/$key': {
+      id: '/instances/$key'
+      path: '/instances/$key'
+      fullPath: '/instances/$key'
+      preLoaderRoute: typeof InstancesKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DefinitionsKeyRoute: DefinitionsKeyRoute,
+  InstancesKeyRoute: InstancesKeyRoute,
   DefinitionsIndexRoute: DefinitionsIndexRoute,
+  InstancesIndexRoute: InstancesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

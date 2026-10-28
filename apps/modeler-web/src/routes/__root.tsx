@@ -20,6 +20,9 @@ function RootLayout() {
             <Link to="/definitions" className="[&.active]:font-medium [&.active]:text-foreground">
               Definitions
             </Link>
+            <Link to="/instances" className="[&.active]:font-medium [&.active]:text-foreground">
+              Instances
+            </Link>
           </nav>
         </div>
       </header>
