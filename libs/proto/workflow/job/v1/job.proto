@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package workflow.job.v1;
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1;jobv1";
+
+// JobService membaca dan menyelesaikan job service task. Fase 4 menambah ActivateJobs, FailJob,
+// ThrowError, dan UpdateJobRetries ke service yang sama tanpa breaking change.
+service JobService {
+  // ListJobs mengembalikan job terbaru dahulu dengan keyset pagination.
+  rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
+  // CompleteJob menyelesaikan job terbuka, menggabungkan variabel ke scope process instance,
+  // lalu melanjutkan token. Job yang sudah selesai atau dibatalkan ditolak FAILED_PRECONDITION.
+  rpc CompleteJob(CompleteJobRequest) returns (CompleteJobResponse) {}
+}
+
+message ListJobsRequest {
+  string type = 1;
+  int64 process_instance_key = 2;
+  // Hanya job berstate CREATED.
+  bool only_open = 3;
+  // Default 50, maksimum 500.
+  int32 page_size = 4;
+  string page_token = 5;
+}
+
+message ListJobsResponse {
+  repeated JobInfo jobs = 1;
+  string next_page_token = 2;
+}
+
+message JobInfo {
+  int64 job_key = 1;
+  string type = 2;
+  int64 process_instance_key = 3;
+  int64 element_instance_key = 4;
+  string element_id = 5;
+  string bpmn_process_id = 6;
+  int32 retries = 7;
+  map<string, string> custom_headers = 8;
+  // CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
+  string state = 9;
+  int64 process_definition_key = 10;
+}
+
+message CompleteJobRequest {
+  int64 job_key = 1;
+  // Dokumen JSON object; kosong berarti tanpa variabel.
+  string variables = 2;
+}
+
+message CompleteJobResponse {}
