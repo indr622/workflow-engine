@@ -55,7 +55,7 @@ GOLANGCI_LINT_VERSION := v2.15.0
 .DEFAULT_GOAL := help
 
 .PHONY: help setup tools up down logs dev gen lint test build typecheck check test-integration \
-        test-race fuzz bench prop parity \
+        test-faultinject test-race fuzz bench prop parity \
         migrate-up migrate-down migrate-status migrate-new migrate-redo docker-build docker-push \
         db-backup db-backup-list db-restore \
         deploy-local deploy-local-down clean
@@ -108,6 +108,9 @@ check: ## Lint, test, typecheck, dan build untuk proyek yang terdampak (dipakai 
 
 test-integration: ## Test integrasi Go terhadap Postgres di DATABASE_URL
 	go test -count=1 -tags=integration ./apps/engine/...
+
+test-faultinject: ## Test pemulihan dengan fault point (tag integration,faultinject) terhadap DATABASE_URL
+	go test -count=1 -tags=integration,faultinject -run 'Crash|Slow|Failure' ./apps/engine/internal/modules/execution/infrastructure/
 
 test-race: ## Test Go dengan race detector (butuh cgo; dijalankan CI di Linux)
 	go test -race -count=1 ./libs/go/... ./apps/engine/...
@@ -175,3 +178,20 @@ deploy-local-down: ## Matikan compose produksi lokal
 
 clean: ## Hapus hasil build dan cache Nx
 	rm -rf dist tmp coverage .nx/cache
+
+# Suite chaos Compose (Fase 3, 11.2–11.3): image engine dibangun dengan tag yang sama dengan
+# `docker-build` (hanya image engine; web tidak dipakai), postgres chaos dinyalakan, runner
+# dijalankan, dan project chaos (termasuk volume) selalu dihapus di akhir, juga saat gagal.
+COMPOSE_CHAOS      := docker compose -f infra/docker/docker-compose.chaos.yml
+CHAOS_ENGINE_IMAGE ?= $(REGISTRY)/engine:$(VERSION)
+export CHAOS_ENGINE_IMAGE
+
+.PHONY: chaos
+
+chaos: ## Suite chaos Compose: SCENARIO=all|kill-engine,... (default all), DURATION=30s per skenario
+	@trap '$(COMPOSE_CHAOS) --profile replicas down -v --remove-orphans' EXIT; set -e; \
+	echo "building $(CHAOS_ENGINE_IMAGE)"; \
+	docker build -f infra/docker/engine.Dockerfile --build-arg VERSION=$(VERSION) -t $(CHAOS_ENGINE_IMAGE) .; \
+	$(COMPOSE_CHAOS) up -d --wait postgres; \
+	go run ./tools/scripts/chaos -scenario "$(or $(SCENARIO),all)" -duration "$(or $(DURATION),30s)" \
+		-compose infra/docker/docker-compose.chaos.yml -image "$(CHAOS_ENGINE_IMAGE)"

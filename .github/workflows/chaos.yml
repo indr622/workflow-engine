@@ -1,0 +1,51 @@
+name: Chaos
+
+# Suite chaos Compose (rencana Fase 3, 11.2–11.3, langkah 12.10). Terlalu lama untuk setiap PR,
+# jadi dijalankan nightly dan manual.
+on:
+  schedule:
+    - cron: '0 19 * * *' # 02:00 WIB
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'all, or comma-separated scenario names (go run ./tools/scripts/chaos -list)'
+        required: false
+        default: all
+      duration:
+        description: 'Load duration per scenario'
+        required: false
+        default: 30s
+
+concurrency:
+  group: chaos-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  chaos:
+    name: Compose chaos suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Run chaos suite
+        env:
+          SCENARIO: ${{ github.event.inputs.scenario || 'all' }}
+          DURATION: ${{ github.event.inputs.duration || '30s' }}
+        run: make chaos SCENARIO="$SCENARIO" DURATION="$DURATION"
+
+      - name: Upload logs of failed scenarios
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chaos-logs
+          path: tmp/chaos-logs
+          if-no-files-found: ignore
+          retention-days: 14

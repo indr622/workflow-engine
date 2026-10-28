@@ -1,0 +1,75 @@
+# Lingkungan chaos (Fase 3, 11.2): postgres + engine dari image `make docker-build`, terpisah total
+# dari compose dev (project, network, volume, dan port sendiri). Dijalankan oleh `make chaos`;
+# runner `tools/scripts/chaos` membunuh, me-restart, dan memutus container lewat Docker CLI.
+#
+#   CHAOS_ENGINE_IMAGE=ghcr.io/indr622/workflow-engine/engine:<tag> \
+#     docker compose -f infra/docker/docker-compose.chaos.yml up -d --wait
+#
+# Satu network bernama `workflow-engine-chaos`. Skenario partisi memutus *postgres* dari network itu
+# (bukan engine): di Docker Desktop memutus network sebuah container ikut mematikan port host-nya,
+# sedangkan runner harus tetap bisa memanggil API engine selama partisi.
+name: workflow-engine-chaos
+
+x-engine: &engine
+  image: ${CHAOS_ENGINE_IMAGE:-ghcr.io/indr622/workflow-engine/engine:latest}
+  # Engine yang mati harus tetap mati: runner yang menyalakannya kembali agar pemulihan terukur.
+  restart: 'no'
+  environment:
+    ENGINE_HTTP_ADDR: ':8080'
+    DATABASE_URL: postgres://workflow:chaos@postgres:5432/workflow?sslmode=disable
+    ENGINE_MIGRATE: 'true'
+    ENGINE_LOG_LEVEL: ${CHAOS_ENGINE_LOG_LEVEL:-info}
+    ENGINE_RECOVERY_ON_MISMATCH: fail
+    # Pool kecil agar dua replika + `engine verify` muat di max_connections.
+    ENGINE_DB_MAX_CONNS: '16'
+    ENGINE_CORS_ORIGINS: ''
+  healthcheck:
+    test: ['CMD', '/engine', 'healthcheck']
+    interval: 2s
+    timeout: 3s
+    start_period: 60s
+    retries: 30
+  networks:
+    - chaos
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: 'no'
+    environment:
+      POSTGRES_USER: workflow
+      POSTGRES_PASSWORD: chaos
+      POSTGRES_DB: workflow
+    command: postgres -c wal_level=replica -c max_connections=200
+    ports:
+      - '127.0.0.1:${CHAOS_POSTGRES_PORT:-5544}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - chaos
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U workflow -d workflow']
+      interval: 1s
+      timeout: 3s
+      retries: 60
+
+  engine:
+    <<: *engine
+    ports:
+      - '127.0.0.1:${CHAOS_ENGINE_PORT:-8180}:8080'
+
+  engine-2:
+    <<: *engine
+    profiles: [replicas]
+    ports:
+      - '127.0.0.1:${CHAOS_ENGINE_2_PORT:-8181}:8080'
+
+networks:
+  chaos:
+    name: workflow-engine-chaos
+
+volumes:
+  postgres-data:
