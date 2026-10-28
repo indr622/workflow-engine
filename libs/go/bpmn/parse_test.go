@@ -147,13 +147,14 @@ func issuesForGolden(is Issues) []goldenIssue {
 	return out
 }
 
-// TestExecutableProfile memastikan ProfileExecutable menerima tepat elemen Fase 2 dan menolak sisanya.
+// TestExecutableProfile memastikan ProfileExecutable menerima tepat elemen Fase 4 dan menolak sisanya.
 func TestExecutableProfile(t *testing.T) {
 	accepted := map[string]bool{
 		"v01_minimal.bpmn": true, "v03_exclusive_gateway.bpmn": true,
 		"v04_parallel_gateway.bpmn": true, "v05_inclusive_gateway.bpmn": true, "v06_undefined_manual_task.bpmn": true,
 		"v22_bpmn2_prefix.bpmn": true, "v23_large_process.bpmn": true, "v24_implicit_end.bpmn": true,
 		"v25_non_executable_pool.bpmn": true, "v26_camunda7_extension.bpmn": true, "v27_unreachable_element.bpmn": true,
+		"v28_user_task_job_based.bpmn": true,
 	}
 	for _, path := range corpus(t, "valid") {
 		name := filepath.Base(path)

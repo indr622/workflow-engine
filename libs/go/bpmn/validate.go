@@ -50,7 +50,11 @@ func (v *validator) warnAt(code Code, el FlowElement, msg string, args ...any) {
 func (v *validator) walk(s *Scope) {
 	for _, el := range s.elements {
 		if !v.profile.accepts(el) {
-			v.errorAt(CodeUnsupportedElement, el, "%s is not supported in profile %q", describe(el), v.profile.name)
+			if msg := v.profile.explainRejection(el); msg != "" {
+				v.errorAt(CodeUnsupportedElement, el, "%s", msg)
+			} else {
+				v.errorAt(CodeUnsupportedElement, el, "%s is not supported in profile %q", describe(el), v.profile.name)
+			}
 		}
 		switch x := el.(type) {
 		case *SequenceFlow:

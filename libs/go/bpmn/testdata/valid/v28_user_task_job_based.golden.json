@@ -1,0 +1,67 @@
+{
+  "model": {
+    "executionPlatform": "Camunda Cloud 8.8.0",
+    "id": "Definitions_v28",
+    "processes": [
+      {
+        "elements": [
+          {
+            "headers": [
+              {
+                "key": "priority",
+                "value": "high"
+              }
+            ],
+            "id": "approve",
+            "incoming": [
+              "f1"
+            ],
+            "name": "Approve order",
+            "outgoing": [
+              "f2"
+            ],
+            "type": "userTask",
+            "userTask": {
+              "assignee": "feel:=initiator",
+              "candidateGroups": "sales, managers",
+              "candidateUsers": "alice",
+              "dueDate": "2026-12-01T10:00:00Z",
+              "formKey": "camunda-forms:bpmn:approvalForm",
+              "zeebeUserTask": false
+            }
+          },
+          {
+            "id": "end",
+            "incoming": [
+              "f2"
+            ],
+            "type": "endEvent"
+          },
+          {
+            "id": "f1",
+            "source": "start",
+            "target": "approve",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "f2",
+            "source": "approve",
+            "target": "end",
+            "type": "sequenceFlow"
+          },
+          {
+            "id": "start",
+            "outgoing": [
+              "f1"
+            ],
+            "type": "startEvent"
+          }
+        ],
+        "executable": true,
+        "id": "job-based-approval",
+        "name": "job based approval"
+      }
+    ]
+  },
+  "warnings": []
+}

@@ -6,6 +6,15 @@ type Profile struct {
 	accepts func(FlowElement) bool
 	// rejectIOMapping menolak zeebe:ioMapping karena engine belum mengevaluasinya (Fase 7).
 	rejectIOMapping bool
+	// explain memberi pesan penolakan yang lebih spesifik; kosong berarti pesan umum.
+	explain func(FlowElement) string
+}
+
+func (p Profile) explainRejection(el FlowElement) string {
+	if p.explain == nil {
+		return ""
+	}
+	return p.explain(el)
 }
 
 // Name adalah nama profil ("full" atau "executable").
@@ -16,10 +25,18 @@ var ProfileFull = Profile{name: "full", accepts: func(FlowElement) bool { return
 
 // ProfileExecutable hanya menerima elemen yang sudah bisa dieksekusi engine.
 // Daftarnya tumbuh setiap fase; Fase 2: none start/end, sequence flow, service task,
-// undefined/manual task, exclusive/parallel/inclusive gateway.
-var ProfileExecutable = Profile{name: "executable", accepts: executableInPhase2, rejectIOMapping: true}
+// undefined/manual task, exclusive/parallel/inclusive gateway. Fase 4: user task berbasis job
+// worker (tanpa zeebe:userTask).
+var ProfileExecutable = Profile{name: "executable", accepts: executableInPhase4, rejectIOMapping: true, explain: explainExecutable}
 
-func executableInPhase2(el FlowElement) bool {
+func explainExecutable(el FlowElement) string {
+	if a, ok := el.(*Activity); ok && a.typ == UserTaskType && a.userTask.ZeebeUserTask {
+		return "native user task (zeebe:userTask) is supported from phase 6; remove zeebe:userTask to run it as a job-based user task"
+	}
+	return ""
+}
+
+func executableInPhase4(el FlowElement) bool {
 	switch x := el.(type) {
 	case *SequenceFlow:
 		return true
@@ -28,6 +45,9 @@ func executableInPhase2(el FlowElement) bool {
 	case *Activity:
 		if x.multiInstance != nil {
 			return false
+		}
+		if x.typ == UserTaskType {
+			return !x.userTask.ZeebeUserTask
 		}
 		return x.typ == TaskType || x.typ == ManualTaskType || x.typ == ServiceTaskType
 	case *Event:

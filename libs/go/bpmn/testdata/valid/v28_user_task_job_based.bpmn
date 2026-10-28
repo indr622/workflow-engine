@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_v28" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.40.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="job-based-approval" name="job based approval" isExecutable="true">
+    <bpmn:startEvent id="start"><bpmn:outgoing>f1</bpmn:outgoing></bpmn:startEvent>
+    <bpmn:userTask id="approve" name="Approve order"><bpmn:extensionElements><zeebe:formDefinition formKey="camunda-forms:bpmn:approvalForm" /><zeebe:assignmentDefinition assignee="=initiator" candidateGroups="sales, managers" candidateUsers="alice" /><zeebe:taskSchedule dueDate="2026-12-01T10:00:00Z" /><zeebe:taskHeaders><zeebe:header key="priority" value="high" /></zeebe:taskHeaders></bpmn:extensionElements><bpmn:incoming>f1</bpmn:incoming><bpmn:outgoing>f2</bpmn:outgoing></bpmn:userTask>
+    <bpmn:endEvent id="end"><bpmn:incoming>f2</bpmn:incoming></bpmn:endEvent>
+    <bpmn:sequenceFlow id="f1" sourceRef="start" targetRef="approve" />
+    <bpmn:sequenceFlow id="f2" sourceRef="approve" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

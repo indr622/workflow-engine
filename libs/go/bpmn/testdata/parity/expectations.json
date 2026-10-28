@@ -1,6 +1,6 @@
 {
   "reference": "camunda/zeebe:8.8.44",
-  "updatedAt": "2026-10-27T19:01:13Z",
+  "updatedAt": "2026-10-28T16:05:24Z",
   "entries": [
     {
       "file": "invalid/i01_no_executable_process.bpmn",
@@ -45,7 +45,7 @@
       "file": "invalid/i04_task_definition_invalid.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i04_task_definition_invalid.bpmn': - Element: task > extensionElements > taskDefinition\n    - ERROR: Expected expression but not found."
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i04_task_definition_invalid.bpmn': - Element: task \u003e extensionElements \u003e taskDefinition\n    - ERROR: Expected expression but not found."
       },
       "ours": {
         "accepted": false,
@@ -140,7 +140,7 @@
       "file": "invalid/i11_message_refs.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i11_message_refs.bpmn': - Element: msgNoName\n    - ERROR: Name must be present and not empty\n- Element: msgNoKey\n    - ERROR: Must have exactly one zeebe:subscription extension element\n- Element: m1\n    - ERROR: Must reference a message"
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i11_message_refs.bpmn': - Element: m1\n    - ERROR: Must reference a message\n- Element: msgNoName\n    - ERROR: Name must be present and not empty\n- Element: msgNoKey\n    - ERROR: Must have exactly one zeebe:subscription extension element"
       },
       "ours": {
         "accepted": false,
@@ -155,7 +155,7 @@
       "file": "invalid/i12_error_end_invalid.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i12_error_end_invalid.bpmn': - Element: e2\n    - ERROR: ErrorCode must be present and not empty\n- Element: e1\n    - ERROR: Must reference an error"
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i12_error_end_invalid.bpmn': - Element: e1\n    - ERROR: Must reference an error\n- Element: e2\n    - ERROR: ErrorCode must be present and not empty"
       },
       "ours": {
         "accepted": false,
@@ -208,7 +208,7 @@
       "file": "invalid/i16_unsupported_elements.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i16_unsupported_elements.bpmn': - Element: exotic\n    - ERROR: Can't find an catch link event for the throw link event with the name 'jump'.\n- Element: complex\n    - ERROR: Elements of type 'ComplexGateway' are currently not supported. Please refer to the documentation for a list of supported elements: https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-coverage/"
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i16_unsupported_elements.bpmn': - Element: complex\n    - ERROR: Elements of type 'ComplexGateway' are currently not supported. Please refer to the documentation for a list of supported elements: https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-coverage/\n- Element: exotic\n    - ERROR: Can't find an catch link event for the throw link event with the name 'jump'."
       },
       "ours": {
         "accepted": false,
@@ -221,7 +221,7 @@
       "file": "invalid/i17_multi_instance_invalid.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i17_multi_instance_invalid.bpmn': - Element: task > multiInstanceLoopCharacteristics > extensionElements > loopCharacteristics\n    - ERROR: Expected expression but not found."
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i17_multi_instance_invalid.bpmn': - Element: task \u003e multiInstanceLoopCharacteristics \u003e extensionElements \u003e loopCharacteristics\n    - ERROR: Expected expression but not found."
       },
       "ours": {
         "accepted": false,
@@ -235,7 +235,7 @@
       "file": "invalid/i18_user_task_form_conflict.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i18_user_task_form_conflict.bpmn': - Element: task > extensionElements > formDefinition\n    - ERROR: Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i18_user_task_form_conflict.bpmn': - Element: task \u003e extensionElements \u003e formDefinition\n    - ERROR: Exactly one of the attributes 'formId, externalReference' must be present and not blank for native user tasks"
       },
       "ours": {
         "accepted": false,
@@ -352,7 +352,7 @@
       "file": "invalid/i27_io_mapping_target_empty.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i27_io_mapping_target_empty.bpmn': - Element: task > extensionElements > ioMapping > input\n    - ERROR: Expected path expression but not found."
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i27_io_mapping_target_empty.bpmn': - Element: task \u003e extensionElements \u003e ioMapping \u003e input\n    - ERROR: Expected path expression but not found."
       },
       "ours": {
         "accepted": false,
@@ -378,7 +378,7 @@
       "file": "invalid/i29_escalation_signal_refs.bpmn",
       "camunda": {
         "accepted": false,
-        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i29_escalation_signal_refs.bpmn': - Element: x\n    - ERROR: Must reference an escalation\n- Element: s\n    - ERROR: Must reference a signal"
+        "message": "Command 'CREATE' rejected with code 'INVALID_ARGUMENT': Expected to deploy new resources, but encountered the following errors:\n'i29_escalation_signal_refs.bpmn': - Element: s\n    - ERROR: Must reference a signal\n- Element: x\n    - ERROR: Must reference an escalation"
       },
       "ours": {
         "accepted": false,
@@ -663,6 +663,15 @@
     },
     {
       "file": "valid/v27_unreachable_element.bpmn",
+      "camunda": {
+        "accepted": true
+      },
+      "ours": {
+        "accepted": true
+      }
+    },
+    {
+      "file": "valid/v28_user_task_job_based.bpmn",
       "camunda": {
         "accepted": true
       },

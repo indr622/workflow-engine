@@ -70,3 +70,33 @@ func hasCode(issues Issues, code Code) bool {
 	}
 	return false
 }
+
+func TestExecutableProfileExplainsNativeUserTask(t *testing.T) {
+	data := readFile(t, filepath.Join("testdata", "valid", "v07_user_task.bpmn"))
+	_, issues, err := ParseAndValidate(strings.NewReader(string(data)), ProfileExecutable)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, i := range issues.Errors() {
+		if i.Code == CodeUnsupportedElement && i.ElementID == "task" {
+			if !strings.Contains(i.Message, "phase 6") {
+				t.Fatalf("native user task rejection should point to phase 6, got %q", i.Message)
+			}
+			return
+		}
+	}
+	t.Fatalf("native user task must be rejected, got %v", issues)
+}
+
+func TestJobBasedUserTaskHeaders(t *testing.T) {
+	data := readFile(t, filepath.Join("testdata", "valid", "v28_user_task_job_based.bpmn"))
+	d, issues, err := ParseAndValidate(strings.NewReader(string(data)), ProfileExecutable)
+	if err != nil || issues.HasErrors() {
+		t.Fatalf("job-based user task must be executable: %v %v", err, issues)
+	}
+	el, _ := d.Processes()[0].Element("approve")
+	a := el.(*Activity)
+	if a.UserTask().ZeebeUserTask || a.UserTask().FormKey == "" || len(a.Headers()) != 1 {
+		t.Fatalf("unexpected user task model: %+v headers=%v", a.UserTask(), a.Headers())
+	}
+}
