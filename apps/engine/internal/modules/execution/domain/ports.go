@@ -33,18 +33,6 @@ type Clock interface {
 	Now() time.Time
 }
 
-// Repository membuka transaksi untuk satu command dan membaca referensi yang tidak pernah berubah
-// (job → instance, instance → definition) di luar transaksi, agar model proses bisa dimuat
-// sebelum row lock diambil.
-type Repository interface {
-	WithTx(ctx context.Context, fn func(ctx context.Context, tx TxRepository) error) error
-	// JobRef mengembalikan process instance pemilik job beserta process definition-nya;
-	// ErrJobNotFound bila job tidak ada.
-	JobRef(ctx context.Context, jobKey string) (instanceKey, definitionKey string, err error)
-	// DefinitionKeyOf mengembalikan process definition sebuah instance; ErrInstanceNotFound bila tidak ada.
-	DefinitionKeyOf(ctx context.Context, instanceKey string) (string, error)
-}
-
 // TxRepository adalah operasi di dalam transaksi satu command.
 type TxRepository interface {
 	// LockAndLoad mengunci baris process instance (FOR UPDATE) dan memuat state runtime-nya dalam

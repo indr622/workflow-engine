@@ -1,5 +1,10 @@
 package api
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // Topik event bus modul execution. Semua dipublikasikan setelah commit; outbox transaksional
 // menyusul di Fase 3.
 const (
@@ -52,3 +57,27 @@ type IncidentCreated struct {
 
 // Topic memenuhi eventbus.Event.
 func (IncidentCreated) Topic() string { return TopicIncidentCreated }
+
+// Event adalah event modul execution yang bisa dikirim lewat outbox atau bus in-process.
+type Event interface{ Topic() string }
+
+// DecodeEvent mengubah payload outbox menjadi tipe event api; dipakai consumer modul lain.
+func DecodeEvent(topic string, payload []byte) (Event, error) {
+	var ev Event
+	switch topic {
+	case TopicProcessInstanceCompleted:
+		ev = &ProcessInstanceCompleted{}
+	case TopicProcessInstanceTerminated:
+		ev = &ProcessInstanceTerminated{}
+	case TopicJobCreated:
+		ev = &JobCreated{}
+	case TopicIncidentCreated:
+		ev = &IncidentCreated{}
+	default:
+		return nil, fmt.Errorf("unknown execution topic %q", topic)
+	}
+	if err := json.Unmarshal(payload, ev); err != nil {
+		return nil, fmt.Errorf("decode %s: %w", topic, err)
+	}
+	return ev, nil
+}

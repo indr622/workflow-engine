@@ -1,5 +1,10 @@
 package api
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // TopicProcessDeployed adalah topik event bus untuk versi proses baru.
 const TopicProcessDeployed = "deployment.process_deployed"
 
@@ -15,3 +20,12 @@ type ProcessDeployed struct {
 
 // Topic memenuhi eventbus.Event.
 func (ProcessDeployed) Topic() string { return TopicProcessDeployed }
+
+// DecodeProcessDeployed mengubah payload outbox topik TopicProcessDeployed menjadi event api.
+func DecodeProcessDeployed(payload []byte) (ProcessDeployed, error) {
+	var ev ProcessDeployed
+	if err := json.Unmarshal(payload, &ev); err != nil {
+		return ev, fmt.Errorf("decode %s: %w", TopicProcessDeployed, err)
+	}
+	return ev, nil
+}

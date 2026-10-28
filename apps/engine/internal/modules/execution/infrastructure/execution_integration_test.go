@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	deploymentapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
@@ -34,6 +35,7 @@ import (
 	platformdb "github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	deploymentv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1"
 	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1/deploymentv1connect"
 	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
@@ -79,7 +81,7 @@ func setup(t *testing.T) *fixture {
 	deployRepo := deploymentinfra.NewPostgresRepository(pool, keys)
 	cache := deploymentapp.NewProcessCache(deployRepo, 64)
 	deploy := deploymentapp.NewDeployResource(deployRepo, bus, cache, nil, log)
-	repo := infrastructure.NewPostgresRepository(pool)
+	repo := infrastructure.NewPostgresRepository(pool, outbox.NewWriter(keys))
 	processor := domain.NewProcessor(domain.NewFeelEvaluator(), clock{}, domain.Limits{})
 	commands := application.NewCommands(repo, cache, processor, infrastructure.NewKeyGenerator(keys), bus, log, application.Config{})
 	queries := application.NewQueries(repo)
@@ -433,7 +435,7 @@ func assertReplay(t *testing.T, f *fixture, piKey string, active bool) {
 	t.Helper()
 	ctx := context.Background()
 	var snap *domain.InstanceSnapshot
-	err := f.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
+	err := f.repo.Do(ctx, func(ctx context.Context, tx application.TxScope) error {
 		var err error
 		snap, err = tx.LockAndLoad(ctx, piKey)
 		return err
@@ -540,5 +542,95 @@ func TestLinear20Latency(t *testing.T) {
 	// satu round trip ~1,2 ms, jadi di sini hanya sanity check agar regresi besar tetap tertangkap.
 	if p50 > time.Second {
 		t.Fatalf("p50 %v: regression, a command should take a few round trips", p50)
+	}
+}
+
+// TestOutboxEventsOrderedPerInstance: event durable satu instance diterima consumer dengan
+// aggregate_seq naik, meski 50 CompleteJob paralel bersaing (diulang 20 kali; DoD Fase 3).
+func TestOutboxEventsOrderedPerInstance(t *testing.T) {
+	f := setup(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	processID := f.deployXML(t, "outbox50", forkXML(50))
+
+	type seen struct {
+		topic string
+		seq   int32
+	}
+	var mu sync.Mutex
+	byInstance := map[string][]seen{}
+	relay := outbox.NewRelay(f.pool, slog.New(slog.NewTextHandler(io.Discard, nil)), outbox.Options{BatchSize: 37})
+	consumer := fmt.Sprintf("test.execution.%s", f.run)
+	err := relay.Register(outbox.Consumer{
+		Name: consumer, StartFrom: outbox.StartNow,
+		Topics: []string{api.TopicJobCreated, api.TopicProcessInstanceCompleted, api.TopicIncidentCreated, api.TopicProcessInstanceTerminated},
+		Handle: func(_ context.Context, _ pgx.Tx, ev outbox.Event) error {
+			if _, err := api.DecodeEvent(ev.Topic, ev.Payload); err != nil {
+				return err
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			byInstance[ev.AggregateKey] = append(byInstance[ev.AggregateKey], seen{ev.Topic, ev.AggregateSeq})
+			return nil
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := relay.Drain(ctx); err != nil { // kursor dibuat sebelum instance pertama
+		t.Fatal(err)
+	}
+	defer func() {
+		_, _ = f.pool.Exec(context.Background(), `DELETE FROM outbox_cursor WHERE consumer = $1`, consumer)
+	}()
+
+	var instances []string
+	for rep := 0; rep < 20; rep++ {
+		created, err := f.commands.CreateProcessInstance(ctx, api.CreateInstanceRequest{BpmnProcessID: processID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		instances = append(instances, created.ProcessInstanceKey)
+		jobs, _, err := f.queries.ListJobs(ctx, application.JobFilter{ProcessInstanceKey: created.ProcessInstanceKey, OnlyOpen: true, Limit: 100})
+		if err != nil || len(jobs) != 50 {
+			t.Fatalf("open jobs = %d, %v", len(jobs), err)
+		}
+		var wg sync.WaitGroup
+		errs := make(chan error, len(jobs))
+		for _, j := range jobs {
+			wg.Add(1)
+			go func(key string) {
+				defer wg.Done()
+				errs <- f.commands.CompleteJob(ctx, key, nil)
+			}(j.Key)
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		if err := relay.Drain(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, key := range instances {
+		events := byInstance[key]
+		created, completed := 0, 0
+		for i, e := range events {
+			if i > 0 && e.seq <= events[i-1].seq {
+				t.Fatalf("instance %s: aggregate_seq %d after %d", key, e.seq, events[i-1].seq)
+			}
+			switch e.topic {
+			case api.TopicJobCreated:
+				created++
+			case api.TopicProcessInstanceCompleted:
+				completed++
+			}
+		}
+		if created != 50 || completed != 1 {
+			t.Fatalf("instance %s: %d job_created and %d completed events, want 50 and 1", key, created, completed)
+		}
 	}
 }

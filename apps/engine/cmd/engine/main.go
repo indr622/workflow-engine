@@ -31,6 +31,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/httpserver"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/logger"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 )
 
 // Pastikan use case health memenuhi kontrak publik modulnya.
@@ -115,7 +116,7 @@ func run() error {
 	var _ deploymentapi.ProcessDefinitions = processCache
 
 	// Modul execution: hanya bergantung pada deployment lewat api.ProcessDefinitions.
-	executionRepo := executioninfra.NewPostgresRepository(pool)
+	executionRepo := executioninfra.NewPostgresRepository(pool, outbox.NewWriter(keys))
 	processor := executiondomain.NewProcessor(executiondomain.NewFeelEvaluator(), systemClock{},
 		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
 	commands := executionapp.NewCommands(executionRepo, processCache, processor,

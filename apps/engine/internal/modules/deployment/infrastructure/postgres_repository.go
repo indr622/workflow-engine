@@ -3,6 +3,7 @@ package infrastructure
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -10,21 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/infrastructure/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 )
 
 // PostgresRepository mengimplementasikan domain.Repository di atas pgx dan sqlc.
 type PostgresRepository struct {
-	pool *pgxpool.Pool
-	q    *db.Queries
-	keys keygen.Generator
+	pool   *pgxpool.Pool
+	q      *db.Queries
+	keys   keygen.Generator
+	outbox *outbox.Writer
 }
 
 // NewPostgresRepository membuat repository untuk pool yang diberikan.
 func NewPostgresRepository(pool *pgxpool.Pool, keys keygen.Generator) *PostgresRepository {
-	return &PostgresRepository{pool: pool, q: db.New(pool), keys: keys}
+	return &PostgresRepository{pool: pool, q: db.New(pool), keys: keys, outbox: outbox.NewWriter(keys)}
 }
 
 var _ domain.Repository = (*PostgresRepository)(nil)
@@ -36,7 +40,7 @@ func (r *PostgresRepository) WithTx(ctx context.Context, fn func(ctx context.Con
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), keys: r.keys}); err != nil {
+	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), tx: tx, keys: r.keys, outbox: r.outbox}); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -121,8 +125,10 @@ func (r *PostgresRepository) List(ctx context.Context, q domain.ListQuery) ([]do
 }
 
 type txRepository struct {
-	q    *db.Queries
-	keys keygen.Generator
+	q      *db.Queries
+	tx     pgx.Tx
+	keys   keygen.Generator
+	outbox *outbox.Writer
 }
 
 func (t *txRepository) LockProcessID(ctx context.Context, tenantID, bpmnProcessID string) error {
@@ -179,6 +185,24 @@ func (t *txRepository) SaveDeployment(ctx context.Context, d domain.Deployment) 
 		}); err != nil {
 			return fmt.Errorf("insert process definition %q v%d: %w", pd.BpmnProcessID, pd.Version, err)
 		}
+	}
+	// process_deployed ditulis ke outbox dalam transaksi deploy (ADR-0015); sinyal in-process
+	// pasca-commit tetap dikirim application.
+	events := make([]outbox.Event, 0, len(d.Definitions))
+	for _, pd := range d.Definitions {
+		payload, err := json.Marshal(api.ProcessDeployed{
+			ProcessDefinitionKey: pd.Key, BpmnProcessID: pd.BpmnProcessID, Version: pd.Version,
+			VersionTag: pd.VersionTag, DeploymentKey: d.Key, TenantID: d.TenantID,
+		})
+		if err != nil {
+			return err
+		}
+		events = append(events, outbox.Event{
+			Topic: api.TopicProcessDeployed, AggregateType: "process_definition", AggregateKey: pd.Key, Payload: payload,
+		})
+	}
+	if err := t.outbox.Enqueue(ctx, t.tx, events...); err != nil {
+		return err
 	}
 	return nil
 }

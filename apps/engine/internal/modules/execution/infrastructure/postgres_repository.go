@@ -16,34 +16,48 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
 )
 
-// PostgresRepository mengimplementasikan domain.Repository di atas pgx dan sqlc.
+// PostgresRepository mengimplementasikan application.UnitOfWork di atas pgx dan sqlc.
 type PostgresRepository struct {
-	pool *pgxpool.Pool
-	q    *db.Queries
+	pool   *pgxpool.Pool
+	q      *db.Queries
+	outbox *outbox.Writer
 }
 
 // NewPostgresRepository membuat repository untuk pool yang diberikan.
-func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool, q: db.New(pool)}
+func NewPostgresRepository(pool *pgxpool.Pool, writer *outbox.Writer) *PostgresRepository {
+	return &PostgresRepository{pool: pool, q: db.New(pool), outbox: writer}
 }
 
-var _ domain.Repository = (*PostgresRepository)(nil)
+var _ application.UnitOfWork = (*PostgresRepository)(nil)
 
-// WithTx menjalankan fn dalam satu transaksi.
-func (r *PostgresRepository) WithTx(ctx context.Context, fn func(ctx context.Context, tx domain.TxRepository) error) error {
+// Do menjalankan fn dalam satu transaksi. Event outbox yang belum ikut batch AppendAndProject
+// dikirim sebelum commit.
+func (r *PostgresRepository) Do(ctx context.Context, fn func(ctx context.Context, tx application.TxScope) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(ctx, &txRepository{tx: tx}); err != nil {
+	scope := &txRepository{tx: tx, outbox: r.outbox}
+	if err := fn(ctx, scope); err != nil {
 		return err
+	}
+	if len(scope.pending) > 0 {
+		events := make([]outbox.Event, 0, len(scope.pending))
+		for _, p := range scope.pending {
+			events = append(events, p.Event)
+		}
+		if err := r.outbox.Enqueue(ctx, tx, events...); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit: %w", err)
@@ -76,9 +90,16 @@ func (r *PostgresRepository) DefinitionKeyOf(ctx context.Context, instanceKey st
 }
 
 type txRepository struct {
-	tx pgx.Tx
+	tx     pgx.Tx
+	outbox *outbox.Writer
 	// lastSequence adalah sequence record terakhir instance yang dimuat (0 untuk instance baru).
 	lastSequence int32
+	pending      []application.RecordEvent
+}
+
+// EnqueueForRecords memenuhi application.TxScope.
+func (t *txRepository) EnqueueForRecords(events []application.RecordEvent) {
+	t.pending = append(t.pending, events...)
 }
 
 // lockSQL mengunci baris instance. Kunci dan muat sengaja dua statement: di READ COMMITTED
@@ -304,6 +325,20 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 		}
 	}
 	b.Queue(sqlInsertRecords, st.Key, seqs, keys, types, intents, elementIDs, payloads, times)
+
+	// Event outbox ikut batch yang sama; aggregate_seq = sequence record pemicu.
+	if len(t.pending) > 0 {
+		events := make([]outbox.Event, 0, len(t.pending))
+		for _, p := range t.pending {
+			ev := p.Event
+			ev.AggregateSeq = t.lastSequence + int32(p.RecordIndex) + 1 //nolint:gosec // dibatasi Limits
+			events = append(events, ev)
+		}
+		if err := t.outbox.Queue(ctx, b, events...); err != nil {
+			return err
+		}
+		t.pending = nil
+	}
 
 	if err := t.tx.SendBatch(ctx, b).Close(); err != nil {
 		return fmt.Errorf("append and project: %w", err)

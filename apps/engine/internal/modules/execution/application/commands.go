@@ -5,6 +5,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,6 +14,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
 	"github.com/indr622/workflow-engine/libs/go/bpmn"
 )
 
@@ -26,7 +28,7 @@ type Config struct {
 
 // Commands mengimplementasikan api.ProcessInstances dan api.Jobs.
 type Commands struct {
-	repo      domain.Repository
+	uow       UnitOfWork
 	defs      deploymentapi.ProcessDefinitions
 	processor *domain.Processor
 	keys      domain.KeyGenerator
@@ -41,7 +43,7 @@ var (
 )
 
 // NewCommands merakit use case command.
-func NewCommands(repo domain.Repository, defs deploymentapi.ProcessDefinitions, processor *domain.Processor,
+func NewCommands(uow UnitOfWork, defs deploymentapi.ProcessDefinitions, processor *domain.Processor,
 	keys domain.KeyGenerator, bus eventbus.Bus, log *slog.Logger, cfg Config) *Commands {
 	if cfg.MaxVariablesBytes <= 0 {
 		cfg.MaxVariablesBytes = DefaultMaxVariablesBytes
@@ -49,7 +51,7 @@ func NewCommands(repo domain.Repository, defs deploymentapi.ProcessDefinitions, 
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Commands{repo: repo, defs: defs, processor: processor, keys: keys, bus: bus, log: log, cfg: cfg}
+	return &Commands{uow: uow, defs: defs, processor: processor, keys: keys, bus: bus, log: log, cfg: cfg}
 }
 
 // ErrDefinitionRequired dikembalikan bila request tidak memilih process definition.
@@ -68,12 +70,13 @@ func (c *Commands) CreateProcessInstance(ctx context.Context, req api.CreateInst
 	ref := domain.DefinitionRef{Key: def.Key, BpmnProcessID: def.BpmnProcessID, Version: def.Version}
 	var st *domain.InstanceState
 	var records []domain.Record
-	err = c.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
+	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
 		st = domain.NewInstanceState(ref, proc)
 		records, err = c.processor.Process(st, domain.CreateInstance{Variables: vars}, c.keys)
 		if err != nil {
 			return err
 		}
+		tx.EnqueueForRecords(outboxEvents(st, records))
 		return tx.AppendAndProject(ctx, records, st)
 	})
 	if err != nil {
@@ -105,7 +108,7 @@ func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []b
 	if err != nil {
 		return err
 	}
-	piKey, defKey, err := c.repo.JobRef(ctx, jobKey)
+	piKey, defKey, err := c.uow.JobRef(ctx, jobKey)
 	if err != nil {
 		return fmt.Errorf("complete job: %w", err)
 	}
@@ -115,7 +118,7 @@ func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []b
 	}
 	var st *domain.InstanceState
 	var records []domain.Record
-	err = c.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
+	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
 		var err error
 		st, err = lockAndLoad(ctx, tx, piKey, proc)
 		if err != nil {
@@ -125,6 +128,7 @@ func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []b
 		if err != nil {
 			return err
 		}
+		tx.EnqueueForRecords(outboxEvents(st, records))
 		return tx.AppendAndProject(ctx, records, st)
 	})
 	if err != nil {
@@ -142,7 +146,7 @@ func (c *Commands) CancelProcessInstance(ctx context.Context, processInstanceKey
 	}
 	var st *domain.InstanceState
 	var records []domain.Record
-	err = c.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
+	err = c.uow.Do(ctx, func(ctx context.Context, tx TxScope) error {
 		var err error
 		st, err = lockAndLoad(ctx, tx, processInstanceKey, proc)
 		if err != nil {
@@ -152,6 +156,7 @@ func (c *Commands) CancelProcessInstance(ctx context.Context, processInstanceKey
 		if err != nil {
 			return err
 		}
+		tx.EnqueueForRecords(outboxEvents(st, records))
 		return tx.AppendAndProject(ctx, records, st)
 	})
 	if err != nil {
@@ -165,7 +170,7 @@ func (c *Commands) CancelProcessInstance(ctx context.Context, processInstanceKey
 // transaksi (sambil memegang row lock) bisa meminta koneksi kedua dari pool; pada banyak command
 // paralel untuk satu instance, pool habis dan semua transaksi saling menunggu.
 func (c *Commands) processOf(ctx context.Context, instanceKey string) (*bpmn.Process, error) {
-	defKey, err := c.repo.DefinitionKeyOf(ctx, instanceKey)
+	defKey, err := c.uow.DefinitionKeyOf(ctx, instanceKey)
 	if err != nil {
 		return nil, err
 	}
@@ -226,4 +231,24 @@ func eventOf(st *domain.InstanceState, r *domain.Record) eventbus.Event {
 		}
 	}
 	return nil
+}
+
+// outboxEvents menurunkan event durable dari record command (ADR-0015). Payload adalah JSON struct
+// event api sehingga consumer tidak bergantung pada format record internal.
+func outboxEvents(st *domain.InstanceState, records []domain.Record) []RecordEvent {
+	var out []RecordEvent
+	for i := range records {
+		ev := eventOf(st, &records[i])
+		if ev == nil {
+			continue
+		}
+		payload, err := json.Marshal(ev)
+		if err != nil {
+			continue // struct event api selalu bisa di-marshal
+		}
+		out = append(out, RecordEvent{RecordIndex: i, Event: outbox.Event{
+			Topic: ev.Topic(), AggregateType: "process_instance", AggregateKey: st.Key, Payload: payload,
+		}})
+	}
+	return out
 }
