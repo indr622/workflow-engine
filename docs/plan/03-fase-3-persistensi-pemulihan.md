@@ -2,7 +2,7 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Draft rencana — belum dieksekusi
+**Status:** 🚧 Sedang dieksekusi di branch `feat/phase-3-persistence` (mulai 2026-10-28)
 **Tanggal:** 2026-10-28
 
 ---
@@ -1148,7 +1148,44 @@ Setiap pertanyaan diberi rekomendasi. Keputusan final dicatat di 15.1 setelah re
 
 ### 15.1 Keputusan
 
-Belum ada. Diisi dengan tabel yang sama seperti 9.1 dokumen Fase 1.
+Dicatat 2026-10-28. User meminta Fase 3 dimulai ("lanjut fase 3"); seperti fase sebelumnya, setiap
+pertanyaan memakai rekomendasi dokumen ini, disesuaikan dengan keputusan yang diambil saat Fase 2:
+
+| # | Keputusan |
+|---|---|
+| 1 | Tabel `outbox_event` generik milik platform |
+| 2 | Pembacaan bebas celah dengan `xid8` + `pg_snapshot_xmin` |
+| 3 | `ENGINE_RECOVERY_ON_MISMATCH` default `fail` |
+| 4 | Verifikasi dalam saat start: jendela + sampel; `--all` lewat CLI |
+| 5 | `request_id` di body proto |
+| 6 | Key sama dengan payload berbeda → `InvalidArgument` + `IDEMPOTENCY_KEY_REUSED` |
+| 7 | TTL idempotensi 24 jam |
+| 8 | Tanpa kompaksi record di Fase 3 |
+| 9 | Retensi menghapus instance final setelah N hari, default nonaktif |
+| 10 | **Digantikan ADR-0011**: key sudah UUIDv7 sejak Fase 2; tidak ada bit partisi |
+| 11 | Row lock per instance tetap; affinity hanya bila benchmark menunjukkan lock wait p99 > 50 ms |
+| 12 | Handler consumer menerima `pgx.Tx` di `interfaces`/`infrastructure` modul |
+| 13 | `GetProcessInstance` dipotong di 1.000 element instance + flag + RPC list |
+| 14 | PITR tidak di Fase 3; hanya `wal_level=replica` dan catatan |
+| 15 | Metrik lewat API OpenTelemetry dengan provider no-op |
+| 16 | Tanpa sinyal in-process lintas replika; `NOTIFY outbox_wakeup` hanya untuk relay |
+
+Penyesuaian terhadap kondisi setelah Fase 2 (berlaku untuk seluruh dokumen ini):
+
+- **Tanpa auto-increment** (preferensi user): `outbox_event` memakai `event_id UUID` dari generator
+  engine sebagai primary key; kursor relay `(tx_id, event_id)`. Urutan dalam satu transaksi tetap
+  terjaga karena generator UUIDv7 monotonik di dalam satu proses. Semua kolom key bertipe `UUID`.
+- **Bagian 8 (key dan partisi) sudah diputuskan ADR-0011**: key UUIDv7; kesiapan partisi memakai
+  hash `process_instance_key` di lapisan routing.
+- **`execution_record` tidak punya `position`**: riwayat berhalaman memakai `sequence`; field
+  `position` di `ExecutionRecord` proto dihilangkan.
+- **Penomoran digeser**: ADR Fase 3 menjadi ADR-0015 (dua tingkat pengiriman event), ADR-0016
+  (record sebagai sumber kebenaran, verify dan rebuild), ADR-0017 (idempotensi), ADR-0018 (kesiapan
+  partisi dan contention), ADR-0019 (snapshot dan retensi). Migrasi menjadi `00005_outbox.sql`,
+  `00006_idempotency.sql`, `00007_history.sql`.
+- **Port Fase 2 yang sebenarnya** berbeda dari sketsa 3.3: `domain.Repository` punya `WithTx`,
+  `JobRef`, `DefinitionKeyOf`; `TxRepository` punya `LockAndLoad` dan `AppendAndProject`. Unit of work
+  application dibangun di atas bentuk itu.
 
 ### 15.2 Pertanyaan dan rekomendasi
 
