@@ -196,9 +196,16 @@ func TestFailingEventIsRetriedThenDeadLettered(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, s := range statuses {
-		if s.Consumer == consumer && (s.Pending != 0 || s.DeadLetters != 1) {
+		// Pending menghitung semua topik di belakang kursor; paket test lain bisa menulis event
+		// bersamaan, jadi di sini hanya dead letter yang diperiksa dari status.
+		if s.Consumer == consumer && s.DeadLetters != 1 {
 			t.Fatalf("status = %+v", s)
 		}
+	}
+	var behind int
+	if err := pool.QueryRow(context.Background(), `SELECT count(*) FROM outbox_event e JOIN outbox_cursor c ON c.consumer = $1
+		WHERE e.topic = $2 AND (e.tx_id, e.event_id) > (c.tx_id, c.event_id)`, consumer, topic).Scan(&behind); err != nil || behind != 0 {
+		t.Fatalf("%d events of the topic still behind the cursor, %v", behind, err)
 	}
 }
 
