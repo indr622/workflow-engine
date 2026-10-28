@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package workflow.process.v1;
 
+import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1;processv1";
@@ -24,6 +26,13 @@ service ProcessInstanceService {
   rpc ListProcessInstanceRecords(ListProcessInstanceRecordsRequest) returns (ListProcessInstanceRecordsResponse) {}
   // ListElementInstances mengembalikan element instance urut key, berhalaman.
   rpc ListElementInstances(ListElementInstancesRequest) returns (ListElementInstancesResponse) {}
+  // CreateProcessInstanceWithResult membuat instance lalu menunggu sampai instance selesai atau
+  // request_timeout habis. Timeout menghasilkan DEADLINE_EXCEEDED dengan ErrorInfo
+  // RESULT_TIMEOUT; instance tetap berjalan.
+  rpc CreateProcessInstanceWithResult(CreateProcessInstanceWithResultRequest) returns (CreateProcessInstanceWithResultResponse) {}
+  // SetVariables menulis variabel ke scope process instance. scope_key boleh key process instance
+  // atau element instance aktif miliknya; local = true hanya didukung pada scope process instance.
+  rpc SetVariables(SetVariablesRequest) returns (SetVariablesResponse) {}
 }
 
 message CreateProcessInstanceRequest {
@@ -136,7 +145,7 @@ message Job {
   string element_id = 3;
   string element_instance_key = 4;
   int32 retries = 5;
-  // CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
+  // CREATED, ACTIVATED, COMPLETED, FAILED, ERROR_THROWN, atau CANCELED.
   string state = 6;
 }
 
@@ -202,3 +211,34 @@ message ListElementInstancesResponse {
   repeated ElementInstance element_instances = 1;
   string next_page_token = 2;
 }
+
+message CreateProcessInstanceWithResultRequest {
+  CreateProcessInstanceRequest request = 1 [(buf.validate.field).required = true];
+  // Default 10 s, maksimum 55 s.
+  google.protobuf.Duration request_timeout = 2 [(buf.validate.field).duration.gte = {}];
+  // Nama variabel yang dikembalikan; kosong berarti semua.
+  repeated string fetch_variables = 3 [(buf.validate.field).repeated.max_items = 256];
+}
+
+message CreateProcessInstanceWithResultResponse {
+  string process_instance_key = 1;
+  string process_definition_key = 2;
+  string bpmn_process_id = 3;
+  int32 version = 4;
+  // COMPLETED atau TERMINATED.
+  ProcessInstanceState state = 5;
+  // Dokumen JSON object berisi variabel akhir scope process instance.
+  string variables = 6;
+}
+
+message SetVariablesRequest {
+  string scope_key = 1 [(buf.validate.field).string.uuid = true];
+  // Dokumen JSON object, wajib berisi minimal satu variabel.
+  string variables = 2 [(buf.validate.field).string.min_len = 2];
+  // Tulis ke scope itu sendiri tanpa propagasi. Fase 4 hanya pada scope process instance.
+  bool local = 3;
+  // Opsional, 1 sampai 128 byte (ADR-0017).
+  string request_id = 4 [(buf.validate.field).string.max_len = 128];
+}
+
+message SetVariablesResponse {}

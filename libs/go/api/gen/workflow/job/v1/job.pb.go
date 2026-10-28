@@ -7,8 +7,11 @@
 package jobv1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -21,15 +24,78 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type JobState int32
+
+const (
+	JobState_JOB_STATE_UNSPECIFIED  JobState = 0
+	JobState_JOB_STATE_CREATED      JobState = 1
+	JobState_JOB_STATE_ACTIVATED    JobState = 2
+	JobState_JOB_STATE_COMPLETED    JobState = 3
+	JobState_JOB_STATE_FAILED       JobState = 4
+	JobState_JOB_STATE_ERROR_THROWN JobState = 5
+	JobState_JOB_STATE_CANCELED     JobState = 6
+)
+
+// Enum value maps for JobState.
+var (
+	JobState_name = map[int32]string{
+		0: "JOB_STATE_UNSPECIFIED",
+		1: "JOB_STATE_CREATED",
+		2: "JOB_STATE_ACTIVATED",
+		3: "JOB_STATE_COMPLETED",
+		4: "JOB_STATE_FAILED",
+		5: "JOB_STATE_ERROR_THROWN",
+		6: "JOB_STATE_CANCELED",
+	}
+	JobState_value = map[string]int32{
+		"JOB_STATE_UNSPECIFIED":  0,
+		"JOB_STATE_CREATED":      1,
+		"JOB_STATE_ACTIVATED":    2,
+		"JOB_STATE_COMPLETED":    3,
+		"JOB_STATE_FAILED":       4,
+		"JOB_STATE_ERROR_THROWN": 5,
+		"JOB_STATE_CANCELED":     6,
+	}
+)
+
+func (x JobState) Enum() *JobState {
+	p := new(JobState)
+	*p = x
+	return p
+}
+
+func (x JobState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (JobState) Descriptor() protoreflect.EnumDescriptor {
+	return file_workflow_job_v1_job_proto_enumTypes[0].Descriptor()
+}
+
+func (JobState) Type() protoreflect.EnumType {
+	return &file_workflow_job_v1_job_proto_enumTypes[0]
+}
+
+func (x JobState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use JobState.Descriptor instead.
+func (JobState) EnumDescriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{0}
+}
+
 type ListJobsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Type               string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
 	ProcessInstanceKey string                 `protobuf:"bytes,2,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
-	// Hanya job berstate CREATED.
+	// Hanya job yang belum final (CREATED, ACTIVATED, FAILED, ERROR_THROWN).
 	OnlyOpen bool `protobuf:"varint,3,opt,name=only_open,json=onlyOpen,proto3" json:"only_open,omitempty"`
 	// Default 50, maksimum 500.
-	PageSize      int32  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	PageToken     string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageSize  int32  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken string `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Filter state; UNSPECIFIED berarti semua.
+	State         JobState `protobuf:"varint,6,opt,name=state,proto3,enum=workflow.job.v1.JobState" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -99,6 +165,13 @@ func (x *ListJobsRequest) GetPageToken() string {
 	return ""
 }
 
+func (x *ListJobsRequest) GetState() JobState {
+	if x != nil {
+		return x.State
+	}
+	return JobState_JOB_STATE_UNSPECIFIED
+}
+
 type ListJobsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Jobs          []*JobInfo             `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
@@ -161,11 +234,20 @@ type JobInfo struct {
 	BpmnProcessId      string                 `protobuf:"bytes,6,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
 	Retries            int32                  `protobuf:"varint,7,opt,name=retries,proto3" json:"retries,omitempty"`
 	CustomHeaders      map[string]string      `protobuf:"bytes,8,rep,name=custom_headers,json=customHeaders,proto3" json:"custom_headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
-	State                string `protobuf:"bytes,9,opt,name=state,proto3" json:"state,omitempty"`
-	ProcessDefinitionKey string `protobuf:"bytes,10,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Nama state, sama dengan state_enum tanpa awalan JOB_STATE_. Dipertahankan dari Fase 2.
+	State                string   `protobuf:"bytes,9,opt,name=state,proto3" json:"state,omitempty"`
+	ProcessDefinitionKey string   `protobuf:"bytes,10,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	StateEnum            JobState `protobuf:"varint,11,opt,name=state_enum,json=stateEnum,proto3,enum=workflow.job.v1.JobState" json:"state_enum,omitempty"`
+	// Worker pemegang lease; kosong bila tidak ACTIVATED.
+	Worker   string                 `protobuf:"bytes,12,opt,name=worker,proto3" json:"worker,omitempty"`
+	Deadline *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=deadline,proto3" json:"deadline,omitempty"`
+	// Waktu paling awal job dapat diaktifkan (setelah backoff FailJob).
+	ActivatableAt   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=activatable_at,json=activatableAt,proto3" json:"activatable_at,omitempty"`
+	ErrorMessage    string                 `protobuf:"bytes,15,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	ErrorCode       string                 `protobuf:"bytes,16,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ActivationCount int32                  `protobuf:"varint,17,opt,name=activation_count,json=activationCount,proto3" json:"activation_count,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *JobInfo) Reset() {
@@ -268,6 +350,55 @@ func (x *JobInfo) GetProcessDefinitionKey() string {
 	return ""
 }
 
+func (x *JobInfo) GetStateEnum() JobState {
+	if x != nil {
+		return x.StateEnum
+	}
+	return JobState_JOB_STATE_UNSPECIFIED
+}
+
+func (x *JobInfo) GetWorker() string {
+	if x != nil {
+		return x.Worker
+	}
+	return ""
+}
+
+func (x *JobInfo) GetDeadline() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Deadline
+	}
+	return nil
+}
+
+func (x *JobInfo) GetActivatableAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ActivatableAt
+	}
+	return nil
+}
+
+func (x *JobInfo) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *JobInfo) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *JobInfo) GetActivationCount() int32 {
+	if x != nil {
+		return x.ActivationCount
+	}
+	return 0
+}
+
 type CompleteJobRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	JobKey string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
@@ -367,21 +498,729 @@ func (*CompleteJobResponse) Descriptor() ([]byte, []int) {
 	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{4}
 }
 
+type ActivateJobsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Type  string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
+	// Nama worker untuk observability; default "default".
+	Worker string `protobuf:"bytes,2,opt,name=worker,proto3" json:"worker,omitempty"`
+	// Durasi lease; 0 berarti default server (5 menit). Dipotong ke [1 s, 24 jam].
+	Timeout *durationpb.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// 0 berarti default server (32); dipotong ke maksimum server (1.000).
+	MaxJobsToActivate int32 `protobuf:"varint,4,opt,name=max_jobs_to_activate,json=maxJobsToActivate,proto3" json:"max_jobs_to_activate,omitempty"`
+	// Nama variabel yang disertakan; kosong berarti semua variabel scope process instance.
+	FetchVariable []string `protobuf:"bytes,5,rep,name=fetch_variable,json=fetchVariable,proto3" json:"fetch_variable,omitempty"`
+	// Batas long polling; 0 berarti jawab segera. Dipotong ke maksimum server (55 s).
+	RequestTimeout *durationpb.Duration `protobuf:"bytes,6,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ActivateJobsRequest) Reset() {
+	*x = ActivateJobsRequest{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateJobsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateJobsRequest) ProtoMessage() {}
+
+func (x *ActivateJobsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateJobsRequest.ProtoReflect.Descriptor instead.
+func (*ActivateJobsRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ActivateJobsRequest) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ActivateJobsRequest) GetWorker() string {
+	if x != nil {
+		return x.Worker
+	}
+	return ""
+}
+
+func (x *ActivateJobsRequest) GetTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.Timeout
+	}
+	return nil
+}
+
+func (x *ActivateJobsRequest) GetMaxJobsToActivate() int32 {
+	if x != nil {
+		return x.MaxJobsToActivate
+	}
+	return 0
+}
+
+func (x *ActivateJobsRequest) GetFetchVariable() []string {
+	if x != nil {
+		return x.FetchVariable
+	}
+	return nil
+}
+
+func (x *ActivateJobsRequest) GetRequestTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.RequestTimeout
+	}
+	return nil
+}
+
+type ActivateJobsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Jobs          []*ActivatedJob        `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivateJobsResponse) Reset() {
+	*x = ActivateJobsResponse{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivateJobsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivateJobsResponse) ProtoMessage() {}
+
+func (x *ActivateJobsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivateJobsResponse.ProtoReflect.Descriptor instead.
+func (*ActivateJobsResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ActivateJobsResponse) GetJobs() []*ActivatedJob {
+	if x != nil {
+		return x.Jobs
+	}
+	return nil
+}
+
+type ActivatedJob struct {
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	JobKey                   string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	Type                     string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	ProcessInstanceKey       string                 `protobuf:"bytes,3,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	BpmnProcessId            string                 `protobuf:"bytes,4,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
+	ProcessDefinitionVersion int32                  `protobuf:"varint,5,opt,name=process_definition_version,json=processDefinitionVersion,proto3" json:"process_definition_version,omitempty"`
+	ProcessDefinitionKey     string                 `protobuf:"bytes,6,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ElementId                string                 `protobuf:"bytes,7,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
+	ElementInstanceKey       string                 `protobuf:"bytes,8,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
+	CustomHeaders            map[string]string      `protobuf:"bytes,9,rep,name=custom_headers,json=customHeaders,proto3" json:"custom_headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Worker                   string                 `protobuf:"bytes,10,opt,name=worker,proto3" json:"worker,omitempty"`
+	Retries                  int32                  `protobuf:"varint,11,opt,name=retries,proto3" json:"retries,omitempty"`
+	Deadline                 *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=deadline,proto3" json:"deadline,omitempty"`
+	// Dokumen JSON object.
+	Variables string `protobuf:"bytes,13,opt,name=variables,proto3" json:"variables,omitempty"`
+	// "<default>" sampai multi-tenant Fase 8.
+	TenantId      string `protobuf:"bytes,14,opt,name=tenant_id,json=tenantId,proto3" json:"tenant_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActivatedJob) Reset() {
+	*x = ActivatedJob{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActivatedJob) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActivatedJob) ProtoMessage() {}
+
+func (x *ActivatedJob) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActivatedJob.ProtoReflect.Descriptor instead.
+func (*ActivatedJob) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ActivatedJob) GetJobKey() string {
+	if x != nil {
+		return x.JobKey
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetProcessInstanceKey() string {
+	if x != nil {
+		return x.ProcessInstanceKey
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetBpmnProcessId() string {
+	if x != nil {
+		return x.BpmnProcessId
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetProcessDefinitionVersion() int32 {
+	if x != nil {
+		return x.ProcessDefinitionVersion
+	}
+	return 0
+}
+
+func (x *ActivatedJob) GetProcessDefinitionKey() string {
+	if x != nil {
+		return x.ProcessDefinitionKey
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetElementId() string {
+	if x != nil {
+		return x.ElementId
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetElementInstanceKey() string {
+	if x != nil {
+		return x.ElementInstanceKey
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetCustomHeaders() map[string]string {
+	if x != nil {
+		return x.CustomHeaders
+	}
+	return nil
+}
+
+func (x *ActivatedJob) GetWorker() string {
+	if x != nil {
+		return x.Worker
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetRetries() int32 {
+	if x != nil {
+		return x.Retries
+	}
+	return 0
+}
+
+func (x *ActivatedJob) GetDeadline() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Deadline
+	}
+	return nil
+}
+
+func (x *ActivatedJob) GetVariables() string {
+	if x != nil {
+		return x.Variables
+	}
+	return ""
+}
+
+func (x *ActivatedJob) GetTenantId() string {
+	if x != nil {
+		return x.TenantId
+	}
+	return ""
+}
+
+type FailJobRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	JobKey string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	// Retries tersisa yang ditetapkan worker (biasanya retries job dikurangi satu).
+	Retries      int32  `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
+	ErrorMessage string `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	// Jeda sebelum job dapat diaktifkan lagi; dipotong ke maksimum server (24 jam).
+	RetryBackOff *durationpb.Duration `protobuf:"bytes,4,opt,name=retry_back_off,json=retryBackOff,proto3" json:"retry_back_off,omitempty"`
+	// Dokumen JSON object; kosong berarti tanpa variabel.
+	Variables string `protobuf:"bytes,5,opt,name=variables,proto3" json:"variables,omitempty"`
+	// Opsional, 1 sampai 128 byte (ADR-0017).
+	RequestId     string `protobuf:"bytes,6,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FailJobRequest) Reset() {
+	*x = FailJobRequest{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FailJobRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FailJobRequest) ProtoMessage() {}
+
+func (x *FailJobRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FailJobRequest.ProtoReflect.Descriptor instead.
+func (*FailJobRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *FailJobRequest) GetJobKey() string {
+	if x != nil {
+		return x.JobKey
+	}
+	return ""
+}
+
+func (x *FailJobRequest) GetRetries() int32 {
+	if x != nil {
+		return x.Retries
+	}
+	return 0
+}
+
+func (x *FailJobRequest) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *FailJobRequest) GetRetryBackOff() *durationpb.Duration {
+	if x != nil {
+		return x.RetryBackOff
+	}
+	return nil
+}
+
+func (x *FailJobRequest) GetVariables() string {
+	if x != nil {
+		return x.Variables
+	}
+	return ""
+}
+
+func (x *FailJobRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type FailJobResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FailJobResponse) Reset() {
+	*x = FailJobResponse{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FailJobResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FailJobResponse) ProtoMessage() {}
+
+func (x *FailJobResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FailJobResponse.ProtoReflect.Descriptor instead.
+func (*FailJobResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{9}
+}
+
+type ThrowErrorRequest struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	JobKey       string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	ErrorCode    string                 `protobuf:"bytes,2,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	ErrorMessage string                 `protobuf:"bytes,3,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
+	// Dokumen JSON object; kosong berarti tanpa variabel.
+	Variables string `protobuf:"bytes,4,opt,name=variables,proto3" json:"variables,omitempty"`
+	// Opsional, 1 sampai 128 byte (ADR-0017).
+	RequestId     string `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ThrowErrorRequest) Reset() {
+	*x = ThrowErrorRequest{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ThrowErrorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ThrowErrorRequest) ProtoMessage() {}
+
+func (x *ThrowErrorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ThrowErrorRequest.ProtoReflect.Descriptor instead.
+func (*ThrowErrorRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ThrowErrorRequest) GetJobKey() string {
+	if x != nil {
+		return x.JobKey
+	}
+	return ""
+}
+
+func (x *ThrowErrorRequest) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *ThrowErrorRequest) GetErrorMessage() string {
+	if x != nil {
+		return x.ErrorMessage
+	}
+	return ""
+}
+
+func (x *ThrowErrorRequest) GetVariables() string {
+	if x != nil {
+		return x.Variables
+	}
+	return ""
+}
+
+func (x *ThrowErrorRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type ThrowErrorResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ThrowErrorResponse) Reset() {
+	*x = ThrowErrorResponse{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ThrowErrorResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ThrowErrorResponse) ProtoMessage() {}
+
+func (x *ThrowErrorResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ThrowErrorResponse.ProtoReflect.Descriptor instead.
+func (*ThrowErrorResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{11}
+}
+
+type UpdateJobRetriesRequest struct {
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	JobKey  string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	Retries int32                  `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
+	// Opsional, 1 sampai 128 byte (ADR-0017).
+	RequestId     string `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateJobRetriesRequest) Reset() {
+	*x = UpdateJobRetriesRequest{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJobRetriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJobRetriesRequest) ProtoMessage() {}
+
+func (x *UpdateJobRetriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJobRetriesRequest.ProtoReflect.Descriptor instead.
+func (*UpdateJobRetriesRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UpdateJobRetriesRequest) GetJobKey() string {
+	if x != nil {
+		return x.JobKey
+	}
+	return ""
+}
+
+func (x *UpdateJobRetriesRequest) GetRetries() int32 {
+	if x != nil {
+		return x.Retries
+	}
+	return 0
+}
+
+func (x *UpdateJobRetriesRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type UpdateJobRetriesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateJobRetriesResponse) Reset() {
+	*x = UpdateJobRetriesResponse{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJobRetriesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJobRetriesResponse) ProtoMessage() {}
+
+func (x *UpdateJobRetriesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJobRetriesResponse.ProtoReflect.Descriptor instead.
+func (*UpdateJobRetriesResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{13}
+}
+
+type UpdateJobTimeoutRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	JobKey string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	// Deadline baru = sekarang + timeout; dipotong ke [1 s, 24 jam].
+	Timeout       *durationpb.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateJobTimeoutRequest) Reset() {
+	*x = UpdateJobTimeoutRequest{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJobTimeoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJobTimeoutRequest) ProtoMessage() {}
+
+func (x *UpdateJobTimeoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJobTimeoutRequest.ProtoReflect.Descriptor instead.
+func (*UpdateJobTimeoutRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *UpdateJobTimeoutRequest) GetJobKey() string {
+	if x != nil {
+		return x.JobKey
+	}
+	return ""
+}
+
+func (x *UpdateJobTimeoutRequest) GetTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.Timeout
+	}
+	return nil
+}
+
+type UpdateJobTimeoutResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateJobTimeoutResponse) Reset() {
+	*x = UpdateJobTimeoutResponse{}
+	mi := &file_workflow_job_v1_job_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateJobTimeoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateJobTimeoutResponse) ProtoMessage() {}
+
+func (x *UpdateJobTimeoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_job_v1_job_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateJobTimeoutResponse.ProtoReflect.Descriptor instead.
+func (*UpdateJobTimeoutResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{15}
+}
+
 var File_workflow_job_v1_job_proto protoreflect.FileDescriptor
 
 const file_workflow_job_v1_job_proto_rawDesc = "" +
 	"\n" +
-	"\x19workflow/job/v1/job.proto\x12\x0fworkflow.job.v1\"\xb0\x01\n" +
-	"\x0fListJobsRequest\x12\x12\n" +
-	"\x04type\x18\x01 \x01(\tR\x04type\x120\n" +
-	"\x14process_instance_key\x18\x02 \x01(\tR\x12processInstanceKey\x12\x1b\n" +
-	"\tonly_open\x18\x03 \x01(\bR\bonlyOpen\x12\x1b\n" +
-	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\x19workflow/job/v1/job.proto\x12\x0fworkflow.job.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x95\x02\n" +
+	"\x0fListJobsRequest\x12\x1c\n" +
+	"\x04type\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x04type\x12=\n" +
+	"\x14process_instance_key\x18\x02 \x01(\tB\v\xbaH\b\xd8\x01\x01r\x03\xb0\x01\x01R\x12processInstanceKey\x12\x1b\n" +
+	"\tonly_open\x18\x03 \x01(\bR\bonlyOpen\x12$\n" +
+	"\tpage_size\x18\x04 \x01(\x05B\a\xbaH\x04\x1a\x02(\x00R\bpageSize\x12'\n" +
 	"\n" +
-	"page_token\x18\x05 \x01(\tR\tpageToken\"h\n" +
+	"page_token\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x04R\tpageToken\x129\n" +
+	"\x05state\x18\x06 \x01(\x0e2\x19.workflow.job.v1.JobStateB\b\xbaH\x05\x82\x01\x02\x10\x01R\x05state\"h\n" +
 	"\x10ListJobsResponse\x12,\n" +
 	"\x04jobs\x18\x01 \x03(\v2\x18.workflow.job.v1.JobInfoR\x04jobs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xdd\x03\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x99\x06\n" +
 	"\aJobInfo\x12\x17\n" +
 	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x120\n" +
@@ -394,20 +1233,102 @@ const file_workflow_job_v1_job_proto_rawDesc = "" +
 	"\x0ecustom_headers\x18\b \x03(\v2+.workflow.job.v1.JobInfo.CustomHeadersEntryR\rcustomHeaders\x12\x14\n" +
 	"\x05state\x18\t \x01(\tR\x05state\x124\n" +
 	"\x16process_definition_key\x18\n" +
-	" \x01(\tR\x14processDefinitionKey\x1a@\n" +
+	" \x01(\tR\x14processDefinitionKey\x128\n" +
+	"\n" +
+	"state_enum\x18\v \x01(\x0e2\x19.workflow.job.v1.JobStateR\tstateEnum\x12\x16\n" +
+	"\x06worker\x18\f \x01(\tR\x06worker\x126\n" +
+	"\bdeadline\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\bdeadline\x12A\n" +
+	"\x0eactivatable_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\ractivatableAt\x12#\n" +
+	"\rerror_message\x18\x0f \x01(\tR\ferrorMessage\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x10 \x01(\tR\terrorCode\x12)\n" +
+	"\x10activation_count\x18\x11 \x01(\x05R\x0factivationCount\x1a@\n" +
 	"\x12CustomHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
-	"\x12CompleteJobRequest\x12\x17\n" +
-	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x1c\n" +
-	"\tvariables\x18\x02 \x01(\tR\tvariables\x12\x1d\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"~\n" +
+	"\x12CompleteJobRequest\x12!\n" +
+	"\ajob_key\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06jobKey\x12\x1c\n" +
+	"\tvariables\x18\x02 \x01(\tR\tvariables\x12'\n" +
 	"\n" +
-	"request_id\x18\x03 \x01(\tR\trequestId\"\x15\n" +
-	"\x13CompleteJobResponse2\xbb\x01\n" +
+	"request_id\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x01R\trequestId\"\x15\n" +
+	"\x13CompleteJobResponse\"\xd0\x02\n" +
+	"\x13ActivateJobsRequest\x12\x1e\n" +
+	"\x04type\x18\x01 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\x04type\x12 \n" +
+	"\x06worker\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x01R\x06worker\x12=\n" +
+	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x022\x00R\atimeout\x128\n" +
+	"\x14max_jobs_to_activate\x18\x04 \x01(\x05B\a\xbaH\x04\x1a\x02(\x00R\x11maxJobsToActivate\x120\n" +
+	"\x0efetch_variable\x18\x05 \x03(\tB\t\xbaH\x06\x92\x01\x03\x10\x80\x02R\rfetchVariable\x12L\n" +
+	"\x0frequest_timeout\x18\x06 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x022\x00R\x0erequestTimeout\"I\n" +
+	"\x14ActivateJobsResponse\x121\n" +
+	"\x04jobs\x18\x01 \x03(\v2\x1d.workflow.job.v1.ActivatedJobR\x04jobs\"\x9a\x05\n" +
+	"\fActivatedJob\x12\x17\n" +
+	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x120\n" +
+	"\x14process_instance_key\x18\x03 \x01(\tR\x12processInstanceKey\x12&\n" +
+	"\x0fbpmn_process_id\x18\x04 \x01(\tR\rbpmnProcessId\x12<\n" +
+	"\x1aprocess_definition_version\x18\x05 \x01(\x05R\x18processDefinitionVersion\x124\n" +
+	"\x16process_definition_key\x18\x06 \x01(\tR\x14processDefinitionKey\x12\x1d\n" +
+	"\n" +
+	"element_id\x18\a \x01(\tR\telementId\x120\n" +
+	"\x14element_instance_key\x18\b \x01(\tR\x12elementInstanceKey\x12W\n" +
+	"\x0ecustom_headers\x18\t \x03(\v20.workflow.job.v1.ActivatedJob.CustomHeadersEntryR\rcustomHeaders\x12\x16\n" +
+	"\x06worker\x18\n" +
+	" \x01(\tR\x06worker\x12\x18\n" +
+	"\aretries\x18\v \x01(\x05R\aretries\x126\n" +
+	"\bdeadline\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\bdeadline\x12\x1c\n" +
+	"\tvariables\x18\r \x01(\tR\tvariables\x12\x1b\n" +
+	"\ttenant_id\x18\x0e \x01(\tR\btenantId\x1a@\n" +
+	"\x12CustomHeadersEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x97\x02\n" +
+	"\x0eFailJobRequest\x12!\n" +
+	"\ajob_key\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06jobKey\x12!\n" +
+	"\aretries\x18\x02 \x01(\x05B\a\xbaH\x04\x1a\x02(\x00R\aretries\x12-\n" +
+	"\rerror_message\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80 R\ferrorMessage\x12I\n" +
+	"\x0eretry_back_off\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x022\x00R\fretryBackOff\x12\x1c\n" +
+	"\tvariables\x18\x05 \x01(\tR\tvariables\x12'\n" +
+	"\n" +
+	"request_id\x18\x06 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x01R\trequestId\"\x11\n" +
+	"\x0fFailJobResponse\"\xd7\x01\n" +
+	"\x11ThrowErrorRequest\x12!\n" +
+	"\ajob_key\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06jobKey\x12)\n" +
+	"\n" +
+	"error_code\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\terrorCode\x12-\n" +
+	"\rerror_message\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80 R\ferrorMessage\x12\x1c\n" +
+	"\tvariables\x18\x04 \x01(\tR\tvariables\x12'\n" +
+	"\n" +
+	"request_id\x18\x05 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x01R\trequestId\"\x14\n" +
+	"\x12ThrowErrorResponse\"\x88\x01\n" +
+	"\x17UpdateJobRetriesRequest\x12!\n" +
+	"\ajob_key\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06jobKey\x12!\n" +
+	"\aretries\x18\x02 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\aretries\x12'\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x01R\trequestId\"\x1a\n" +
+	"\x18UpdateJobRetriesResponse\"{\n" +
+	"\x17UpdateJobTimeoutRequest\x12!\n" +
+	"\ajob_key\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06jobKey\x12=\n" +
+	"\atimeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\atimeout\"\x1a\n" +
+	"\x18UpdateJobTimeoutResponse*\xb8\x01\n" +
+	"\bJobState\x12\x19\n" +
+	"\x15JOB_STATE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11JOB_STATE_CREATED\x10\x01\x12\x17\n" +
+	"\x13JOB_STATE_ACTIVATED\x10\x02\x12\x17\n" +
+	"\x13JOB_STATE_COMPLETED\x10\x03\x12\x14\n" +
+	"\x10JOB_STATE_FAILED\x10\x04\x12\x1a\n" +
+	"\x16JOB_STATE_ERROR_THROWN\x10\x05\x12\x16\n" +
+	"\x12JOB_STATE_CANCELED\x10\x062\x99\x05\n" +
 	"\n" +
 	"JobService\x12Q\n" +
 	"\bListJobs\x12 .workflow.job.v1.ListJobsRequest\x1a!.workflow.job.v1.ListJobsResponse\"\x00\x12Z\n" +
-	"\vCompleteJob\x12#.workflow.job.v1.CompleteJobRequest\x1a$.workflow.job.v1.CompleteJobResponse\"\x00BJZHgithub.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1;jobv1b\x06proto3"
+	"\vCompleteJob\x12#.workflow.job.v1.CompleteJobRequest\x1a$.workflow.job.v1.CompleteJobResponse\"\x00\x12]\n" +
+	"\fActivateJobs\x12$.workflow.job.v1.ActivateJobsRequest\x1a%.workflow.job.v1.ActivateJobsResponse\"\x00\x12N\n" +
+	"\aFailJob\x12\x1f.workflow.job.v1.FailJobRequest\x1a .workflow.job.v1.FailJobResponse\"\x00\x12W\n" +
+	"\n" +
+	"ThrowError\x12\".workflow.job.v1.ThrowErrorRequest\x1a#.workflow.job.v1.ThrowErrorResponse\"\x00\x12i\n" +
+	"\x10UpdateJobRetries\x12(.workflow.job.v1.UpdateJobRetriesRequest\x1a).workflow.job.v1.UpdateJobRetriesResponse\"\x00\x12i\n" +
+	"\x10UpdateJobTimeout\x12(.workflow.job.v1.UpdateJobTimeoutRequest\x1a).workflow.job.v1.UpdateJobTimeoutResponse\"\x00BJZHgithub.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1;jobv1b\x06proto3"
 
 var (
 	file_workflow_job_v1_job_proto_rawDescOnce sync.Once
@@ -421,27 +1342,64 @@ func file_workflow_job_v1_job_proto_rawDescGZIP() []byte {
 	return file_workflow_job_v1_job_proto_rawDescData
 }
 
-var file_workflow_job_v1_job_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_workflow_job_v1_job_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_workflow_job_v1_job_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_workflow_job_v1_job_proto_goTypes = []any{
-	(*ListJobsRequest)(nil),     // 0: workflow.job.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),    // 1: workflow.job.v1.ListJobsResponse
-	(*JobInfo)(nil),             // 2: workflow.job.v1.JobInfo
-	(*CompleteJobRequest)(nil),  // 3: workflow.job.v1.CompleteJobRequest
-	(*CompleteJobResponse)(nil), // 4: workflow.job.v1.CompleteJobResponse
-	nil,                         // 5: workflow.job.v1.JobInfo.CustomHeadersEntry
+	(JobState)(0),                    // 0: workflow.job.v1.JobState
+	(*ListJobsRequest)(nil),          // 1: workflow.job.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),         // 2: workflow.job.v1.ListJobsResponse
+	(*JobInfo)(nil),                  // 3: workflow.job.v1.JobInfo
+	(*CompleteJobRequest)(nil),       // 4: workflow.job.v1.CompleteJobRequest
+	(*CompleteJobResponse)(nil),      // 5: workflow.job.v1.CompleteJobResponse
+	(*ActivateJobsRequest)(nil),      // 6: workflow.job.v1.ActivateJobsRequest
+	(*ActivateJobsResponse)(nil),     // 7: workflow.job.v1.ActivateJobsResponse
+	(*ActivatedJob)(nil),             // 8: workflow.job.v1.ActivatedJob
+	(*FailJobRequest)(nil),           // 9: workflow.job.v1.FailJobRequest
+	(*FailJobResponse)(nil),          // 10: workflow.job.v1.FailJobResponse
+	(*ThrowErrorRequest)(nil),        // 11: workflow.job.v1.ThrowErrorRequest
+	(*ThrowErrorResponse)(nil),       // 12: workflow.job.v1.ThrowErrorResponse
+	(*UpdateJobRetriesRequest)(nil),  // 13: workflow.job.v1.UpdateJobRetriesRequest
+	(*UpdateJobRetriesResponse)(nil), // 14: workflow.job.v1.UpdateJobRetriesResponse
+	(*UpdateJobTimeoutRequest)(nil),  // 15: workflow.job.v1.UpdateJobTimeoutRequest
+	(*UpdateJobTimeoutResponse)(nil), // 16: workflow.job.v1.UpdateJobTimeoutResponse
+	nil,                              // 17: workflow.job.v1.JobInfo.CustomHeadersEntry
+	nil,                              // 18: workflow.job.v1.ActivatedJob.CustomHeadersEntry
+	(*timestamppb.Timestamp)(nil),    // 19: google.protobuf.Timestamp
+	(*durationpb.Duration)(nil),      // 20: google.protobuf.Duration
 }
 var file_workflow_job_v1_job_proto_depIdxs = []int32{
-	2, // 0: workflow.job.v1.ListJobsResponse.jobs:type_name -> workflow.job.v1.JobInfo
-	5, // 1: workflow.job.v1.JobInfo.custom_headers:type_name -> workflow.job.v1.JobInfo.CustomHeadersEntry
-	0, // 2: workflow.job.v1.JobService.ListJobs:input_type -> workflow.job.v1.ListJobsRequest
-	3, // 3: workflow.job.v1.JobService.CompleteJob:input_type -> workflow.job.v1.CompleteJobRequest
-	1, // 4: workflow.job.v1.JobService.ListJobs:output_type -> workflow.job.v1.ListJobsResponse
-	4, // 5: workflow.job.v1.JobService.CompleteJob:output_type -> workflow.job.v1.CompleteJobResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0,  // 0: workflow.job.v1.ListJobsRequest.state:type_name -> workflow.job.v1.JobState
+	3,  // 1: workflow.job.v1.ListJobsResponse.jobs:type_name -> workflow.job.v1.JobInfo
+	17, // 2: workflow.job.v1.JobInfo.custom_headers:type_name -> workflow.job.v1.JobInfo.CustomHeadersEntry
+	0,  // 3: workflow.job.v1.JobInfo.state_enum:type_name -> workflow.job.v1.JobState
+	19, // 4: workflow.job.v1.JobInfo.deadline:type_name -> google.protobuf.Timestamp
+	19, // 5: workflow.job.v1.JobInfo.activatable_at:type_name -> google.protobuf.Timestamp
+	20, // 6: workflow.job.v1.ActivateJobsRequest.timeout:type_name -> google.protobuf.Duration
+	20, // 7: workflow.job.v1.ActivateJobsRequest.request_timeout:type_name -> google.protobuf.Duration
+	8,  // 8: workflow.job.v1.ActivateJobsResponse.jobs:type_name -> workflow.job.v1.ActivatedJob
+	18, // 9: workflow.job.v1.ActivatedJob.custom_headers:type_name -> workflow.job.v1.ActivatedJob.CustomHeadersEntry
+	19, // 10: workflow.job.v1.ActivatedJob.deadline:type_name -> google.protobuf.Timestamp
+	20, // 11: workflow.job.v1.FailJobRequest.retry_back_off:type_name -> google.protobuf.Duration
+	20, // 12: workflow.job.v1.UpdateJobTimeoutRequest.timeout:type_name -> google.protobuf.Duration
+	1,  // 13: workflow.job.v1.JobService.ListJobs:input_type -> workflow.job.v1.ListJobsRequest
+	4,  // 14: workflow.job.v1.JobService.CompleteJob:input_type -> workflow.job.v1.CompleteJobRequest
+	6,  // 15: workflow.job.v1.JobService.ActivateJobs:input_type -> workflow.job.v1.ActivateJobsRequest
+	9,  // 16: workflow.job.v1.JobService.FailJob:input_type -> workflow.job.v1.FailJobRequest
+	11, // 17: workflow.job.v1.JobService.ThrowError:input_type -> workflow.job.v1.ThrowErrorRequest
+	13, // 18: workflow.job.v1.JobService.UpdateJobRetries:input_type -> workflow.job.v1.UpdateJobRetriesRequest
+	15, // 19: workflow.job.v1.JobService.UpdateJobTimeout:input_type -> workflow.job.v1.UpdateJobTimeoutRequest
+	2,  // 20: workflow.job.v1.JobService.ListJobs:output_type -> workflow.job.v1.ListJobsResponse
+	5,  // 21: workflow.job.v1.JobService.CompleteJob:output_type -> workflow.job.v1.CompleteJobResponse
+	7,  // 22: workflow.job.v1.JobService.ActivateJobs:output_type -> workflow.job.v1.ActivateJobsResponse
+	10, // 23: workflow.job.v1.JobService.FailJob:output_type -> workflow.job.v1.FailJobResponse
+	12, // 24: workflow.job.v1.JobService.ThrowError:output_type -> workflow.job.v1.ThrowErrorResponse
+	14, // 25: workflow.job.v1.JobService.UpdateJobRetries:output_type -> workflow.job.v1.UpdateJobRetriesResponse
+	16, // 26: workflow.job.v1.JobService.UpdateJobTimeout:output_type -> workflow.job.v1.UpdateJobTimeoutResponse
+	20, // [20:27] is the sub-list for method output_type
+	13, // [13:20] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_workflow_job_v1_job_proto_init() }
@@ -454,13 +1412,14 @@ func file_workflow_job_v1_job_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workflow_job_v1_job_proto_rawDesc), len(file_workflow_job_v1_job_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   6,
+			NumEnums:      1,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_workflow_job_v1_job_proto_goTypes,
 		DependencyIndexes: file_workflow_job_v1_job_proto_depIdxs,
+		EnumInfos:         file_workflow_job_v1_job_proto_enumTypes,
 		MessageInfos:      file_workflow_job_v1_job_proto_msgTypes,
 	}.Build()
 	File_workflow_job_v1_job_proto = out.File

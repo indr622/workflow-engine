@@ -32,6 +32,10 @@ const MaxRequestBytes = 2 << 20
 
 // Handler mengekspos use case execution lewat Connect RPC.
 type Handler struct {
+	// RPC Fase 4 yang belum diimplementasikan menjawab UNIMPLEMENTED sampai use case-nya ada.
+	processv1connect.UnimplementedProcessInstanceServiceHandler
+	jobv1connect.UnimplementedJobServiceHandler
+
 	instances api.ProcessInstances
 	jobs      api.Jobs
 	queries   *application.Queries

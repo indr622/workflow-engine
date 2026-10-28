@@ -2,15 +2,18 @@
 // @generated from file workflow/job/v1/job.proto (package workflow.job.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { file_buf_validate_validate } from "../../../buf/validate/validate_pb";
+import type { Duration, Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_duration, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file workflow/job/v1/job.proto.
  */
 export const file_workflow_job_v1_job: GenFile = /*@__PURE__*/
-  fileDesc("Chl3b3JrZmxvdy9qb2IvdjEvam9iLnByb3RvEg93b3JrZmxvdy5qb2IudjEidwoPTGlzdEpvYnNSZXF1ZXN0EgwKBHR5cGUYASABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAiABKAkSEQoJb25seV9vcGVuGAMgASgIEhEKCXBhZ2Vfc2l6ZRgEIAEoBRISCgpwYWdlX3Rva2VuGAUgASgJIlMKEExpc3RKb2JzUmVzcG9uc2USJgoEam9icxgBIAMoCzIYLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSLMAgoHSm9iSW5mbxIPCgdqb2Jfa2V5GAEgASgJEgwKBHR5cGUYAiABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAyABKAkSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYBCABKAkSEgoKZWxlbWVudF9pZBgFIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYBiABKAkSDwoHcmV0cmllcxgHIAEoBRJDCg5jdXN0b21faGVhZGVycxgIIAMoCzIrLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvLkN1c3RvbUhlYWRlcnNFbnRyeRINCgVzdGF0ZRgJIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAogASgJGjQKEkN1c3RvbUhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIkwKEkNvbXBsZXRlSm9iUmVxdWVzdBIPCgdqb2Jfa2V5GAEgASgJEhEKCXZhcmlhYmxlcxgCIAEoCRISCgpyZXF1ZXN0X2lkGAMgASgJIhUKE0NvbXBsZXRlSm9iUmVzcG9uc2UyuwEKCkpvYlNlcnZpY2USUQoITGlzdEpvYnMSIC53b3JrZmxvdy5qb2IudjEuTGlzdEpvYnNSZXF1ZXN0GiEud29ya2Zsb3cuam9iLnYxLkxpc3RKb2JzUmVzcG9uc2UiABJaCgtDb21wbGV0ZUpvYhIjLndvcmtmbG93LmpvYi52MS5Db21wbGV0ZUpvYlJlcXVlc3QaJC53b3JrZmxvdy5qb2IudjEuQ29tcGxldGVKb2JSZXNwb25zZSIAQkpaSGdpdGh1Yi5jb20vaW5kcjYyMi93b3JrZmxvdy1lbmdpbmUvbGlicy9nby9hcGkvZ2VuL3dvcmtmbG93L2pvYi92MTtqb2J2MWIGcHJvdG8z");
+  fileDesc("Chl3b3JrZmxvdy9qb2IvdjEvam9iLnByb3RvEg93b3JrZmxvdy5qb2IudjEi1QEKD0xpc3RKb2JzUmVxdWVzdBIWCgR0eXBlGAEgASgJQgi6SAVyAxiAAhIpChRwcm9jZXNzX2luc3RhbmNlX2tleRgCIAEoCUILukgI2AEBcgOwAQESEQoJb25seV9vcGVuGAMgASgIEhoKCXBhZ2Vfc2l6ZRgEIAEoBUIHukgEGgIoABIcCgpwYWdlX3Rva2VuGAUgASgJQgi6SAVyAxiABBIyCgVzdGF0ZRgGIAEoDjIZLndvcmtmbG93LmpvYi52MS5Kb2JTdGF0ZUIIukgFggECEAEiUwoQTGlzdEpvYnNSZXNwb25zZRImCgRqb2JzGAEgAygLMhgud29ya2Zsb3cuam9iLnYxLkpvYkluZm8SFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIrIECgdKb2JJbmZvEg8KB2pvYl9rZXkYASABKAkSDAoEdHlwZRgCIAEoCRIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgDIAEoCRIcChRlbGVtZW50X2luc3RhbmNlX2tleRgEIAEoCRISCgplbGVtZW50X2lkGAUgASgJEhcKD2JwbW5fcHJvY2Vzc19pZBgGIAEoCRIPCgdyZXRyaWVzGAcgASgFEkMKDmN1c3RvbV9oZWFkZXJzGAggAygLMisud29ya2Zsb3cuam9iLnYxLkpvYkluZm8uQ3VzdG9tSGVhZGVyc0VudHJ5Eg0KBXN0YXRlGAkgASgJEh4KFnByb2Nlc3NfZGVmaW5pdGlvbl9rZXkYCiABKAkSLQoKc3RhdGVfZW51bRgLIAEoDjIZLndvcmtmbG93LmpvYi52MS5Kb2JTdGF0ZRIOCgZ3b3JrZXIYDCABKAkSLAoIZGVhZGxpbmUYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjIKDmFjdGl2YXRhYmxlX2F0GA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIVCg1lcnJvcl9tZXNzYWdlGA8gASgJEhIKCmVycm9yX2NvZGUYECABKAkSGAoQYWN0aXZhdGlvbl9jb3VudBgRIAEoBRo0ChJDdXN0b21IZWFkZXJzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJgChJDb21wbGV0ZUpvYlJlcXVlc3QSGQoHam9iX2tleRgBIAEoCUIIukgFcgOwAQESEQoJdmFyaWFibGVzGAIgASgJEhwKCnJlcXVlc3RfaWQYAyABKAlCCLpIBXIDGIABIhUKE0NvbXBsZXRlSm9iUmVzcG9uc2UihwIKE0FjdGl2YXRlSm9ic1JlcXVlc3QSGAoEdHlwZRgBIAEoCUIKukgHcgUQARiAAhIYCgZ3b3JrZXIYAiABKAlCCLpIBXIDGIABEjQKB3RpbWVvdXQYAyABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb25CCLpIBaoBAjIAEiUKFG1heF9qb2JzX3RvX2FjdGl2YXRlGAQgASgFQge6SAQaAigAEiEKDmZldGNoX3ZhcmlhYmxlGAUgAygJQgm6SAaSAQMQgAISPAoPcmVxdWVzdF90aW1lb3V0GAYgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQgi6SAWqAQIyACJDChRBY3RpdmF0ZUpvYnNSZXNwb25zZRIrCgRqb2JzGAEgAygLMh0ud29ya2Zsb3cuam9iLnYxLkFjdGl2YXRlZEpvYiLPAwoMQWN0aXZhdGVkSm9iEg8KB2pvYl9rZXkYASABKAkSDAoEdHlwZRgCIAEoCRIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgDIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYBCABKAkSIgoacHJvY2Vzc19kZWZpbml0aW9uX3ZlcnNpb24YBSABKAUSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgGIAEoCRISCgplbGVtZW50X2lkGAcgASgJEhwKFGVsZW1lbnRfaW5zdGFuY2Vfa2V5GAggASgJEkgKDmN1c3RvbV9oZWFkZXJzGAkgAygLMjAud29ya2Zsb3cuam9iLnYxLkFjdGl2YXRlZEpvYi5DdXN0b21IZWFkZXJzRW50cnkSDgoGd29ya2VyGAogASgJEg8KB3JldHJpZXMYCyABKAUSLAoIZGVhZGxpbmUYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCXZhcmlhYmxlcxgNIAEoCRIRCgl0ZW5hbnRfaWQYDiABKAkaNAoSQ3VzdG9tSGVhZGVyc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEi1AEKDkZhaWxKb2JSZXF1ZXN0EhkKB2pvYl9rZXkYASABKAlCCLpIBXIDsAEBEhgKB3JldHJpZXMYAiABKAVCB7pIBBoCKAASHwoNZXJyb3JfbWVzc2FnZRgDIAEoCUIIukgFcgMYgCASOwoOcmV0cnlfYmFja19vZmYYBCABKAsyGS5nb29nbGUucHJvdG9idWYuRHVyYXRpb25CCLpIBaoBAjIAEhEKCXZhcmlhYmxlcxgFIAEoCRIcCgpyZXF1ZXN0X2lkGAYgASgJQgi6SAVyAxiAASIRCg9GYWlsSm9iUmVzcG9uc2UioAEKEVRocm93RXJyb3JSZXF1ZXN0EhkKB2pvYl9rZXkYASABKAlCCLpIBXIDsAEBEh4KCmVycm9yX2NvZGUYAiABKAlCCrpIB3IFEAEYgAISHwoNZXJyb3JfbWVzc2FnZRgDIAEoCUIIukgFcgMYgCASEQoJdmFyaWFibGVzGAQgASgJEhwKCnJlcXVlc3RfaWQYBSABKAlCCLpIBXIDGIABIhQKElRocm93RXJyb3JSZXNwb25zZSJsChdVcGRhdGVKb2JSZXRyaWVzUmVxdWVzdBIZCgdqb2Jfa2V5GAEgASgJQgi6SAVyA7ABARIYCgdyZXRyaWVzGAIgASgFQge6SAQaAiAAEhwKCnJlcXVlc3RfaWQYAyABKAlCCLpIBXIDGIABIhoKGFVwZGF0ZUpvYlJldHJpZXNSZXNwb25zZSJqChdVcGRhdGVKb2JUaW1lb3V0UmVxdWVzdBIZCgdqb2Jfa2V5GAEgASgJQgi6SAVyA7ABARI0Cgd0aW1lb3V0GAIgASgLMhkuZ29vZ2xlLnByb3RvYnVmLkR1cmF0aW9uQgi6SAWqAQIqACIaChhVcGRhdGVKb2JUaW1lb3V0UmVzcG9uc2UquAEKCEpvYlN0YXRlEhkKFUpPQl9TVEFURV9VTlNQRUNJRklFRBAAEhUKEUpPQl9TVEFURV9DUkVBVEVEEAESFwoTSk9CX1NUQVRFX0FDVElWQVRFRBACEhcKE0pPQl9TVEFURV9DT01QTEVURUQQAxIUChBKT0JfU1RBVEVfRkFJTEVEEAQSGgoWSk9CX1NUQVRFX0VSUk9SX1RIUk9XThAFEhYKEkpPQl9TVEFURV9DQU5DRUxFRBAGMpkFCgpKb2JTZXJ2aWNlElEKCExpc3RKb2JzEiAud29ya2Zsb3cuam9iLnYxLkxpc3RKb2JzUmVxdWVzdBohLndvcmtmbG93LmpvYi52MS5MaXN0Sm9ic1Jlc3BvbnNlIgASWgoLQ29tcGxldGVKb2ISIy53b3JrZmxvdy5qb2IudjEuQ29tcGxldGVKb2JSZXF1ZXN0GiQud29ya2Zsb3cuam9iLnYxLkNvbXBsZXRlSm9iUmVzcG9uc2UiABJdCgxBY3RpdmF0ZUpvYnMSJC53b3JrZmxvdy5qb2IudjEuQWN0aXZhdGVKb2JzUmVxdWVzdBolLndvcmtmbG93LmpvYi52MS5BY3RpdmF0ZUpvYnNSZXNwb25zZSIAEk4KB0ZhaWxKb2ISHy53b3JrZmxvdy5qb2IudjEuRmFpbEpvYlJlcXVlc3QaIC53b3JrZmxvdy5qb2IudjEuRmFpbEpvYlJlc3BvbnNlIgASVwoKVGhyb3dFcnJvchIiLndvcmtmbG93LmpvYi52MS5UaHJvd0Vycm9yUmVxdWVzdBojLndvcmtmbG93LmpvYi52MS5UaHJvd0Vycm9yUmVzcG9uc2UiABJpChBVcGRhdGVKb2JSZXRyaWVzEigud29ya2Zsb3cuam9iLnYxLlVwZGF0ZUpvYlJldHJpZXNSZXF1ZXN0Gikud29ya2Zsb3cuam9iLnYxLlVwZGF0ZUpvYlJldHJpZXNSZXNwb25zZSIAEmkKEFVwZGF0ZUpvYlRpbWVvdXQSKC53b3JrZmxvdy5qb2IudjEuVXBkYXRlSm9iVGltZW91dFJlcXVlc3QaKS53b3JrZmxvdy5qb2IudjEuVXBkYXRlSm9iVGltZW91dFJlc3BvbnNlIgBCSlpIZ2l0aHViLmNvbS9pbmRyNjIyL3dvcmtmbG93LWVuZ2luZS9saWJzL2dvL2FwaS9nZW4vd29ya2Zsb3cvam9iL3YxO2pvYnYxYgZwcm90bzM", [file_buf_validate_validate, file_google_protobuf_duration, file_google_protobuf_timestamp]);
 
 /**
  * @generated from message workflow.job.v1.ListJobsRequest
@@ -27,7 +30,7 @@ export type ListJobsRequest = Message<"workflow.job.v1.ListJobsRequest"> & {
   processInstanceKey: string;
 
   /**
-   * Hanya job berstate CREATED.
+   * Hanya job yang belum final (CREATED, ACTIVATED, FAILED, ERROR_THROWN).
    *
    * @generated from field: bool only_open = 3;
    */
@@ -44,6 +47,13 @@ export type ListJobsRequest = Message<"workflow.job.v1.ListJobsRequest"> & {
    * @generated from field: string page_token = 5;
    */
   pageToken: string;
+
+  /**
+   * Filter state; UNSPECIFIED berarti semua.
+   *
+   * @generated from field: workflow.job.v1.JobState state = 6;
+   */
+  state: JobState;
 };
 
 /**
@@ -120,7 +130,7 @@ export type JobInfo = Message<"workflow.job.v1.JobInfo"> & {
   customHeaders: { [key: string]: string };
 
   /**
-   * CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
+   * Nama state, sama dengan state_enum tanpa awalan JOB_STATE_. Dipertahankan dari Fase 2.
    *
    * @generated from field: string state = 9;
    */
@@ -130,6 +140,45 @@ export type JobInfo = Message<"workflow.job.v1.JobInfo"> & {
    * @generated from field: string process_definition_key = 10;
    */
   processDefinitionKey: string;
+
+  /**
+   * @generated from field: workflow.job.v1.JobState state_enum = 11;
+   */
+  stateEnum: JobState;
+
+  /**
+   * Worker pemegang lease; kosong bila tidak ACTIVATED.
+   *
+   * @generated from field: string worker = 12;
+   */
+  worker: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp deadline = 13;
+   */
+  deadline?: Timestamp | undefined;
+
+  /**
+   * Waktu paling awal job dapat diaktifkan (setelah backoff FailJob).
+   *
+   * @generated from field: google.protobuf.Timestamp activatable_at = 14;
+   */
+  activatableAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string error_message = 15;
+   */
+  errorMessage: string;
+
+  /**
+   * @generated from field: string error_code = 16;
+   */
+  errorCode: string;
+
+  /**
+   * @generated from field: int32 activation_count = 17;
+   */
+  activationCount: number;
 };
 
 /**
@@ -185,8 +234,405 @@ export const CompleteJobResponseSchema: GenMessage<CompleteJobResponse> = /*@__P
   messageDesc(file_workflow_job_v1_job, 4);
 
 /**
- * JobService membaca dan menyelesaikan job service task. Fase 4 menambah ActivateJobs, FailJob,
- * ThrowError, dan UpdateJobRetries ke service yang sama tanpa breaking change.
+ * @generated from message workflow.job.v1.ActivateJobsRequest
+ */
+export type ActivateJobsRequest = Message<"workflow.job.v1.ActivateJobsRequest"> & {
+  /**
+   * @generated from field: string type = 1;
+   */
+  type: string;
+
+  /**
+   * Nama worker untuk observability; default "default".
+   *
+   * @generated from field: string worker = 2;
+   */
+  worker: string;
+
+  /**
+   * Durasi lease; 0 berarti default server (5 menit). Dipotong ke [1 s, 24 jam].
+   *
+   * @generated from field: google.protobuf.Duration timeout = 3;
+   */
+  timeout?: Duration | undefined;
+
+  /**
+   * 0 berarti default server (32); dipotong ke maksimum server (1.000).
+   *
+   * @generated from field: int32 max_jobs_to_activate = 4;
+   */
+  maxJobsToActivate: number;
+
+  /**
+   * Nama variabel yang disertakan; kosong berarti semua variabel scope process instance.
+   *
+   * @generated from field: repeated string fetch_variable = 5;
+   */
+  fetchVariable: string[];
+
+  /**
+   * Batas long polling; 0 berarti jawab segera. Dipotong ke maksimum server (55 s).
+   *
+   * @generated from field: google.protobuf.Duration request_timeout = 6;
+   */
+  requestTimeout?: Duration | undefined;
+};
+
+/**
+ * Describes the message workflow.job.v1.ActivateJobsRequest.
+ * Use `create(ActivateJobsRequestSchema)` to create a new message.
+ */
+export const ActivateJobsRequestSchema: GenMessage<ActivateJobsRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 5);
+
+/**
+ * @generated from message workflow.job.v1.ActivateJobsResponse
+ */
+export type ActivateJobsResponse = Message<"workflow.job.v1.ActivateJobsResponse"> & {
+  /**
+   * @generated from field: repeated workflow.job.v1.ActivatedJob jobs = 1;
+   */
+  jobs: ActivatedJob[];
+};
+
+/**
+ * Describes the message workflow.job.v1.ActivateJobsResponse.
+ * Use `create(ActivateJobsResponseSchema)` to create a new message.
+ */
+export const ActivateJobsResponseSchema: GenMessage<ActivateJobsResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 6);
+
+/**
+ * @generated from message workflow.job.v1.ActivatedJob
+ */
+export type ActivatedJob = Message<"workflow.job.v1.ActivatedJob"> & {
+  /**
+   * @generated from field: string job_key = 1;
+   */
+  jobKey: string;
+
+  /**
+   * @generated from field: string type = 2;
+   */
+  type: string;
+
+  /**
+   * @generated from field: string process_instance_key = 3;
+   */
+  processInstanceKey: string;
+
+  /**
+   * @generated from field: string bpmn_process_id = 4;
+   */
+  bpmnProcessId: string;
+
+  /**
+   * @generated from field: int32 process_definition_version = 5;
+   */
+  processDefinitionVersion: number;
+
+  /**
+   * @generated from field: string process_definition_key = 6;
+   */
+  processDefinitionKey: string;
+
+  /**
+   * @generated from field: string element_id = 7;
+   */
+  elementId: string;
+
+  /**
+   * @generated from field: string element_instance_key = 8;
+   */
+  elementInstanceKey: string;
+
+  /**
+   * @generated from field: map<string, string> custom_headers = 9;
+   */
+  customHeaders: { [key: string]: string };
+
+  /**
+   * @generated from field: string worker = 10;
+   */
+  worker: string;
+
+  /**
+   * @generated from field: int32 retries = 11;
+   */
+  retries: number;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp deadline = 12;
+   */
+  deadline?: Timestamp | undefined;
+
+  /**
+   * Dokumen JSON object.
+   *
+   * @generated from field: string variables = 13;
+   */
+  variables: string;
+
+  /**
+   * "<default>" sampai multi-tenant Fase 8.
+   *
+   * @generated from field: string tenant_id = 14;
+   */
+  tenantId: string;
+};
+
+/**
+ * Describes the message workflow.job.v1.ActivatedJob.
+ * Use `create(ActivatedJobSchema)` to create a new message.
+ */
+export const ActivatedJobSchema: GenMessage<ActivatedJob> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 7);
+
+/**
+ * @generated from message workflow.job.v1.FailJobRequest
+ */
+export type FailJobRequest = Message<"workflow.job.v1.FailJobRequest"> & {
+  /**
+   * @generated from field: string job_key = 1;
+   */
+  jobKey: string;
+
+  /**
+   * Retries tersisa yang ditetapkan worker (biasanya retries job dikurangi satu).
+   *
+   * @generated from field: int32 retries = 2;
+   */
+  retries: number;
+
+  /**
+   * @generated from field: string error_message = 3;
+   */
+  errorMessage: string;
+
+  /**
+   * Jeda sebelum job dapat diaktifkan lagi; dipotong ke maksimum server (24 jam).
+   *
+   * @generated from field: google.protobuf.Duration retry_back_off = 4;
+   */
+  retryBackOff?: Duration | undefined;
+
+  /**
+   * Dokumen JSON object; kosong berarti tanpa variabel.
+   *
+   * @generated from field: string variables = 5;
+   */
+  variables: string;
+
+  /**
+   * Opsional, 1 sampai 128 byte (ADR-0017).
+   *
+   * @generated from field: string request_id = 6;
+   */
+  requestId: string;
+};
+
+/**
+ * Describes the message workflow.job.v1.FailJobRequest.
+ * Use `create(FailJobRequestSchema)` to create a new message.
+ */
+export const FailJobRequestSchema: GenMessage<FailJobRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 8);
+
+/**
+ * @generated from message workflow.job.v1.FailJobResponse
+ */
+export type FailJobResponse = Message<"workflow.job.v1.FailJobResponse"> & {
+};
+
+/**
+ * Describes the message workflow.job.v1.FailJobResponse.
+ * Use `create(FailJobResponseSchema)` to create a new message.
+ */
+export const FailJobResponseSchema: GenMessage<FailJobResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 9);
+
+/**
+ * @generated from message workflow.job.v1.ThrowErrorRequest
+ */
+export type ThrowErrorRequest = Message<"workflow.job.v1.ThrowErrorRequest"> & {
+  /**
+   * @generated from field: string job_key = 1;
+   */
+  jobKey: string;
+
+  /**
+   * @generated from field: string error_code = 2;
+   */
+  errorCode: string;
+
+  /**
+   * @generated from field: string error_message = 3;
+   */
+  errorMessage: string;
+
+  /**
+   * Dokumen JSON object; kosong berarti tanpa variabel.
+   *
+   * @generated from field: string variables = 4;
+   */
+  variables: string;
+
+  /**
+   * Opsional, 1 sampai 128 byte (ADR-0017).
+   *
+   * @generated from field: string request_id = 5;
+   */
+  requestId: string;
+};
+
+/**
+ * Describes the message workflow.job.v1.ThrowErrorRequest.
+ * Use `create(ThrowErrorRequestSchema)` to create a new message.
+ */
+export const ThrowErrorRequestSchema: GenMessage<ThrowErrorRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 10);
+
+/**
+ * @generated from message workflow.job.v1.ThrowErrorResponse
+ */
+export type ThrowErrorResponse = Message<"workflow.job.v1.ThrowErrorResponse"> & {
+};
+
+/**
+ * Describes the message workflow.job.v1.ThrowErrorResponse.
+ * Use `create(ThrowErrorResponseSchema)` to create a new message.
+ */
+export const ThrowErrorResponseSchema: GenMessage<ThrowErrorResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 11);
+
+/**
+ * @generated from message workflow.job.v1.UpdateJobRetriesRequest
+ */
+export type UpdateJobRetriesRequest = Message<"workflow.job.v1.UpdateJobRetriesRequest"> & {
+  /**
+   * @generated from field: string job_key = 1;
+   */
+  jobKey: string;
+
+  /**
+   * @generated from field: int32 retries = 2;
+   */
+  retries: number;
+
+  /**
+   * Opsional, 1 sampai 128 byte (ADR-0017).
+   *
+   * @generated from field: string request_id = 3;
+   */
+  requestId: string;
+};
+
+/**
+ * Describes the message workflow.job.v1.UpdateJobRetriesRequest.
+ * Use `create(UpdateJobRetriesRequestSchema)` to create a new message.
+ */
+export const UpdateJobRetriesRequestSchema: GenMessage<UpdateJobRetriesRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 12);
+
+/**
+ * @generated from message workflow.job.v1.UpdateJobRetriesResponse
+ */
+export type UpdateJobRetriesResponse = Message<"workflow.job.v1.UpdateJobRetriesResponse"> & {
+};
+
+/**
+ * Describes the message workflow.job.v1.UpdateJobRetriesResponse.
+ * Use `create(UpdateJobRetriesResponseSchema)` to create a new message.
+ */
+export const UpdateJobRetriesResponseSchema: GenMessage<UpdateJobRetriesResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 13);
+
+/**
+ * @generated from message workflow.job.v1.UpdateJobTimeoutRequest
+ */
+export type UpdateJobTimeoutRequest = Message<"workflow.job.v1.UpdateJobTimeoutRequest"> & {
+  /**
+   * @generated from field: string job_key = 1;
+   */
+  jobKey: string;
+
+  /**
+   * Deadline baru = sekarang + timeout; dipotong ke [1 s, 24 jam].
+   *
+   * @generated from field: google.protobuf.Duration timeout = 2;
+   */
+  timeout?: Duration | undefined;
+};
+
+/**
+ * Describes the message workflow.job.v1.UpdateJobTimeoutRequest.
+ * Use `create(UpdateJobTimeoutRequestSchema)` to create a new message.
+ */
+export const UpdateJobTimeoutRequestSchema: GenMessage<UpdateJobTimeoutRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 14);
+
+/**
+ * @generated from message workflow.job.v1.UpdateJobTimeoutResponse
+ */
+export type UpdateJobTimeoutResponse = Message<"workflow.job.v1.UpdateJobTimeoutResponse"> & {
+};
+
+/**
+ * Describes the message workflow.job.v1.UpdateJobTimeoutResponse.
+ * Use `create(UpdateJobTimeoutResponseSchema)` to create a new message.
+ */
+export const UpdateJobTimeoutResponseSchema: GenMessage<UpdateJobTimeoutResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_job_v1_job, 15);
+
+/**
+ * @generated from enum workflow.job.v1.JobState
+ */
+export enum JobState {
+  /**
+   * @generated from enum value: JOB_STATE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: JOB_STATE_CREATED = 1;
+   */
+  CREATED = 1,
+
+  /**
+   * @generated from enum value: JOB_STATE_ACTIVATED = 2;
+   */
+  ACTIVATED = 2,
+
+  /**
+   * @generated from enum value: JOB_STATE_COMPLETED = 3;
+   */
+  COMPLETED = 3,
+
+  /**
+   * @generated from enum value: JOB_STATE_FAILED = 4;
+   */
+  FAILED = 4,
+
+  /**
+   * @generated from enum value: JOB_STATE_ERROR_THROWN = 5;
+   */
+  ERROR_THROWN = 5,
+
+  /**
+   * @generated from enum value: JOB_STATE_CANCELED = 6;
+   */
+  CANCELED = 6,
+}
+
+/**
+ * Describes the enum workflow.job.v1.JobState.
+ */
+export const JobStateSchema: GenEnum<JobState> = /*@__PURE__*/
+  enumDesc(file_workflow_job_v1_job, 0);
+
+/**
+ * JobService adalah protokol job worker (ADR-0020): worker mengaktifkan job dengan long polling,
+ * lalu menyelesaikan, menggagalkan, atau melempar BPMN error.
  *
  * @generated from service workflow.job.v1.JobService
  */
@@ -202,8 +648,8 @@ export const JobService: GenService<{
     output: typeof ListJobsResponseSchema;
   },
   /**
-   * CompleteJob menyelesaikan job terbuka, menggabungkan variabel ke scope process instance,
-   * lalu melanjutkan token. Job yang sudah selesai atau dibatalkan ditolak FAILED_PRECONDITION.
+   * CompleteJob menyelesaikan job CREATED atau ACTIVATED, menggabungkan variabel ke scope
+   * process instance, lalu melanjutkan token. Job lain ditolak FAILED_PRECONDITION.
    *
    * @generated from rpc workflow.job.v1.JobService.CompleteJob
    */
@@ -211,6 +657,60 @@ export const JobService: GenService<{
     methodKind: "unary";
     input: typeof CompleteJobRequestSchema;
     output: typeof CompleteJobResponseSchema;
+  },
+  /**
+   * ActivateJobs mengaktifkan sampai max_jobs_to_activate job bertipe type. Bila tidak ada job dan
+   * request_timeout > 0, request menunggu job baru sampai request_timeout lalu menjawab kosong.
+   *
+   * @generated from rpc workflow.job.v1.JobService.ActivateJobs
+   */
+  activateJobs: {
+    methodKind: "unary";
+    input: typeof ActivateJobsRequestSchema;
+    output: typeof ActivateJobsResponseSchema;
+  },
+  /**
+   * FailJob menetapkan retries tersisa. retries > 0: job kembali dapat diaktifkan setelah
+   * retry_back_off; retries = 0: job FAILED dan incident JOB_NO_RETRIES dibuat.
+   *
+   * @generated from rpc workflow.job.v1.JobService.FailJob
+   */
+  failJob: {
+    methodKind: "unary";
+    input: typeof FailJobRequestSchema;
+    output: typeof FailJobResponseSchema;
+  },
+  /**
+   * ThrowError melempar BPMN error. Tanpa catch event (Fase 4 selalu) incident
+   * UNHANDLED_ERROR_EVENT dibuat.
+   *
+   * @generated from rpc workflow.job.v1.JobService.ThrowError
+   */
+  throwError: {
+    methodKind: "unary";
+    input: typeof ThrowErrorRequestSchema;
+    output: typeof ThrowErrorResponseSchema;
+  },
+  /**
+   * UpdateJobRetries mengubah retries job yang belum final. Incident JOB_NO_RETRIES tidak ikut
+   * diselesaikan; panggil IncidentService.ResolveIncident sesudahnya.
+   *
+   * @generated from rpc workflow.job.v1.JobService.UpdateJobRetries
+   */
+  updateJobRetries: {
+    methodKind: "unary";
+    input: typeof UpdateJobRetriesRequestSchema;
+    output: typeof UpdateJobRetriesResponseSchema;
+  },
+  /**
+   * UpdateJobTimeout mengubah deadline lease job ACTIVATED menjadi sekarang + timeout.
+   *
+   * @generated from rpc workflow.job.v1.JobService.UpdateJobTimeout
+   */
+  updateJobTimeout: {
+    methodKind: "unary";
+    input: typeof UpdateJobTimeoutRequestSchema;
+    output: typeof UpdateJobTimeoutResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_workflow_job_v1_job, 0);

@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package workflow.message.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/message/v1;messagev1";
+
+// MessageService menerima message dan menyimpannya di buffer selama time_to_live (ADR-0022).
+// Korelasi ke subscription menyusul di Fase 5.
+service MessageService {
+  // PublishMessage menyimpan message dengan TTL > 0 sampai kedaluwarsa. message_id yang sama untuk
+  // name dan correlation_key yang sama selama message masih di buffer ditolak ALREADY_EXISTS.
+  rpc PublishMessage(PublishMessageRequest) returns (PublishMessageResponse) {}
+}
+
+message PublishMessageRequest {
+  string name = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  // Boleh kosong.
+  string correlation_key = 2 [(buf.validate.field).string.max_len = 256];
+  // 0 berarti message diterima tetapi tidak disimpan. Maksimum ENGINE_MESSAGE_MAX_TTL.
+  google.protobuf.Duration time_to_live = 3 [(buf.validate.field).duration.gte = {}];
+  // Opsional; dedup selama message masih di buffer.
+  string message_id = 4 [(buf.validate.field).string.max_len = 256];
+  // Dokumen JSON object; kosong berarti tanpa variabel.
+  string variables = 5;
+}
+
+message PublishMessageResponse {
+  string message_key = 1;
+  // "<default>" sampai multi-tenant Fase 8.
+  string tenant_id = 2;
+}

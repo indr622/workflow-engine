@@ -2,28 +2,51 @@ syntax = "proto3";
 
 package workflow.job.v1;
 
+import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1;jobv1";
 
 // Semua key (field berakhiran _key) adalah UUIDv7 dalam bentuk kanonik huruf kecil (ADR-0011).
 
-// JobService membaca dan menyelesaikan job service task. Fase 4 menambah ActivateJobs, FailJob,
-// ThrowError, dan UpdateJobRetries ke service yang sama tanpa breaking change.
+// JobService adalah protokol job worker (ADR-0020): worker mengaktifkan job dengan long polling,
+// lalu menyelesaikan, menggagalkan, atau melempar BPMN error.
 service JobService {
   // ListJobs mengembalikan job terbaru dahulu dengan keyset pagination.
   rpc ListJobs(ListJobsRequest) returns (ListJobsResponse) {}
-  // CompleteJob menyelesaikan job terbuka, menggabungkan variabel ke scope process instance,
-  // lalu melanjutkan token. Job yang sudah selesai atau dibatalkan ditolak FAILED_PRECONDITION.
+  // CompleteJob menyelesaikan job CREATED atau ACTIVATED, menggabungkan variabel ke scope
+  // process instance, lalu melanjutkan token. Job lain ditolak FAILED_PRECONDITION.
   rpc CompleteJob(CompleteJobRequest) returns (CompleteJobResponse) {}
+  // ActivateJobs mengaktifkan sampai max_jobs_to_activate job bertipe type. Bila tidak ada job dan
+  // request_timeout > 0, request menunggu job baru sampai request_timeout lalu menjawab kosong.
+  rpc ActivateJobs(ActivateJobsRequest) returns (ActivateJobsResponse) {}
+  // FailJob menetapkan retries tersisa. retries > 0: job kembali dapat diaktifkan setelah
+  // retry_back_off; retries = 0: job FAILED dan incident JOB_NO_RETRIES dibuat.
+  rpc FailJob(FailJobRequest) returns (FailJobResponse) {}
+  // ThrowError melempar BPMN error. Tanpa catch event (Fase 4 selalu) incident
+  // UNHANDLED_ERROR_EVENT dibuat.
+  rpc ThrowError(ThrowErrorRequest) returns (ThrowErrorResponse) {}
+  // UpdateJobRetries mengubah retries job yang belum final. Incident JOB_NO_RETRIES tidak ikut
+  // diselesaikan; panggil IncidentService.ResolveIncident sesudahnya.
+  rpc UpdateJobRetries(UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {}
+  // UpdateJobTimeout mengubah deadline lease job ACTIVATED menjadi sekarang + timeout.
+  rpc UpdateJobTimeout(UpdateJobTimeoutRequest) returns (UpdateJobTimeoutResponse) {}
 }
 
 message ListJobsRequest {
-  string type = 1;
-  string process_instance_key = 2;
-  // Hanya job berstate CREATED.
+  string type = 1 [(buf.validate.field).string.max_len = 256];
+  string process_instance_key = 2 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+  // Hanya job yang belum final (CREATED, ACTIVATED, FAILED, ERROR_THROWN).
   bool only_open = 3;
   // Default 50, maksimum 500.
-  int32 page_size = 4;
-  string page_token = 5;
+  int32 page_size = 4 [(buf.validate.field).int32.gte = 0];
+  string page_token = 5 [(buf.validate.field).string.max_len = 512];
+  // Filter state; UNSPECIFIED berarti semua.
+  JobState state = 6 [(buf.validate.field).enum.defined_only = true];
 }
 
 message ListJobsResponse {
@@ -40,18 +63,124 @@ message JobInfo {
   string bpmn_process_id = 6;
   int32 retries = 7;
   map<string, string> custom_headers = 8;
-  // CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
+  // Nama state, sama dengan state_enum tanpa awalan JOB_STATE_. Dipertahankan dari Fase 2.
   string state = 9;
   string process_definition_key = 10;
+  JobState state_enum = 11;
+  // Worker pemegang lease; kosong bila tidak ACTIVATED.
+  string worker = 12;
+  google.protobuf.Timestamp deadline = 13;
+  // Waktu paling awal job dapat diaktifkan (setelah backoff FailJob).
+  google.protobuf.Timestamp activatable_at = 14;
+  string error_message = 15;
+  string error_code = 16;
+  int32 activation_count = 17;
+}
+
+enum JobState {
+  JOB_STATE_UNSPECIFIED = 0;
+  JOB_STATE_CREATED = 1;
+  JOB_STATE_ACTIVATED = 2;
+  JOB_STATE_COMPLETED = 3;
+  JOB_STATE_FAILED = 4;
+  JOB_STATE_ERROR_THROWN = 5;
+  JOB_STATE_CANCELED = 6;
 }
 
 message CompleteJobRequest {
-  string job_key = 1;
+  string job_key = 1 [(buf.validate.field).string.uuid = true];
   // Dokumen JSON object; kosong berarti tanpa variabel.
   string variables = 2;
   // Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
   // (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
-  string request_id = 3;
+  string request_id = 3 [(buf.validate.field).string.max_len = 128];
 }
 
 message CompleteJobResponse {}
+
+message ActivateJobsRequest {
+  string type = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  // Nama worker untuk observability; default "default".
+  string worker = 2 [(buf.validate.field).string.max_len = 128];
+  // Durasi lease; 0 berarti default server (5 menit). Dipotong ke [1 s, 24 jam].
+  google.protobuf.Duration timeout = 3 [(buf.validate.field).duration.gte = {}];
+  // 0 berarti default server (32); dipotong ke maksimum server (1.000).
+  int32 max_jobs_to_activate = 4 [(buf.validate.field).int32.gte = 0];
+  // Nama variabel yang disertakan; kosong berarti semua variabel scope process instance.
+  repeated string fetch_variable = 5 [(buf.validate.field).repeated.max_items = 256];
+  // Batas long polling; 0 berarti jawab segera. Dipotong ke maksimum server (55 s).
+  google.protobuf.Duration request_timeout = 6 [(buf.validate.field).duration.gte = {}];
+}
+
+message ActivateJobsResponse {
+  repeated ActivatedJob jobs = 1;
+}
+
+message ActivatedJob {
+  string job_key = 1;
+  string type = 2;
+  string process_instance_key = 3;
+  string bpmn_process_id = 4;
+  int32 process_definition_version = 5;
+  string process_definition_key = 6;
+  string element_id = 7;
+  string element_instance_key = 8;
+  map<string, string> custom_headers = 9;
+  string worker = 10;
+  int32 retries = 11;
+  google.protobuf.Timestamp deadline = 12;
+  // Dokumen JSON object.
+  string variables = 13;
+  // "<default>" sampai multi-tenant Fase 8.
+  string tenant_id = 14;
+}
+
+message FailJobRequest {
+  string job_key = 1 [(buf.validate.field).string.uuid = true];
+  // Retries tersisa yang ditetapkan worker (biasanya retries job dikurangi satu).
+  int32 retries = 2 [(buf.validate.field).int32.gte = 0];
+  string error_message = 3 [(buf.validate.field).string.max_len = 4096];
+  // Jeda sebelum job dapat diaktifkan lagi; dipotong ke maksimum server (24 jam).
+  google.protobuf.Duration retry_back_off = 4 [(buf.validate.field).duration.gte = {}];
+  // Dokumen JSON object; kosong berarti tanpa variabel.
+  string variables = 5;
+  // Opsional, 1 sampai 128 byte (ADR-0017).
+  string request_id = 6 [(buf.validate.field).string.max_len = 128];
+}
+
+message FailJobResponse {}
+
+message ThrowErrorRequest {
+  string job_key = 1 [(buf.validate.field).string.uuid = true];
+  string error_code = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  string error_message = 3 [(buf.validate.field).string.max_len = 4096];
+  // Dokumen JSON object; kosong berarti tanpa variabel.
+  string variables = 4;
+  // Opsional, 1 sampai 128 byte (ADR-0017).
+  string request_id = 5 [(buf.validate.field).string.max_len = 128];
+}
+
+message ThrowErrorResponse {}
+
+message UpdateJobRetriesRequest {
+  string job_key = 1 [(buf.validate.field).string.uuid = true];
+  int32 retries = 2 [(buf.validate.field).int32.gt = 0];
+  // Opsional, 1 sampai 128 byte (ADR-0017).
+  string request_id = 3 [(buf.validate.field).string.max_len = 128];
+}
+
+message UpdateJobRetriesResponse {}
+
+message UpdateJobTimeoutRequest {
+  string job_key = 1 [(buf.validate.field).string.uuid = true];
+  // Deadline baru = sekarang + timeout; dipotong ke [1 s, 24 jam].
+  google.protobuf.Duration timeout = 2 [(buf.validate.field).duration.gt = {}];
+}
+
+message UpdateJobTimeoutResponse {}

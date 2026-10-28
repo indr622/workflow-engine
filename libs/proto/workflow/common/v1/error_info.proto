@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package workflow.common.v1;
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1;commonv1";
+
+// ErrorInfo dilampirkan sebagai detail error Connect pada setiap penolakan non-INTERNAL
+// (ADR-0023). Bentuknya cermin google.rpc.ErrorInfo tanpa dependensi googleapis.
+message ErrorInfo {
+  // Kode stabil SCREAMING_SNAKE_CASE, misalnya JOB_NOT_ACTIVE atau REQUEST_INVALID. Klien
+  // bercabang berdasarkan reason, bukan pesan error.
+  string reason = 1;
+  // Selalu "workflow-engine".
+  string domain = 2;
+  // Konteks tambahan, misalnya job_key, state, process_instance_key, atau violations.
+  map<string, string> metadata = 3;
+}

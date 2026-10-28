@@ -37,15 +37,41 @@ const (
 	JobServiceListJobsProcedure = "/workflow.job.v1.JobService/ListJobs"
 	// JobServiceCompleteJobProcedure is the fully-qualified name of the JobService's CompleteJob RPC.
 	JobServiceCompleteJobProcedure = "/workflow.job.v1.JobService/CompleteJob"
+	// JobServiceActivateJobsProcedure is the fully-qualified name of the JobService's ActivateJobs RPC.
+	JobServiceActivateJobsProcedure = "/workflow.job.v1.JobService/ActivateJobs"
+	// JobServiceFailJobProcedure is the fully-qualified name of the JobService's FailJob RPC.
+	JobServiceFailJobProcedure = "/workflow.job.v1.JobService/FailJob"
+	// JobServiceThrowErrorProcedure is the fully-qualified name of the JobService's ThrowError RPC.
+	JobServiceThrowErrorProcedure = "/workflow.job.v1.JobService/ThrowError"
+	// JobServiceUpdateJobRetriesProcedure is the fully-qualified name of the JobService's
+	// UpdateJobRetries RPC.
+	JobServiceUpdateJobRetriesProcedure = "/workflow.job.v1.JobService/UpdateJobRetries"
+	// JobServiceUpdateJobTimeoutProcedure is the fully-qualified name of the JobService's
+	// UpdateJobTimeout RPC.
+	JobServiceUpdateJobTimeoutProcedure = "/workflow.job.v1.JobService/UpdateJobTimeout"
 )
 
 // JobServiceClient is a client for the workflow.job.v1.JobService service.
 type JobServiceClient interface {
 	// ListJobs mengembalikan job terbaru dahulu dengan keyset pagination.
 	ListJobs(context.Context, *connect.Request[v1.ListJobsRequest]) (*connect.Response[v1.ListJobsResponse], error)
-	// CompleteJob menyelesaikan job terbuka, menggabungkan variabel ke scope process instance,
-	// lalu melanjutkan token. Job yang sudah selesai atau dibatalkan ditolak FAILED_PRECONDITION.
+	// CompleteJob menyelesaikan job CREATED atau ACTIVATED, menggabungkan variabel ke scope
+	// process instance, lalu melanjutkan token. Job lain ditolak FAILED_PRECONDITION.
 	CompleteJob(context.Context, *connect.Request[v1.CompleteJobRequest]) (*connect.Response[v1.CompleteJobResponse], error)
+	// ActivateJobs mengaktifkan sampai max_jobs_to_activate job bertipe type. Bila tidak ada job dan
+	// request_timeout > 0, request menunggu job baru sampai request_timeout lalu menjawab kosong.
+	ActivateJobs(context.Context, *connect.Request[v1.ActivateJobsRequest]) (*connect.Response[v1.ActivateJobsResponse], error)
+	// FailJob menetapkan retries tersisa. retries > 0: job kembali dapat diaktifkan setelah
+	// retry_back_off; retries = 0: job FAILED dan incident JOB_NO_RETRIES dibuat.
+	FailJob(context.Context, *connect.Request[v1.FailJobRequest]) (*connect.Response[v1.FailJobResponse], error)
+	// ThrowError melempar BPMN error. Tanpa catch event (Fase 4 selalu) incident
+	// UNHANDLED_ERROR_EVENT dibuat.
+	ThrowError(context.Context, *connect.Request[v1.ThrowErrorRequest]) (*connect.Response[v1.ThrowErrorResponse], error)
+	// UpdateJobRetries mengubah retries job yang belum final. Incident JOB_NO_RETRIES tidak ikut
+	// diselesaikan; panggil IncidentService.ResolveIncident sesudahnya.
+	UpdateJobRetries(context.Context, *connect.Request[v1.UpdateJobRetriesRequest]) (*connect.Response[v1.UpdateJobRetriesResponse], error)
+	// UpdateJobTimeout mengubah deadline lease job ACTIVATED menjadi sekarang + timeout.
+	UpdateJobTimeout(context.Context, *connect.Request[v1.UpdateJobTimeoutRequest]) (*connect.Response[v1.UpdateJobTimeoutResponse], error)
 }
 
 // NewJobServiceClient constructs a client for the workflow.job.v1.JobService service. By default,
@@ -71,13 +97,48 @@ func NewJobServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(jobServiceMethods.ByName("CompleteJob")),
 			connect.WithClientOptions(opts...),
 		),
+		activateJobs: connect.NewClient[v1.ActivateJobsRequest, v1.ActivateJobsResponse](
+			httpClient,
+			baseURL+JobServiceActivateJobsProcedure,
+			connect.WithSchema(jobServiceMethods.ByName("ActivateJobs")),
+			connect.WithClientOptions(opts...),
+		),
+		failJob: connect.NewClient[v1.FailJobRequest, v1.FailJobResponse](
+			httpClient,
+			baseURL+JobServiceFailJobProcedure,
+			connect.WithSchema(jobServiceMethods.ByName("FailJob")),
+			connect.WithClientOptions(opts...),
+		),
+		throwError: connect.NewClient[v1.ThrowErrorRequest, v1.ThrowErrorResponse](
+			httpClient,
+			baseURL+JobServiceThrowErrorProcedure,
+			connect.WithSchema(jobServiceMethods.ByName("ThrowError")),
+			connect.WithClientOptions(opts...),
+		),
+		updateJobRetries: connect.NewClient[v1.UpdateJobRetriesRequest, v1.UpdateJobRetriesResponse](
+			httpClient,
+			baseURL+JobServiceUpdateJobRetriesProcedure,
+			connect.WithSchema(jobServiceMethods.ByName("UpdateJobRetries")),
+			connect.WithClientOptions(opts...),
+		),
+		updateJobTimeout: connect.NewClient[v1.UpdateJobTimeoutRequest, v1.UpdateJobTimeoutResponse](
+			httpClient,
+			baseURL+JobServiceUpdateJobTimeoutProcedure,
+			connect.WithSchema(jobServiceMethods.ByName("UpdateJobTimeout")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // jobServiceClient implements JobServiceClient.
 type jobServiceClient struct {
-	listJobs    *connect.Client[v1.ListJobsRequest, v1.ListJobsResponse]
-	completeJob *connect.Client[v1.CompleteJobRequest, v1.CompleteJobResponse]
+	listJobs         *connect.Client[v1.ListJobsRequest, v1.ListJobsResponse]
+	completeJob      *connect.Client[v1.CompleteJobRequest, v1.CompleteJobResponse]
+	activateJobs     *connect.Client[v1.ActivateJobsRequest, v1.ActivateJobsResponse]
+	failJob          *connect.Client[v1.FailJobRequest, v1.FailJobResponse]
+	throwError       *connect.Client[v1.ThrowErrorRequest, v1.ThrowErrorResponse]
+	updateJobRetries *connect.Client[v1.UpdateJobRetriesRequest, v1.UpdateJobRetriesResponse]
+	updateJobTimeout *connect.Client[v1.UpdateJobTimeoutRequest, v1.UpdateJobTimeoutResponse]
 }
 
 // ListJobs calls workflow.job.v1.JobService.ListJobs.
@@ -90,13 +151,52 @@ func (c *jobServiceClient) CompleteJob(ctx context.Context, req *connect.Request
 	return c.completeJob.CallUnary(ctx, req)
 }
 
+// ActivateJobs calls workflow.job.v1.JobService.ActivateJobs.
+func (c *jobServiceClient) ActivateJobs(ctx context.Context, req *connect.Request[v1.ActivateJobsRequest]) (*connect.Response[v1.ActivateJobsResponse], error) {
+	return c.activateJobs.CallUnary(ctx, req)
+}
+
+// FailJob calls workflow.job.v1.JobService.FailJob.
+func (c *jobServiceClient) FailJob(ctx context.Context, req *connect.Request[v1.FailJobRequest]) (*connect.Response[v1.FailJobResponse], error) {
+	return c.failJob.CallUnary(ctx, req)
+}
+
+// ThrowError calls workflow.job.v1.JobService.ThrowError.
+func (c *jobServiceClient) ThrowError(ctx context.Context, req *connect.Request[v1.ThrowErrorRequest]) (*connect.Response[v1.ThrowErrorResponse], error) {
+	return c.throwError.CallUnary(ctx, req)
+}
+
+// UpdateJobRetries calls workflow.job.v1.JobService.UpdateJobRetries.
+func (c *jobServiceClient) UpdateJobRetries(ctx context.Context, req *connect.Request[v1.UpdateJobRetriesRequest]) (*connect.Response[v1.UpdateJobRetriesResponse], error) {
+	return c.updateJobRetries.CallUnary(ctx, req)
+}
+
+// UpdateJobTimeout calls workflow.job.v1.JobService.UpdateJobTimeout.
+func (c *jobServiceClient) UpdateJobTimeout(ctx context.Context, req *connect.Request[v1.UpdateJobTimeoutRequest]) (*connect.Response[v1.UpdateJobTimeoutResponse], error) {
+	return c.updateJobTimeout.CallUnary(ctx, req)
+}
+
 // JobServiceHandler is an implementation of the workflow.job.v1.JobService service.
 type JobServiceHandler interface {
 	// ListJobs mengembalikan job terbaru dahulu dengan keyset pagination.
 	ListJobs(context.Context, *connect.Request[v1.ListJobsRequest]) (*connect.Response[v1.ListJobsResponse], error)
-	// CompleteJob menyelesaikan job terbuka, menggabungkan variabel ke scope process instance,
-	// lalu melanjutkan token. Job yang sudah selesai atau dibatalkan ditolak FAILED_PRECONDITION.
+	// CompleteJob menyelesaikan job CREATED atau ACTIVATED, menggabungkan variabel ke scope
+	// process instance, lalu melanjutkan token. Job lain ditolak FAILED_PRECONDITION.
 	CompleteJob(context.Context, *connect.Request[v1.CompleteJobRequest]) (*connect.Response[v1.CompleteJobResponse], error)
+	// ActivateJobs mengaktifkan sampai max_jobs_to_activate job bertipe type. Bila tidak ada job dan
+	// request_timeout > 0, request menunggu job baru sampai request_timeout lalu menjawab kosong.
+	ActivateJobs(context.Context, *connect.Request[v1.ActivateJobsRequest]) (*connect.Response[v1.ActivateJobsResponse], error)
+	// FailJob menetapkan retries tersisa. retries > 0: job kembali dapat diaktifkan setelah
+	// retry_back_off; retries = 0: job FAILED dan incident JOB_NO_RETRIES dibuat.
+	FailJob(context.Context, *connect.Request[v1.FailJobRequest]) (*connect.Response[v1.FailJobResponse], error)
+	// ThrowError melempar BPMN error. Tanpa catch event (Fase 4 selalu) incident
+	// UNHANDLED_ERROR_EVENT dibuat.
+	ThrowError(context.Context, *connect.Request[v1.ThrowErrorRequest]) (*connect.Response[v1.ThrowErrorResponse], error)
+	// UpdateJobRetries mengubah retries job yang belum final. Incident JOB_NO_RETRIES tidak ikut
+	// diselesaikan; panggil IncidentService.ResolveIncident sesudahnya.
+	UpdateJobRetries(context.Context, *connect.Request[v1.UpdateJobRetriesRequest]) (*connect.Response[v1.UpdateJobRetriesResponse], error)
+	// UpdateJobTimeout mengubah deadline lease job ACTIVATED menjadi sekarang + timeout.
+	UpdateJobTimeout(context.Context, *connect.Request[v1.UpdateJobTimeoutRequest]) (*connect.Response[v1.UpdateJobTimeoutResponse], error)
 }
 
 // NewJobServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -118,12 +218,52 @@ func NewJobServiceHandler(svc JobServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(jobServiceMethods.ByName("CompleteJob")),
 		connect.WithHandlerOptions(opts...),
 	)
+	jobServiceActivateJobsHandler := connect.NewUnaryHandler(
+		JobServiceActivateJobsProcedure,
+		svc.ActivateJobs,
+		connect.WithSchema(jobServiceMethods.ByName("ActivateJobs")),
+		connect.WithHandlerOptions(opts...),
+	)
+	jobServiceFailJobHandler := connect.NewUnaryHandler(
+		JobServiceFailJobProcedure,
+		svc.FailJob,
+		connect.WithSchema(jobServiceMethods.ByName("FailJob")),
+		connect.WithHandlerOptions(opts...),
+	)
+	jobServiceThrowErrorHandler := connect.NewUnaryHandler(
+		JobServiceThrowErrorProcedure,
+		svc.ThrowError,
+		connect.WithSchema(jobServiceMethods.ByName("ThrowError")),
+		connect.WithHandlerOptions(opts...),
+	)
+	jobServiceUpdateJobRetriesHandler := connect.NewUnaryHandler(
+		JobServiceUpdateJobRetriesProcedure,
+		svc.UpdateJobRetries,
+		connect.WithSchema(jobServiceMethods.ByName("UpdateJobRetries")),
+		connect.WithHandlerOptions(opts...),
+	)
+	jobServiceUpdateJobTimeoutHandler := connect.NewUnaryHandler(
+		JobServiceUpdateJobTimeoutProcedure,
+		svc.UpdateJobTimeout,
+		connect.WithSchema(jobServiceMethods.ByName("UpdateJobTimeout")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/workflow.job.v1.JobService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case JobServiceListJobsProcedure:
 			jobServiceListJobsHandler.ServeHTTP(w, r)
 		case JobServiceCompleteJobProcedure:
 			jobServiceCompleteJobHandler.ServeHTTP(w, r)
+		case JobServiceActivateJobsProcedure:
+			jobServiceActivateJobsHandler.ServeHTTP(w, r)
+		case JobServiceFailJobProcedure:
+			jobServiceFailJobHandler.ServeHTTP(w, r)
+		case JobServiceThrowErrorProcedure:
+			jobServiceThrowErrorHandler.ServeHTTP(w, r)
+		case JobServiceUpdateJobRetriesProcedure:
+			jobServiceUpdateJobRetriesHandler.ServeHTTP(w, r)
+		case JobServiceUpdateJobTimeoutProcedure:
+			jobServiceUpdateJobTimeoutHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -139,4 +279,24 @@ func (UnimplementedJobServiceHandler) ListJobs(context.Context, *connect.Request
 
 func (UnimplementedJobServiceHandler) CompleteJob(context.Context, *connect.Request[v1.CompleteJobRequest]) (*connect.Response[v1.CompleteJobResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.CompleteJob is not implemented"))
+}
+
+func (UnimplementedJobServiceHandler) ActivateJobs(context.Context, *connect.Request[v1.ActivateJobsRequest]) (*connect.Response[v1.ActivateJobsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.ActivateJobs is not implemented"))
+}
+
+func (UnimplementedJobServiceHandler) FailJob(context.Context, *connect.Request[v1.FailJobRequest]) (*connect.Response[v1.FailJobResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.FailJob is not implemented"))
+}
+
+func (UnimplementedJobServiceHandler) ThrowError(context.Context, *connect.Request[v1.ThrowErrorRequest]) (*connect.Response[v1.ThrowErrorResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.ThrowError is not implemented"))
+}
+
+func (UnimplementedJobServiceHandler) UpdateJobRetries(context.Context, *connect.Request[v1.UpdateJobRetriesRequest]) (*connect.Response[v1.UpdateJobRetriesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.UpdateJobRetries is not implemented"))
+}
+
+func (UnimplementedJobServiceHandler) UpdateJobTimeout(context.Context, *connect.Request[v1.UpdateJobTimeoutRequest]) (*connect.Response[v1.UpdateJobTimeoutResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.job.v1.JobService.UpdateJobTimeout is not implemented"))
 }

@@ -51,6 +51,12 @@ const (
 	// ProcessInstanceServiceListElementInstancesProcedure is the fully-qualified name of the
 	// ProcessInstanceService's ListElementInstances RPC.
 	ProcessInstanceServiceListElementInstancesProcedure = "/workflow.process.v1.ProcessInstanceService/ListElementInstances"
+	// ProcessInstanceServiceCreateProcessInstanceWithResultProcedure is the fully-qualified name of the
+	// ProcessInstanceService's CreateProcessInstanceWithResult RPC.
+	ProcessInstanceServiceCreateProcessInstanceWithResultProcedure = "/workflow.process.v1.ProcessInstanceService/CreateProcessInstanceWithResult"
+	// ProcessInstanceServiceSetVariablesProcedure is the fully-qualified name of the
+	// ProcessInstanceService's SetVariables RPC.
+	ProcessInstanceServiceSetVariablesProcedure = "/workflow.process.v1.ProcessInstanceService/SetVariables"
 )
 
 // ProcessInstanceServiceClient is a client for the workflow.process.v1.ProcessInstanceService
@@ -70,6 +76,13 @@ type ProcessInstanceServiceClient interface {
 	ListProcessInstanceRecords(context.Context, *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error)
 	// ListElementInstances mengembalikan element instance urut key, berhalaman.
 	ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error)
+	// CreateProcessInstanceWithResult membuat instance lalu menunggu sampai instance selesai atau
+	// request_timeout habis. Timeout menghasilkan DEADLINE_EXCEEDED dengan ErrorInfo
+	// RESULT_TIMEOUT; instance tetap berjalan.
+	CreateProcessInstanceWithResult(context.Context, *connect.Request[v1.CreateProcessInstanceWithResultRequest]) (*connect.Response[v1.CreateProcessInstanceWithResultResponse], error)
+	// SetVariables menulis variabel ke scope process instance. scope_key boleh key process instance
+	// atau element instance aktif miliknya; local = true hanya didukung pada scope process instance.
+	SetVariables(context.Context, *connect.Request[v1.SetVariablesRequest]) (*connect.Response[v1.SetVariablesResponse], error)
 }
 
 // NewProcessInstanceServiceClient constructs a client for the
@@ -119,17 +132,31 @@ func NewProcessInstanceServiceClient(httpClient connect.HTTPClient, baseURL stri
 			connect.WithSchema(processInstanceServiceMethods.ByName("ListElementInstances")),
 			connect.WithClientOptions(opts...),
 		),
+		createProcessInstanceWithResult: connect.NewClient[v1.CreateProcessInstanceWithResultRequest, v1.CreateProcessInstanceWithResultResponse](
+			httpClient,
+			baseURL+ProcessInstanceServiceCreateProcessInstanceWithResultProcedure,
+			connect.WithSchema(processInstanceServiceMethods.ByName("CreateProcessInstanceWithResult")),
+			connect.WithClientOptions(opts...),
+		),
+		setVariables: connect.NewClient[v1.SetVariablesRequest, v1.SetVariablesResponse](
+			httpClient,
+			baseURL+ProcessInstanceServiceSetVariablesProcedure,
+			connect.WithSchema(processInstanceServiceMethods.ByName("SetVariables")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // processInstanceServiceClient implements ProcessInstanceServiceClient.
 type processInstanceServiceClient struct {
-	createProcessInstance      *connect.Client[v1.CreateProcessInstanceRequest, v1.CreateProcessInstanceResponse]
-	getProcessInstance         *connect.Client[v1.GetProcessInstanceRequest, v1.GetProcessInstanceResponse]
-	listProcessInstances       *connect.Client[v1.ListProcessInstancesRequest, v1.ListProcessInstancesResponse]
-	cancelProcessInstance      *connect.Client[v1.CancelProcessInstanceRequest, v1.CancelProcessInstanceResponse]
-	listProcessInstanceRecords *connect.Client[v1.ListProcessInstanceRecordsRequest, v1.ListProcessInstanceRecordsResponse]
-	listElementInstances       *connect.Client[v1.ListElementInstancesRequest, v1.ListElementInstancesResponse]
+	createProcessInstance           *connect.Client[v1.CreateProcessInstanceRequest, v1.CreateProcessInstanceResponse]
+	getProcessInstance              *connect.Client[v1.GetProcessInstanceRequest, v1.GetProcessInstanceResponse]
+	listProcessInstances            *connect.Client[v1.ListProcessInstancesRequest, v1.ListProcessInstancesResponse]
+	cancelProcessInstance           *connect.Client[v1.CancelProcessInstanceRequest, v1.CancelProcessInstanceResponse]
+	listProcessInstanceRecords      *connect.Client[v1.ListProcessInstanceRecordsRequest, v1.ListProcessInstanceRecordsResponse]
+	listElementInstances            *connect.Client[v1.ListElementInstancesRequest, v1.ListElementInstancesResponse]
+	createProcessInstanceWithResult *connect.Client[v1.CreateProcessInstanceWithResultRequest, v1.CreateProcessInstanceWithResultResponse]
+	setVariables                    *connect.Client[v1.SetVariablesRequest, v1.SetVariablesResponse]
 }
 
 // CreateProcessInstance calls workflow.process.v1.ProcessInstanceService.CreateProcessInstance.
@@ -163,6 +190,17 @@ func (c *processInstanceServiceClient) ListElementInstances(ctx context.Context,
 	return c.listElementInstances.CallUnary(ctx, req)
 }
 
+// CreateProcessInstanceWithResult calls
+// workflow.process.v1.ProcessInstanceService.CreateProcessInstanceWithResult.
+func (c *processInstanceServiceClient) CreateProcessInstanceWithResult(ctx context.Context, req *connect.Request[v1.CreateProcessInstanceWithResultRequest]) (*connect.Response[v1.CreateProcessInstanceWithResultResponse], error) {
+	return c.createProcessInstanceWithResult.CallUnary(ctx, req)
+}
+
+// SetVariables calls workflow.process.v1.ProcessInstanceService.SetVariables.
+func (c *processInstanceServiceClient) SetVariables(ctx context.Context, req *connect.Request[v1.SetVariablesRequest]) (*connect.Response[v1.SetVariablesResponse], error) {
+	return c.setVariables.CallUnary(ctx, req)
+}
+
 // ProcessInstanceServiceHandler is an implementation of the
 // workflow.process.v1.ProcessInstanceService service.
 type ProcessInstanceServiceHandler interface {
@@ -180,6 +218,13 @@ type ProcessInstanceServiceHandler interface {
 	ListProcessInstanceRecords(context.Context, *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error)
 	// ListElementInstances mengembalikan element instance urut key, berhalaman.
 	ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error)
+	// CreateProcessInstanceWithResult membuat instance lalu menunggu sampai instance selesai atau
+	// request_timeout habis. Timeout menghasilkan DEADLINE_EXCEEDED dengan ErrorInfo
+	// RESULT_TIMEOUT; instance tetap berjalan.
+	CreateProcessInstanceWithResult(context.Context, *connect.Request[v1.CreateProcessInstanceWithResultRequest]) (*connect.Response[v1.CreateProcessInstanceWithResultResponse], error)
+	// SetVariables menulis variabel ke scope process instance. scope_key boleh key process instance
+	// atau element instance aktif miliknya; local = true hanya didukung pada scope process instance.
+	SetVariables(context.Context, *connect.Request[v1.SetVariablesRequest]) (*connect.Response[v1.SetVariablesResponse], error)
 }
 
 // NewProcessInstanceServiceHandler builds an HTTP handler from the service implementation. It
@@ -225,6 +270,18 @@ func NewProcessInstanceServiceHandler(svc ProcessInstanceServiceHandler, opts ..
 		connect.WithSchema(processInstanceServiceMethods.ByName("ListElementInstances")),
 		connect.WithHandlerOptions(opts...),
 	)
+	processInstanceServiceCreateProcessInstanceWithResultHandler := connect.NewUnaryHandler(
+		ProcessInstanceServiceCreateProcessInstanceWithResultProcedure,
+		svc.CreateProcessInstanceWithResult,
+		connect.WithSchema(processInstanceServiceMethods.ByName("CreateProcessInstanceWithResult")),
+		connect.WithHandlerOptions(opts...),
+	)
+	processInstanceServiceSetVariablesHandler := connect.NewUnaryHandler(
+		ProcessInstanceServiceSetVariablesProcedure,
+		svc.SetVariables,
+		connect.WithSchema(processInstanceServiceMethods.ByName("SetVariables")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/workflow.process.v1.ProcessInstanceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProcessInstanceServiceCreateProcessInstanceProcedure:
@@ -239,6 +296,10 @@ func NewProcessInstanceServiceHandler(svc ProcessInstanceServiceHandler, opts ..
 			processInstanceServiceListProcessInstanceRecordsHandler.ServeHTTP(w, r)
 		case ProcessInstanceServiceListElementInstancesProcedure:
 			processInstanceServiceListElementInstancesHandler.ServeHTTP(w, r)
+		case ProcessInstanceServiceCreateProcessInstanceWithResultProcedure:
+			processInstanceServiceCreateProcessInstanceWithResultHandler.ServeHTTP(w, r)
+		case ProcessInstanceServiceSetVariablesProcedure:
+			processInstanceServiceSetVariablesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -270,4 +331,12 @@ func (UnimplementedProcessInstanceServiceHandler) ListProcessInstanceRecords(con
 
 func (UnimplementedProcessInstanceServiceHandler) ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.ListElementInstances is not implemented"))
+}
+
+func (UnimplementedProcessInstanceServiceHandler) CreateProcessInstanceWithResult(context.Context, *connect.Request[v1.CreateProcessInstanceWithResultRequest]) (*connect.Response[v1.CreateProcessInstanceWithResultResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.CreateProcessInstanceWithResult is not implemented"))
+}
+
+func (UnimplementedProcessInstanceServiceHandler) SetVariables(context.Context, *connect.Request[v1.SetVariablesRequest]) (*connect.Response[v1.SetVariablesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.SetVariables is not implemented"))
 }

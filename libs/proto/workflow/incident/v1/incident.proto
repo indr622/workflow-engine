@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package workflow.incident.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/incident/v1;incidentv1";
+
+// Semua key (field berakhiran _key) adalah UUIDv7 dalam bentuk kanonik huruf kecil (ADR-0011).
+
+// IncidentService membaca dan menyelesaikan incident process instance.
+service IncidentService {
+  // ResolveIncident menandai incident RESOLVED lalu menjalankan ulang langkah yang gagal. Jika
+  // langkah itu gagal lagi, incident baru dibuat dan RPC tetap sukses.
+  rpc ResolveIncident(ResolveIncidentRequest) returns (ResolveIncidentResponse) {}
+  // ListIncidents mengembalikan incident terbaru dahulu dengan keyset pagination.
+  rpc ListIncidents(ListIncidentsRequest) returns (ListIncidentsResponse) {}
+}
+
+message ResolveIncidentRequest {
+  string incident_key = 1 [(buf.validate.field).string.uuid = true];
+  // Opsional, 1 sampai 128 byte (ADR-0017).
+  string request_id = 2 [(buf.validate.field).string.max_len = 128];
+}
+
+message ResolveIncidentResponse {}
+
+message ListIncidentsRequest {
+  // Kosong berarti semua instance.
+  string process_instance_key = 1 [
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+  // Filter opsional, misalnya "JOB_NO_RETRIES".
+  string error_type = 2 [(buf.validate.field).string.max_len = 64];
+  // Hanya incident berstate CREATED.
+  bool only_open = 3;
+  // Default 50, maksimum 500.
+  int32 page_size = 4 [(buf.validate.field).int32.gte = 0];
+  string page_token = 5 [(buf.validate.field).string.max_len = 512];
+}
+
+message ListIncidentsResponse {
+  repeated Incident incidents = 1;
+  string next_page_token = 2;
+}
+
+message Incident {
+  string incident_key = 1;
+  string process_instance_key = 2;
+  string element_instance_key = 3;
+  string element_id = 4;
+  string bpmn_process_id = 5;
+  string process_definition_key = 6;
+  // CONDITION_ERROR, EXTRACT_VALUE_ERROR, EXECUTION_LIMIT_EXCEEDED, JOB_NO_RETRIES, atau
+  // UNHANDLED_ERROR_EVENT.
+  string error_type = 7;
+  string error_message = 8;
+  // Kosong bila incident bukan milik job.
+  string job_key = 9;
+  IncidentState state = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp resolved_at = 12;
+}
+
+enum IncidentState {
+  INCIDENT_STATE_UNSPECIFIED = 0;
+  INCIDENT_STATE_CREATED = 1;
+  INCIDENT_STATE_RESOLVED = 2;
+}

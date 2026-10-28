@@ -10,4 +10,4 @@ plugins:
   - local: ['node', '../../node_modules/@bufbuild/protoc-gen-es/bin/protoc-gen-es']
     out: ../web/api-client/src/gen
     opt: target=ts
-    include_imports: false
+    include_imports: true
