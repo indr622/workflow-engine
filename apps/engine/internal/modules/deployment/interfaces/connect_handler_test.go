@@ -3,6 +3,7 @@ package interfaces_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -25,13 +26,13 @@ import (
 type memoryRepository struct {
 	nextKey int64
 	defs    []domain.ProcessDefinition
-	content map[int64][]byte
+	content map[string][]byte
 }
 
 func (r *memoryRepository) WithTx(ctx context.Context, fn func(context.Context, domain.TxRepository) error) error {
 	return fn(ctx, r)
 }
-func (r *memoryRepository) GetByKey(_ context.Context, key int64) (domain.ProcessDefinition, []byte, error) {
+func (r *memoryRepository) GetByKey(_ context.Context, key string) (domain.ProcessDefinition, []byte, error) {
 	for _, d := range r.defs {
 		if d.Key == key {
 			return d, r.content[key], nil
@@ -60,11 +61,11 @@ func (r *memoryRepository) LatestByProcessID(_ context.Context, _, id string) (d
 	}
 	return best, found, nil
 }
-func (r *memoryRepository) NextKeys(_ context.Context, n int) ([]int64, error) {
-	keys := make([]int64, n)
+func (r *memoryRepository) NextKeys(_ context.Context, n int) ([]string, error) {
+	keys := make([]string, n)
 	for i := range keys {
 		r.nextKey++
-		keys[i] = r.nextKey
+		keys[i] = fmt.Sprintf("00000000-0000-7000-8000-%012d", r.nextKey)
 	}
 	return keys, nil
 }
@@ -82,7 +83,7 @@ func (r *memoryRepository) SaveDeployment(_ context.Context, d domain.Deployment
 
 func newClient(t *testing.T) deploymentv1connect.DeploymentServiceClient {
 	t.Helper()
-	repo := &memoryRepository{content: map[int64][]byte{}}
+	repo := &memoryRepository{content: map[string][]byte{}}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
 	deploy := application.NewDeployResource(repo, eventbus.NewInMemory(), application.NewProcessCache(repo, 8), nil, log)
 	mux := http.NewServeMux()
@@ -126,7 +127,7 @@ func TestDeployThenGetAndList(t *testing.T) {
 	if err != nil || len(list.Msg.GetProcessDefinitions()) != 1 {
 		t.Fatalf("list = %v, err %v", list, err)
 	}
-	_, err = client.GetProcessDefinition(ctx, connect.NewRequest(&deploymentv1.GetProcessDefinitionRequest{ProcessDefinitionKey: 999}))
+	_, err = client.GetProcessDefinition(ctx, connect.NewRequest(&deploymentv1.GetProcessDefinitionRequest{ProcessDefinitionKey: "00000000-0000-7000-8000-000000000999"}))
 	if connect.CodeOf(err) != connect.CodeNotFound {
 		t.Fatalf("missing key code = %v", connect.CodeOf(err))
 	}

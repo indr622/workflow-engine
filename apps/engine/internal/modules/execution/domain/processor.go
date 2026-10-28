@@ -30,7 +30,7 @@ type CreateInstance struct {
 
 // CompleteJob menyelesaikan job terbuka dan melanjutkan token.
 type CompleteJob struct {
-	JobKey    int64
+	JobKey    string
 	Variables []NamedValue
 }
 
@@ -95,8 +95,8 @@ type work struct {
 	kind     workKind
 	node     bpmn.FlowNode
 	flow     *bpmn.SequenceFlow
-	scopeKey int64
-	elemKey  int64
+	scopeKey string
+	elemKey  string
 }
 
 // run adalah satu eksekusi command.
@@ -110,16 +110,16 @@ type run struct {
 	halted  bool
 }
 
-func (r *run) nextKey() (int64, error) {
-	k, ok := r.keys.Next()
-	if !ok {
-		return 0, ErrKeysExhausted
+func (r *run) nextKey() (string, error) {
+	k := r.keys.Next()
+	if k == "" {
+		return "", fmt.Errorf("%w: key generator returned an empty key", ErrInvalidRecord)
 	}
 	return k, nil
 }
 
 // emit menulis record dan langsung menerapkannya ke state.
-func (r *run) emit(key int64, vt ValueType, intent Intent, value any) error {
+func (r *run) emit(key string, vt ValueType, intent Intent, value any) error {
 	rec := Record{
 		Key: key, ProcessInstanceKey: r.st.Key, ValueType: vt, Intent: intent, Timestamp: r.now, Value: value,
 	}
@@ -135,7 +135,7 @@ func (r *run) emit(key int64, vt ValueType, intent Intent, value any) error {
 	return nil
 }
 
-func (r *run) piValue(elementID, elementType string, scopeKey int64) *ProcessInstanceValue {
+func (r *run) piValue(elementID, elementType string, scopeKey string) *ProcessInstanceValue {
 	d := r.st.Definition
 	return &ProcessInstanceValue{
 		BpmnProcessID: d.BpmnProcessID, ProcessDefinitionKey: d.Key, Version: d.Version,
@@ -149,7 +149,7 @@ func (r *run) emitElement(el *ElementInstance, intent Intent) error {
 }
 
 func (r *run) createInstance(c CreateInstance) error {
-	if r.st.Key != 0 {
+	if r.st.Key != "" {
 		return fmt.Errorf("%w: create on a non-empty state", ErrInvalidRecord)
 	}
 	proc := r.st.Process
@@ -161,7 +161,7 @@ func (r *run) createInstance(c CreateInstance) error {
 	if err != nil {
 		return err
 	}
-	if err := r.emit(piKey, ValueProcessInstance, IntentElementActivating, r.piValue(proc.ID(), ElementTypeProcess, 0)); err != nil {
+	if err := r.emit(piKey, ValueProcessInstance, IntentElementActivating, r.piValue(proc.ID(), ElementTypeProcess, "")); err != nil {
 		return err
 	}
 	if err := r.mergeVariables(c.Variables); err != nil {
@@ -240,7 +240,7 @@ func (r *run) cancelInstance() error {
 
 // terminateChildren menghentikan anak non-final sebuah scope, key terbesar dahulu; job terbuka
 // milik anak dibatalkan sebelum elemennya dihentikan.
-func (r *run) terminateChildren(scopeKey int64) error {
+func (r *run) terminateChildren(scopeKey string) error {
 	children := r.st.ChildrenOf(scopeKey)
 	for i := len(children) - 1; i >= 0; i-- {
 		child := children[i]
@@ -259,8 +259,8 @@ func (r *run) terminateChildren(scopeKey int64) error {
 	return nil
 }
 
-func (r *run) cancelJobsOf(elemKey int64) error {
-	var keys []int64
+func (r *run) cancelJobsOf(elemKey string) error {
+	var keys []string
 	for k, j := range r.st.Jobs {
 		if j.ElementInstanceKey == elemKey {
 			keys = append(keys, k)
@@ -282,7 +282,7 @@ func (r *run) cancelJobsOf(elemKey int64) error {
 }
 
 func (r *run) resolveIncidents() error {
-	keys := make([]int64, 0, len(r.st.Incidents))
+	keys := make([]string, 0, len(r.st.Incidents))
 	for k := range r.st.Incidents {
 		keys = append(keys, k)
 	}
@@ -365,7 +365,7 @@ func (r *run) loop() error {
 }
 
 // activate membuat element instance baru untuk node dan menjalankan perilaku aktivasinya.
-func (r *run) activate(node bpmn.FlowNode, scopeKey int64) error {
+func (r *run) activate(node bpmn.FlowNode, scopeKey string) error {
 	key, err := r.nextKey()
 	if err != nil {
 		return err
@@ -414,17 +414,17 @@ func (r *run) passThrough(el *ElementInstance, flows []*bpmn.SequenceFlow) error
 	return nil
 }
 
-func (r *run) enqueueFlows(flows []*bpmn.SequenceFlow, scopeKey int64) {
+func (r *run) enqueueFlows(flows []*bpmn.SequenceFlow, scopeKey string) {
 	for _, f := range flows {
 		r.queue = append(r.queue, work{kind: workTakeFlow, flow: f, scopeKey: scopeKey})
 	}
 }
 
 // complete menyelesaikan elemen yang menunggu (service task setelah job selesai).
-func (r *run) complete(elemKey int64) error {
+func (r *run) complete(elemKey string) error {
 	el, ok := r.st.Elements[elemKey]
 	if !ok {
-		return fmt.Errorf("%w: complete unknown element instance %d", ErrInvalidRecord, elemKey)
+		return fmt.Errorf("%w: complete unknown element instance %s", ErrInvalidRecord, elemKey)
 	}
 	if err := r.emitElement(el, IntentElementCompleting); err != nil {
 		return err
@@ -443,7 +443,7 @@ func (r *run) complete(elemKey int64) error {
 // takeFlow mencatat sequence flow lalu mengaktifkan target; untuk gateway join, token menjadi
 // counter. Parallel join diaktifkan segera saat semua incoming sudah tiba; inclusive join
 // diputuskan saat quiescence.
-func (r *run) takeFlow(flow *bpmn.SequenceFlow, scopeKey int64) error {
+func (r *run) takeFlow(flow *bpmn.SequenceFlow, scopeKey string) error {
 	key, err := r.nextKey()
 	if err != nil {
 		return err
@@ -469,7 +469,7 @@ func (r *run) takeFlow(flow *bpmn.SequenceFlow, scopeKey int64) error {
 
 // tryCompleteScope menyelesaikan flow scope yang tidak punya anak aktif dan tidak punya counter
 // join tersisa. Counter yang tidak akan pernah lengkap membuat instance tetap ACTIVE.
-func (r *run) tryCompleteScope(scopeKey int64) error {
+func (r *run) tryCompleteScope(scopeKey string) error {
 	scope, ok := r.st.Elements[scopeKey]
 	if !ok || scope.State != ElementActivated {
 		return nil

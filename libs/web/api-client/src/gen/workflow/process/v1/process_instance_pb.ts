@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file workflow/process/v1/process_instance.proto.
  */
 export const file_workflow_process_v1_process_instance: GenFile = /*@__PURE__*/
-  fileDesc("Cip3b3JrZmxvdy9wcm9jZXNzL3YxL3Byb2Nlc3NfaW5zdGFuY2UucHJvdG8SE3dvcmtmbG93LnByb2Nlc3MudjEipAEKHENyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlcXVlc3QSIAoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgBIAEoA0gAEkEKDGJwbW5fcHJvY2VzcxgCIAEoCzIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0RlZmluaXRpb25SZWZIABIRCgl2YXJpYWJsZXMYAyABKAlCDAoKZGVmaW5pdGlvbiJAChRQcm9jZXNzRGVmaW5pdGlvblJlZhIXCg9icG1uX3Byb2Nlc3NfaWQYASABKAkSDwoHdmVyc2lvbhgCIAEoBSLBAQodQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2USHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYASABKAMSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoAxIXCg9icG1uX3Byb2Nlc3NfaWQYAyABKAkSDwoHdmVyc2lvbhgEIAEoBRI4CgVzdGF0ZRgFIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUiOQoZR2V0UHJvY2Vzc0luc3RhbmNlUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoAyKpAgoaR2V0UHJvY2Vzc0luc3RhbmNlUmVzcG9uc2USPgoQcHJvY2Vzc19pbnN0YW5jZRgBIAEoCzIkLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlEj8KEWVsZW1lbnRfaW5zdGFuY2VzGAIgAygLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2USMAoJdmFyaWFibGVzGAMgAygLMh0ud29ya2Zsb3cucHJvY2Vzcy52MS5WYXJpYWJsZRIwCglpbmNpZGVudHMYBCADKAsyHS53b3JrZmxvdy5wcm9jZXNzLnYxLkluY2lkZW50EiYKBGpvYnMYBSADKAsyGC53b3JrZmxvdy5wcm9jZXNzLnYxLkpvYiKnAgoPUHJvY2Vzc0luc3RhbmNlEhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgDEh4KFnByb2Nlc3NfZGVmaW5pdGlvbl9rZXkYAiABKAMSFwoPYnBtbl9wcm9jZXNzX2lkGAMgASgJEg8KB3ZlcnNpb24YBCABKAUSOAoFc3RhdGUYBSABKA4yKS53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZVN0YXRlEhQKDGhhc19pbmNpZGVudBgGIAEoCBIuCgpzdGFydF90aW1lGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAipAIKD0VsZW1lbnRJbnN0YW5jZRIcChRlbGVtZW50X2luc3RhbmNlX2tleRgBIAEoAxIWCg5mbG93X3Njb3BlX2tleRgCIAEoAxISCgplbGVtZW50X2lkGAMgASgJEhkKEWJwbW5fZWxlbWVudF90eXBlGAQgASgJEjgKBXN0YXRlGAUgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2VTdGF0ZRIUCgxpbmNpZGVudF9rZXkYBiABKAMSLgoKc3RhcnRfdGltZRgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIZW5kX3RpbWUYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjoKCFZhcmlhYmxlEhEKCXNjb3BlX2tleRgBIAEoAxIMCgRuYW1lGAIgASgJEg0KBXZhbHVlGAMgASgJIr8BCghJbmNpZGVudBIUCgxpbmNpZGVudF9rZXkYASABKAMSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYAiABKAMSEgoKZWxlbWVudF9pZBgDIAEoCRISCgplcnJvcl90eXBlGAQgASgJEhUKDWVycm9yX21lc3NhZ2UYBSABKAkSEAoIcmVzb2x2ZWQYBiABKAgSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidgoDSm9iEg8KB2pvYl9rZXkYASABKAMSDAoEdHlwZRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhwKFGVsZW1lbnRfaW5zdGFuY2Vfa2V5GAQgASgDEg8KB3JldHJpZXMYBSABKAUSDQoFc3RhdGUYBiABKAki0wEKG0xpc3RQcm9jZXNzSW5zdGFuY2VzUmVxdWVzdBIXCg9icG1uX3Byb2Nlc3NfaWQYASABKAkSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoAxI4CgVzdGF0ZRgDIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUSGgoSb25seV93aXRoX2luY2lkZW50GAQgASgIEhEKCXBhZ2Vfc2l6ZRgFIAEoBRISCgpwYWdlX3Rva2VuGAYgASgJIngKHExpc3RQcm9jZXNzSW5zdGFuY2VzUmVzcG9uc2USPwoRcHJvY2Vzc19pbnN0YW5jZXMYASADKAsyJC53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiPAocQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoAyIfCh1DYW5jZWxQcm9jZXNzSW5zdGFuY2VSZXNwb25zZSquAQoUUHJvY2Vzc0luc3RhbmNlU3RhdGUSJgoiUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9VTlNQRUNJRklFRBAAEiEKHVBST0NFU1NfSU5TVEFOQ0VfU1RBVEVfQUNUSVZFEAESJAogUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9DT01QTEVURUQQAhIlCiFQUk9DRVNTX0lOU1RBTkNFX1NUQVRFX1RFUk1JTkFURUQQAyqnAgoURWxlbWVudEluc3RhbmNlU3RhdGUSJgoiRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9VTlNQRUNJRklFRBAAEiUKIUVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQUNUSVZBVElORxABEiQKIEVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQUNUSVZBVEVEEAISJQohRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9DT01QTEVUSU5HEAMSJAogRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9DT01QTEVURUQQBBImCiJFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX1RFUk1JTkFUSU5HEAUSJQohRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9URVJNSU5BVEVEEAYylgQKFlByb2Nlc3NJbnN0YW5jZVNlcnZpY2USgAEKFUNyZWF0ZVByb2Nlc3NJbnN0YW5jZRIxLndvcmtmbG93LnByb2Nlc3MudjEuQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBoyLndvcmtmbG93LnByb2Nlc3MudjEuQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2UiABJ3ChJHZXRQcm9jZXNzSW5zdGFuY2USLi53b3JrZmxvdy5wcm9jZXNzLnYxLkdldFByb2Nlc3NJbnN0YW5jZVJlcXVlc3QaLy53b3JrZmxvdy5wcm9jZXNzLnYxLkdldFByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlIgASfQoUTGlzdFByb2Nlc3NJbnN0YW5jZXMSMC53b3JrZmxvdy5wcm9jZXNzLnYxLkxpc3RQcm9jZXNzSW5zdGFuY2VzUmVxdWVzdBoxLndvcmtmbG93LnByb2Nlc3MudjEuTGlzdFByb2Nlc3NJbnN0YW5jZXNSZXNwb25zZSIAEoABChVDYW5jZWxQcm9jZXNzSW5zdGFuY2USMS53b3JrZmxvdy5wcm9jZXNzLnYxLkNhbmNlbFByb2Nlc3NJbnN0YW5jZVJlcXVlc3QaMi53b3JrZmxvdy5wcm9jZXNzLnYxLkNhbmNlbFByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlIgBCUlpQZ2l0aHViLmNvbS9pbmRyNjIyL3dvcmtmbG93LWVuZ2luZS9saWJzL2dvL2FwaS9nZW4vd29ya2Zsb3cvcHJvY2Vzcy92MTtwcm9jZXNzdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
+  fileDesc("Cip3b3JrZmxvdy9wcm9jZXNzL3YxL3Byb2Nlc3NfaW5zdGFuY2UucHJvdG8SE3dvcmtmbG93LnByb2Nlc3MudjEipAEKHENyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlcXVlc3QSIAoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgBIAEoCUgAEkEKDGJwbW5fcHJvY2VzcxgCIAEoCzIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0RlZmluaXRpb25SZWZIABIRCgl2YXJpYWJsZXMYAyABKAlCDAoKZGVmaW5pdGlvbiJAChRQcm9jZXNzRGVmaW5pdGlvblJlZhIXCg9icG1uX3Byb2Nlc3NfaWQYASABKAkSDwoHdmVyc2lvbhgCIAEoBSLBAQodQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2USHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYASABKAkSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYAyABKAkSDwoHdmVyc2lvbhgEIAEoBRI4CgVzdGF0ZRgFIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUiOQoZR2V0UHJvY2Vzc0luc3RhbmNlUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCSKpAgoaR2V0UHJvY2Vzc0luc3RhbmNlUmVzcG9uc2USPgoQcHJvY2Vzc19pbnN0YW5jZRgBIAEoCzIkLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlEj8KEWVsZW1lbnRfaW5zdGFuY2VzGAIgAygLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2USMAoJdmFyaWFibGVzGAMgAygLMh0ud29ya2Zsb3cucHJvY2Vzcy52MS5WYXJpYWJsZRIwCglpbmNpZGVudHMYBCADKAsyHS53b3JrZmxvdy5wcm9jZXNzLnYxLkluY2lkZW50EiYKBGpvYnMYBSADKAsyGC53b3JrZmxvdy5wcm9jZXNzLnYxLkpvYiKnAgoPUHJvY2Vzc0luc3RhbmNlEhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgJEh4KFnByb2Nlc3NfZGVmaW5pdGlvbl9rZXkYAiABKAkSFwoPYnBtbl9wcm9jZXNzX2lkGAMgASgJEg8KB3ZlcnNpb24YBCABKAUSOAoFc3RhdGUYBSABKA4yKS53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZVN0YXRlEhQKDGhhc19pbmNpZGVudBgGIAEoCBIuCgpzdGFydF90aW1lGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAipAIKD0VsZW1lbnRJbnN0YW5jZRIcChRlbGVtZW50X2luc3RhbmNlX2tleRgBIAEoCRIWCg5mbG93X3Njb3BlX2tleRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhkKEWJwbW5fZWxlbWVudF90eXBlGAQgASgJEjgKBXN0YXRlGAUgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2VTdGF0ZRIUCgxpbmNpZGVudF9rZXkYBiABKAkSLgoKc3RhcnRfdGltZRgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIZW5kX3RpbWUYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjoKCFZhcmlhYmxlEhEKCXNjb3BlX2tleRgBIAEoCRIMCgRuYW1lGAIgASgJEg0KBXZhbHVlGAMgASgJIr8BCghJbmNpZGVudBIUCgxpbmNpZGVudF9rZXkYASABKAkSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYAiABKAkSEgoKZWxlbWVudF9pZBgDIAEoCRISCgplcnJvcl90eXBlGAQgASgJEhUKDWVycm9yX21lc3NhZ2UYBSABKAkSEAoIcmVzb2x2ZWQYBiABKAgSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidgoDSm9iEg8KB2pvYl9rZXkYASABKAkSDAoEdHlwZRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhwKFGVsZW1lbnRfaW5zdGFuY2Vfa2V5GAQgASgJEg8KB3JldHJpZXMYBSABKAUSDQoFc3RhdGUYBiABKAki0wEKG0xpc3RQcm9jZXNzSW5zdGFuY2VzUmVxdWVzdBIXCg9icG1uX3Byb2Nlc3NfaWQYASABKAkSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoCRI4CgVzdGF0ZRgDIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUSGgoSb25seV93aXRoX2luY2lkZW50GAQgASgIEhEKCXBhZ2Vfc2l6ZRgFIAEoBRISCgpwYWdlX3Rva2VuGAYgASgJIngKHExpc3RQcm9jZXNzSW5zdGFuY2VzUmVzcG9uc2USPwoRcHJvY2Vzc19pbnN0YW5jZXMYASADKAsyJC53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiPAocQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCSIfCh1DYW5jZWxQcm9jZXNzSW5zdGFuY2VSZXNwb25zZSquAQoUUHJvY2Vzc0luc3RhbmNlU3RhdGUSJgoiUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9VTlNQRUNJRklFRBAAEiEKHVBST0NFU1NfSU5TVEFOQ0VfU1RBVEVfQUNUSVZFEAESJAogUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9DT01QTEVURUQQAhIlCiFQUk9DRVNTX0lOU1RBTkNFX1NUQVRFX1RFUk1JTkFURUQQAyqnAgoURWxlbWVudEluc3RhbmNlU3RhdGUSJgoiRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9VTlNQRUNJRklFRBAAEiUKIUVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQUNUSVZBVElORxABEiQKIEVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQUNUSVZBVEVEEAISJQohRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9DT01QTEVUSU5HEAMSJAogRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9DT01QTEVURUQQBBImCiJFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX1RFUk1JTkFUSU5HEAUSJQohRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9URVJNSU5BVEVEEAYylgQKFlByb2Nlc3NJbnN0YW5jZVNlcnZpY2USgAEKFUNyZWF0ZVByb2Nlc3NJbnN0YW5jZRIxLndvcmtmbG93LnByb2Nlc3MudjEuQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBoyLndvcmtmbG93LnByb2Nlc3MudjEuQ3JlYXRlUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2UiABJ3ChJHZXRQcm9jZXNzSW5zdGFuY2USLi53b3JrZmxvdy5wcm9jZXNzLnYxLkdldFByb2Nlc3NJbnN0YW5jZVJlcXVlc3QaLy53b3JrZmxvdy5wcm9jZXNzLnYxLkdldFByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlIgASfQoUTGlzdFByb2Nlc3NJbnN0YW5jZXMSMC53b3JrZmxvdy5wcm9jZXNzLnYxLkxpc3RQcm9jZXNzSW5zdGFuY2VzUmVxdWVzdBoxLndvcmtmbG93LnByb2Nlc3MudjEuTGlzdFByb2Nlc3NJbnN0YW5jZXNSZXNwb25zZSIAEoABChVDYW5jZWxQcm9jZXNzSW5zdGFuY2USMS53b3JrZmxvdy5wcm9jZXNzLnYxLkNhbmNlbFByb2Nlc3NJbnN0YW5jZVJlcXVlc3QaMi53b3JrZmxvdy5wcm9jZXNzLnYxLkNhbmNlbFByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlIgBCUlpQZ2l0aHViLmNvbS9pbmRyNjIyL3dvcmtmbG93LWVuZ2luZS9saWJzL2dvL2FwaS9nZW4vd29ya2Zsb3cvcHJvY2Vzcy92MTtwcm9jZXNzdjFiBnByb3RvMw", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message workflow.process.v1.CreateProcessInstanceRequest
@@ -25,9 +25,9 @@ export type CreateProcessInstanceRequest = Message<"workflow.process.v1.CreatePr
     /**
      * Key versi process definition tertentu.
      *
-     * @generated from field: int64 process_definition_key = 1;
+     * @generated from field: string process_definition_key = 1;
      */
-    value: bigint;
+    value: string;
     case: "processDefinitionKey";
   } | {
     /**
@@ -83,14 +83,14 @@ export const ProcessDefinitionRefSchema: GenMessage<ProcessDefinitionRef> = /*@_
  */
 export type CreateProcessInstanceResponse = Message<"workflow.process.v1.CreateProcessInstanceResponse"> & {
   /**
-   * @generated from field: int64 process_instance_key = 1;
+   * @generated from field: string process_instance_key = 1;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 
   /**
-   * @generated from field: int64 process_definition_key = 2;
+   * @generated from field: string process_definition_key = 2;
    */
-  processDefinitionKey: bigint;
+  processDefinitionKey: string;
 
   /**
    * @generated from field: string bpmn_process_id = 3;
@@ -122,9 +122,9 @@ export const CreateProcessInstanceResponseSchema: GenMessage<CreateProcessInstan
  */
 export type GetProcessInstanceRequest = Message<"workflow.process.v1.GetProcessInstanceRequest"> & {
   /**
-   * @generated from field: int64 process_instance_key = 1;
+   * @generated from field: string process_instance_key = 1;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 };
 
 /**
@@ -178,14 +178,14 @@ export const GetProcessInstanceResponseSchema: GenMessage<GetProcessInstanceResp
  */
 export type ProcessInstance = Message<"workflow.process.v1.ProcessInstance"> & {
   /**
-   * @generated from field: int64 process_instance_key = 1;
+   * @generated from field: string process_instance_key = 1;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 
   /**
-   * @generated from field: int64 process_definition_key = 2;
+   * @generated from field: string process_definition_key = 2;
    */
-  processDefinitionKey: bigint;
+  processDefinitionKey: string;
 
   /**
    * @generated from field: string bpmn_process_id = 3;
@@ -230,16 +230,16 @@ export const ProcessInstanceSchema: GenMessage<ProcessInstance> = /*@__PURE__*/
  */
 export type ElementInstance = Message<"workflow.process.v1.ElementInstance"> & {
   /**
-   * @generated from field: int64 element_instance_key = 1;
+   * @generated from field: string element_instance_key = 1;
    */
-  elementInstanceKey: bigint;
+  elementInstanceKey: string;
 
   /**
-   * 0 untuk element instance PROCESS.
+   * Kosong untuk element instance PROCESS.
    *
-   * @generated from field: int64 flow_scope_key = 2;
+   * @generated from field: string flow_scope_key = 2;
    */
-  flowScopeKey: bigint;
+  flowScopeKey: string;
 
   /**
    * @generated from field: string element_id = 3;
@@ -259,11 +259,11 @@ export type ElementInstance = Message<"workflow.process.v1.ElementInstance"> & {
   state: ElementInstanceState;
 
   /**
-   * Incident terbuka yang menahan elemen ini, 0 bila tidak ada.
+   * Incident terbuka yang menahan elemen ini, kosong bila tidak ada.
    *
-   * @generated from field: int64 incident_key = 6;
+   * @generated from field: string incident_key = 6;
    */
-  incidentKey: bigint;
+  incidentKey: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp start_time = 7;
@@ -288,9 +288,9 @@ export const ElementInstanceSchema: GenMessage<ElementInstance> = /*@__PURE__*/
  */
 export type Variable = Message<"workflow.process.v1.Variable"> & {
   /**
-   * @generated from field: int64 scope_key = 1;
+   * @generated from field: string scope_key = 1;
    */
-  scopeKey: bigint;
+  scopeKey: string;
 
   /**
    * @generated from field: string name = 2;
@@ -317,14 +317,14 @@ export const VariableSchema: GenMessage<Variable> = /*@__PURE__*/
  */
 export type Incident = Message<"workflow.process.v1.Incident"> & {
   /**
-   * @generated from field: int64 incident_key = 1;
+   * @generated from field: string incident_key = 1;
    */
-  incidentKey: bigint;
+  incidentKey: string;
 
   /**
-   * @generated from field: int64 element_instance_key = 2;
+   * @generated from field: string element_instance_key = 2;
    */
-  elementInstanceKey: bigint;
+  elementInstanceKey: string;
 
   /**
    * @generated from field: string element_id = 3;
@@ -366,9 +366,9 @@ export const IncidentSchema: GenMessage<Incident> = /*@__PURE__*/
  */
 export type Job = Message<"workflow.process.v1.Job"> & {
   /**
-   * @generated from field: int64 job_key = 1;
+   * @generated from field: string job_key = 1;
    */
-  jobKey: bigint;
+  jobKey: string;
 
   /**
    * @generated from field: string type = 2;
@@ -381,9 +381,9 @@ export type Job = Message<"workflow.process.v1.Job"> & {
   elementId: string;
 
   /**
-   * @generated from field: int64 element_instance_key = 4;
+   * @generated from field: string element_instance_key = 4;
    */
-  elementInstanceKey: bigint;
+  elementInstanceKey: string;
 
   /**
    * @generated from field: int32 retries = 5;
@@ -415,9 +415,9 @@ export type ListProcessInstancesRequest = Message<"workflow.process.v1.ListProce
   bpmnProcessId: string;
 
   /**
-   * @generated from field: int64 process_definition_key = 2;
+   * @generated from field: string process_definition_key = 2;
    */
-  processDefinitionKey: bigint;
+  processDefinitionKey: string;
 
   /**
    * @generated from field: workflow.process.v1.ProcessInstanceState state = 3;
@@ -476,9 +476,9 @@ export const ListProcessInstancesResponseSchema: GenMessage<ListProcessInstances
  */
 export type CancelProcessInstanceRequest = Message<"workflow.process.v1.CancelProcessInstanceRequest"> & {
   /**
-   * @generated from field: int64 process_instance_key = 1;
+   * @generated from field: string process_instance_key = 1;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 };
 
 /**

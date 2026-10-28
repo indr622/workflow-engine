@@ -14,16 +14,16 @@ describe('connect deployment repository mappers', () => {
   it('maps a proto definition including int64 keys and timestamps', () => {
     const d = toDomainDefinition(
       create(ProcessDefinitionSchema, {
-        processDefinitionKey: 9007199254740993n,
+        processDefinitionKey: '0190f5d2-6c1a-7b3e-8f00-123456789abc',
         bpmnProcessId: 'order',
         version: 3,
-        deploymentKey: 42n,
+        deploymentKey: '0190f5d2-6c1a-7b3e-8f00-000000000042',
         createdAt: timestampFromDate(new Date('2026-10-28T00:00:00Z')),
         duplicate: true,
       }),
     );
-    expect(d.key).toBe('9007199254740993');
-    expect(d.deploymentKey).toBe('42');
+    expect(d.key).toBe('0190f5d2-6c1a-7b3e-8f00-123456789abc');
+    expect(d.deploymentKey).toBe('0190f5d2-6c1a-7b3e-8f00-000000000042');
     expect(d.createdAt.toISOString()).toBe('2026-10-28T00:00:00.000Z');
     expect(d.duplicate).toBe(true);
   });

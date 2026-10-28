@@ -14,19 +14,19 @@ var ErrNotFound = errors.New("process definition not found")
 
 // ProcessDefinition adalah metadata satu versi proses.
 type ProcessDefinition struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	ResourceName  string
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     time.Time
 }
 
 // ProcessDefinitions memberi modul lain akses ke model BPMN ter-parse (di-cache).
 type ProcessDefinitions interface {
-	GetByKey(ctx context.Context, key int64) (ProcessDefinition, *bpmn.Process, error)
+	GetByKey(ctx context.Context, key string) (ProcessDefinition, *bpmn.Process, error)
 	GetLatest(ctx context.Context, bpmnProcessID string) (ProcessDefinition, *bpmn.Process, error)
 }

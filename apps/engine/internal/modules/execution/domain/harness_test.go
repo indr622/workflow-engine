@@ -109,12 +109,12 @@ func parseExecutable(t testing.TB, xml, id string) *bpmn.Process {
 	return proc
 }
 
-// counterKeys memberi key naik tanpa batas.
+// counterKeys memberi key berbentuk UUIDv7 yang naik tanpa batas; deterministik untuk test.
 type counterKeys struct{ next int64 }
 
-func (k *counterKeys) Next() (int64, bool) {
+func (k *counterKeys) Next() string {
 	k.next++
-	return k.next, true
+	return fmt.Sprintf("00000000-0000-7000-8000-%012d", k.next)
 }
 
 type fixedClock struct{ t time.Time }
@@ -138,7 +138,7 @@ type harness struct {
 	last []domain.Record
 }
 
-var testDefinition = domain.DefinitionRef{Key: 900, Version: 1}
+var testDefinition = domain.DefinitionRef{Key: "00000000-0000-7000-8000-000000000900", Version: 1}
 
 func startInstance(t testing.TB, proc *bpmn.Process, vars string) *harness {
 	t.Helper()
@@ -299,7 +299,7 @@ func (h *harness) assertReplay() {
 }
 
 type stateView struct {
-	Key        int64
+	Key        string
 	Definition domain.DefinitionRef
 	Status     domain.InstanceStatus
 	Elements   []domain.ElementInstance

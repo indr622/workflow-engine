@@ -24,7 +24,7 @@ const (
 type ListJobsRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Type               string                 `protobuf:"bytes,1,opt,name=type,proto3" json:"type,omitempty"`
-	ProcessInstanceKey int64                  `protobuf:"varint,2,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ProcessInstanceKey string                 `protobuf:"bytes,2,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
 	// Hanya job berstate CREATED.
 	OnlyOpen bool `protobuf:"varint,3,opt,name=only_open,json=onlyOpen,proto3" json:"only_open,omitempty"`
 	// Default 50, maksimum 500.
@@ -71,11 +71,11 @@ func (x *ListJobsRequest) GetType() string {
 	return ""
 }
 
-func (x *ListJobsRequest) GetProcessInstanceKey() int64 {
+func (x *ListJobsRequest) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ListJobsRequest) GetOnlyOpen() bool {
@@ -153,17 +153,17 @@ func (x *ListJobsResponse) GetNextPageToken() string {
 
 type JobInfo struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	JobKey             int64                  `protobuf:"varint,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	JobKey             string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
 	Type               string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	ProcessInstanceKey int64                  `protobuf:"varint,3,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
-	ElementInstanceKey int64                  `protobuf:"varint,4,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
+	ProcessInstanceKey string                 `protobuf:"bytes,3,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ElementInstanceKey string                 `protobuf:"bytes,4,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
 	ElementId          string                 `protobuf:"bytes,5,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
 	BpmnProcessId      string                 `protobuf:"bytes,6,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
 	Retries            int32                  `protobuf:"varint,7,opt,name=retries,proto3" json:"retries,omitempty"`
 	CustomHeaders      map[string]string      `protobuf:"bytes,8,rep,name=custom_headers,json=customHeaders,proto3" json:"custom_headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
 	State                string `protobuf:"bytes,9,opt,name=state,proto3" json:"state,omitempty"`
-	ProcessDefinitionKey int64  `protobuf:"varint,10,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessDefinitionKey string `protobuf:"bytes,10,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -198,11 +198,11 @@ func (*JobInfo) Descriptor() ([]byte, []int) {
 	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *JobInfo) GetJobKey() int64 {
+func (x *JobInfo) GetJobKey() string {
 	if x != nil {
 		return x.JobKey
 	}
-	return 0
+	return ""
 }
 
 func (x *JobInfo) GetType() string {
@@ -212,18 +212,18 @@ func (x *JobInfo) GetType() string {
 	return ""
 }
 
-func (x *JobInfo) GetProcessInstanceKey() int64 {
+func (x *JobInfo) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
-func (x *JobInfo) GetElementInstanceKey() int64 {
+func (x *JobInfo) GetElementInstanceKey() string {
 	if x != nil {
 		return x.ElementInstanceKey
 	}
-	return 0
+	return ""
 }
 
 func (x *JobInfo) GetElementId() string {
@@ -261,16 +261,16 @@ func (x *JobInfo) GetState() string {
 	return ""
 }
 
-func (x *JobInfo) GetProcessDefinitionKey() int64 {
+func (x *JobInfo) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 type CompleteJobRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
-	JobKey int64                  `protobuf:"varint,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	JobKey string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
 	// Dokumen JSON object; kosong berarti tanpa variabel.
 	Variables     string `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -307,11 +307,11 @@ func (*CompleteJobRequest) Descriptor() ([]byte, []int) {
 	return file_workflow_job_v1_job_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *CompleteJobRequest) GetJobKey() int64 {
+func (x *CompleteJobRequest) GetJobKey() string {
 	if x != nil {
 		return x.JobKey
 	}
-	return 0
+	return ""
 }
 
 func (x *CompleteJobRequest) GetVariables() string {
@@ -364,7 +364,7 @@ const file_workflow_job_v1_job_proto_rawDesc = "" +
 	"\x19workflow/job/v1/job.proto\x12\x0fworkflow.job.v1\"\xb0\x01\n" +
 	"\x0fListJobsRequest\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x120\n" +
-	"\x14process_instance_key\x18\x02 \x01(\x03R\x12processInstanceKey\x12\x1b\n" +
+	"\x14process_instance_key\x18\x02 \x01(\tR\x12processInstanceKey\x12\x1b\n" +
 	"\tonly_open\x18\x03 \x01(\bR\bonlyOpen\x12\x1b\n" +
 	"\tpage_size\x18\x04 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -373,10 +373,10 @@ const file_workflow_job_v1_job_proto_rawDesc = "" +
 	"\x04jobs\x18\x01 \x03(\v2\x18.workflow.job.v1.JobInfoR\x04jobs\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xdd\x03\n" +
 	"\aJobInfo\x12\x17\n" +
-	"\ajob_key\x18\x01 \x01(\x03R\x06jobKey\x12\x12\n" +
+	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x120\n" +
-	"\x14process_instance_key\x18\x03 \x01(\x03R\x12processInstanceKey\x120\n" +
-	"\x14element_instance_key\x18\x04 \x01(\x03R\x12elementInstanceKey\x12\x1d\n" +
+	"\x14process_instance_key\x18\x03 \x01(\tR\x12processInstanceKey\x120\n" +
+	"\x14element_instance_key\x18\x04 \x01(\tR\x12elementInstanceKey\x12\x1d\n" +
 	"\n" +
 	"element_id\x18\x05 \x01(\tR\telementId\x12&\n" +
 	"\x0fbpmn_process_id\x18\x06 \x01(\tR\rbpmnProcessId\x12\x18\n" +
@@ -384,12 +384,12 @@ const file_workflow_job_v1_job_proto_rawDesc = "" +
 	"\x0ecustom_headers\x18\b \x03(\v2+.workflow.job.v1.JobInfo.CustomHeadersEntryR\rcustomHeaders\x12\x14\n" +
 	"\x05state\x18\t \x01(\tR\x05state\x124\n" +
 	"\x16process_definition_key\x18\n" +
-	" \x01(\x03R\x14processDefinitionKey\x1a@\n" +
+	" \x01(\tR\x14processDefinitionKey\x1a@\n" +
 	"\x12CustomHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"K\n" +
 	"\x12CompleteJobRequest\x12\x17\n" +
-	"\ajob_key\x18\x01 \x01(\x03R\x06jobKey\x12\x1c\n" +
+	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x1c\n" +
 	"\tvariables\x18\x02 \x01(\tR\tvariables\"\x15\n" +
 	"\x13CompleteJobResponse2\xbb\x01\n" +
 	"\n" +

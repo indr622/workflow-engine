@@ -25,6 +25,7 @@ import (
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/httpserver"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/logger"
 )
 
@@ -87,8 +88,9 @@ func run() error {
 		}
 	}
 
-	// Event bus in-process dibagi semua modul.
+	// Event bus in-process dan generator key UUIDv7 dibagi semua modul.
 	bus := eventbus.NewInMemory()
+	keys := keygen.New()
 
 	mux := http.NewServeMux()
 
@@ -97,7 +99,7 @@ func run() error {
 	interfaces.NewHandler(checkHealth).Register(mux)
 
 	// Modul deployment.
-	deploymentRepo := deploymentinfra.NewPostgresRepository(pool)
+	deploymentRepo := deploymentinfra.NewPostgresRepository(pool, keys)
 	processCache := deploymentapp.NewProcessCache(deploymentRepo, 256)
 	deployResource := deploymentapp.NewDeployResource(deploymentRepo, bus, processCache, nil, log)
 	deploymentifc.NewHandler(deployResource, deploymentapp.NewQueries(deploymentRepo)).Register(mux)

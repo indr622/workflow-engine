@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 
@@ -13,12 +14,12 @@ type fakeRepository struct {
 	mu          sync.Mutex
 	nextKey     int64
 	definitions []domain.ProcessDefinition
-	content     map[int64][]byte
+	content     map[string][]byte
 	deployments int
 }
 
 func newFakeRepository() *fakeRepository {
-	return &fakeRepository{nextKey: 1000, content: map[int64][]byte{}}
+	return &fakeRepository{nextKey: 1000, content: map[string][]byte{}}
 }
 
 func (r *fakeRepository) WithTx(ctx context.Context, fn func(ctx context.Context, tx domain.TxRepository) error) error {
@@ -34,7 +35,7 @@ func (r *fakeRepository) WithTx(ctx context.Context, fn func(ctx context.Context
 	return nil
 }
 
-func (r *fakeRepository) GetByKey(_ context.Context, key int64) (domain.ProcessDefinition, []byte, error) {
+func (r *fakeRepository) GetByKey(_ context.Context, key string) (domain.ProcessDefinition, []byte, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	for _, d := range r.definitions {
@@ -107,11 +108,11 @@ func (t *fakeTx) LatestByProcessID(_ context.Context, tenantID, processID string
 	return pd, found, nil
 }
 
-func (t *fakeTx) NextKeys(_ context.Context, n int) ([]int64, error) {
-	keys := make([]int64, n)
+func (t *fakeTx) NextKeys(_ context.Context, n int) ([]string, error) {
+	keys := make([]string, n)
 	for i := range keys {
 		t.nextKey++
-		keys[i] = t.nextKey
+		keys[i] = fmt.Sprintf("00000000-0000-7000-8000-%012d", t.nextKey)
 	}
 	return keys, nil
 }

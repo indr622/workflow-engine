@@ -32,12 +32,12 @@ func Apply(st *InstanceState, r *Record) error {
 		switch r.Intent {
 		case IntentCreated:
 			if exists {
-				return invalid(r, "variable %q already exists in scope %d", v.Name, v.ScopeKey)
+				return invalid(r, "variable %q already exists in scope %s", v.Name, v.ScopeKey)
 			}
 			st.Variables[vk] = &Variable{Key: r.Key, ScopeKey: v.ScopeKey, Name: v.Name, Value: v.Value}
 		case IntentUpdated:
 			if !exists || existing.Key != r.Key {
-				return invalid(r, "variable %q does not exist in scope %d", v.Name, v.ScopeKey)
+				return invalid(r, "variable %q does not exist in scope %s", v.Name, v.ScopeKey)
 			}
 			existing.Value = v.Value
 		default:
@@ -76,7 +76,7 @@ func Apply(st *InstanceState, r *Record) error {
 		case IntentCreated:
 			el, exists := st.Elements[v.ElementInstanceKey]
 			if !exists {
-				return invalid(r, "incident element instance %d is not active", v.ElementInstanceKey)
+				return invalid(r, "incident element instance %s is not active", v.ElementInstanceKey)
 			}
 			st.Incidents[r.Key] = &Incident{
 				Key: r.Key, ElementInstanceKey: v.ElementInstanceKey, ElementID: v.ElementID,
@@ -89,7 +89,7 @@ func Apply(st *InstanceState, r *Record) error {
 			}
 			delete(st.Incidents, r.Key)
 			if el, ok := st.Elements[v.ElementInstanceKey]; ok && el.IncidentKey == r.Key {
-				el.IncidentKey = 0
+				el.IncidentKey = ""
 			}
 		default:
 			return invalid(r, "unknown incident intent")
@@ -111,7 +111,7 @@ func applyElement(st *InstanceState, r *Record, v *ProcessInstanceValue) error {
 			return invalid(r, "element instance already exists")
 		}
 		if isProcess {
-			if st.Key != 0 {
+			if st.Key != "" {
 				return invalid(r, "instance already has a process element instance")
 			}
 			st.Key = r.Key
@@ -210,5 +210,5 @@ func applyFlowTaken(st *InstanceState, r *Record, v *ProcessInstanceValue) error
 }
 
 func invalid(r *Record, format string, args ...any) error {
-	return fmt.Errorf("%w: %s %s key %d: %s", ErrInvalidRecord, r.ValueType, r.Intent, r.Key, fmt.Sprintf(format, args...))
+	return fmt.Errorf("%w: %s %s key %s: %s", ErrInvalidRecord, r.ValueType, r.Intent, r.Key, fmt.Sprintf(format, args...))
 }

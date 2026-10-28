@@ -5,10 +5,9 @@ SELECT pg_advisory_xact_lock(hashtext(sqlc.arg(tenant_id)::text || ':' || sqlc.a
 -- name: InsertDeployment :exec
 INSERT INTO deployment (key, tenant_id) VALUES ($1, $2);
 
--- name: InsertResource :one
-INSERT INTO deployment_resource (deployment_key, resource_name, content, checksum)
-VALUES ($1, $2, $3, $4)
-RETURNING id;
+-- name: InsertResource :exec
+INSERT INTO deployment_resource (id, deployment_key, resource_name, content, checksum)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: InsertProcessDefinition :exec
 INSERT INTO process_definition

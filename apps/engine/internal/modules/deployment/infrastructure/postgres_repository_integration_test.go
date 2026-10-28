@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
 	platformdb "github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
@@ -52,7 +54,7 @@ func TestDeployAgainstPostgres(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	repo := NewPostgresRepository(pool)
+	repo := NewPostgresRepository(pool, keygen.New())
 	cache := application.NewProcessCache(repo, 64)
 	deploy := application.NewDeployResource(repo, eventbus.NewInMemory(), cache, nil, log)
 	// Id unik per run agar test bisa diulang di database yang sama.
@@ -103,7 +105,7 @@ func TestDeployAgainstPostgres(t *testing.T) {
 	if err != nil || meta.Version != 21 || proc.ID() != pid {
 		t.Fatalf("latest = %+v %v %v", meta, proc, err)
 	}
-	if _, _, err := repo.GetByKey(ctx, -1); !errors.Is(err, domain.ErrNotFound) {
+	if _, _, err := repo.GetByKey(ctx, "00000000-0000-7000-8000-000000000000"); !errors.Is(err, domain.ErrNotFound) {
 		t.Fatalf("missing key err = %v", err)
 	}
 	items, err := repo.List(ctx, domain.ListQuery{TenantID: domain.DefaultTenant, BpmnProcessID: pid, Limit: 100})

@@ -35,7 +35,7 @@ func (c Checksum) String() string { return hex.EncodeToString(c[:]) }
 
 // ProcessDefinition adalah satu versi proses yang ter-deploy.
 type ProcessDefinition struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
@@ -43,7 +43,7 @@ type ProcessDefinition struct {
 	Name          string
 	ResourceName  string
 	Checksum      Checksum
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     time.Time
 }
 

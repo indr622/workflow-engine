@@ -99,7 +99,7 @@ export class ConnectDeploymentRepository implements DeploymentRepository {
   }
 
   async get(key: string) {
-    const res = await this.client.getProcessDefinition({ processDefinitionKey: BigInt(key) });
+    const res = await this.client.getProcessDefinition({ processDefinitionKey: key });
     if (!res.processDefinition) throw new Error(`process definition ${key} has no metadata`);
     return { definition: toDomainDefinition(res.processDefinition), bpmnXml: res.bpmnXml };
   }

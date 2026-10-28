@@ -44,7 +44,7 @@ func TestLinearPassThroughCompletesInOneCommand(t *testing.T) {
 	}
 	for _, r := range h.all {
 		if r.ProcessInstanceKey != h.st.Key {
-			t.Fatalf("record %s %s has process instance key %d, want %d", r.Intent, r.ElementID(), r.ProcessInstanceKey, h.st.Key)
+			t.Fatalf("record %s %s has process instance key %s, want %s", r.Intent, r.ElementID(), r.ProcessInstanceKey, h.st.Key)
 		}
 	}
 	h.assertReplay()
@@ -371,16 +371,7 @@ func TestProcessIsDeterministic(t *testing.T) {
 	}
 }
 
-func TestKeysExhausted(t *testing.T) {
-	proc := parallelModel(t).proc
-	def := testDefinition
-	def.BpmnProcessID = proc.ID()
-	st := domain.NewInstanceState(def, proc)
-	_, err := newProcessor(0).Process(st, domain.CreateInstance{}, domain.NewSliceKeys([]int64{1, 2, 3}))
-	expectErr(t, err, domain.ErrKeysExhausted)
-}
-
 func TestUnknownJobIsNotActive(t *testing.T) {
 	h := startInstance(t, parallelModel(t).proc, `{}`)
-	expectErr(t, h.run(domain.CompleteJob{JobKey: 1}), domain.ErrJobNotActive)
+	expectErr(t, h.run(domain.CompleteJob{JobKey: "00000000-0000-7000-8000-000000000001"}), domain.ErrJobNotActive)
 }

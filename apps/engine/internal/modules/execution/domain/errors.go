@@ -25,9 +25,6 @@ var (
 	ErrInvalidVariables   = errors.New("invalid variables")
 	ErrNoNoneStartEvent   = errors.New("process has no none start event")
 	ErrUnsupportedElement = errors.New("element is not supported by the engine")
-	// ErrKeysExhausted: blok key yang disiapkan application habis; application mengambil blok
-	// lebih besar lalu mengulang command dari state yang dimuat ulang (belum ada yang ditulis).
-	ErrKeysExhausted = errors.New("key block exhausted")
 	// ErrInvalidRecord menandai record yang melanggar state saat Apply: selalu bug.
 	ErrInvalidRecord = errors.New("invalid record for current state")
 )

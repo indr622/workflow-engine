@@ -6,6 +6,8 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/deployment/v1;deploymentv1";
 
+// Semua key (field berakhiran _key) adalah UUIDv7 dalam bentuk kanonik huruf kecil (ADR-0011).
+
 // DeploymentService menerima resource BPMN dan mengelola process definition berversi.
 service DeploymentService {
   // DeployResource memvalidasi lalu menyimpan satu atau lebih resource BPMN secara atomik.
@@ -30,7 +32,7 @@ message DeployResourceRequest {
 }
 
 message DeployResourceResponse {
-  int64 deployment_key = 1;
+  string deployment_key = 1;
   repeated ProcessDefinition process_definitions = 2;
   repeated ValidationIssue warnings = 3;
 }
@@ -65,20 +67,20 @@ message ProcessSummary {
 }
 
 message ProcessDefinition {
-  int64 process_definition_key = 1;
+  string process_definition_key = 1;
   string bpmn_process_id = 2;
   int32 version = 3;
   string version_tag = 4;
   string name = 5;
   string resource_name = 6;
-  int64 deployment_key = 7;
+  string deployment_key = 7;
   google.protobuf.Timestamp created_at = 8;
   // duplicate = true bila deploy ini tidak membuat versi baru karena resource identik.
   bool duplicate = 9;
 }
 
 message GetProcessDefinitionRequest {
-  int64 process_definition_key = 1;
+  string process_definition_key = 1;
 }
 
 message GetProcessDefinitionResponse {

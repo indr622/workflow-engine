@@ -7,7 +7,7 @@ type Repository interface {
 	// WithTx menjalankan fn dalam satu transaksi; rollback bila fn mengembalikan error.
 	WithTx(ctx context.Context, fn func(ctx context.Context, tx TxRepository) error) error
 	// GetByKey mengembalikan metadata dan konten resource asli.
-	GetByKey(ctx context.Context, key int64) (ProcessDefinition, []byte, error)
+	GetByKey(ctx context.Context, key string) (ProcessDefinition, []byte, error)
 	// GetLatest mengembalikan versi terbaru beserta konten resource.
 	GetLatest(ctx context.Context, tenantID, bpmnProcessID string) (ProcessDefinition, []byte, error)
 	// List mengembalikan halaman definition sesuai query.
@@ -21,7 +21,7 @@ type TxRepository interface {
 	// LatestByProcessID mengembalikan versi terbaru; found=false bila belum pernah di-deploy.
 	LatestByProcessID(ctx context.Context, tenantID, bpmnProcessID string) (pd ProcessDefinition, found bool, err error)
 	// NextKeys menghasilkan n key baru.
-	NextKeys(ctx context.Context, n int) ([]int64, error)
+	NextKeys(ctx context.Context, n int) ([]string, error)
 	// SaveDeployment menyimpan deployment, resource, dan definition baru.
 	SaveDeployment(ctx context.Context, d Deployment) error
 }

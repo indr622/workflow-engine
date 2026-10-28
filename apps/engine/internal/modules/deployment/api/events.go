@@ -5,11 +5,11 @@ const TopicProcessDeployed = "deployment.process_deployed"
 
 // ProcessDeployed dipublikasikan setelah commit untuk setiap versi baru (bukan duplikat).
 type ProcessDeployed struct {
-	ProcessDefinitionKey int64
+	ProcessDefinitionKey string
 	BpmnProcessID        string
 	Version              int32
 	VersionTag           string
-	DeploymentKey        int64
+	DeploymentKey        string
 	TenantID             string
 }
 

@@ -25,7 +25,7 @@ type Queries struct {
 func NewQueries(repo domain.Repository) *Queries { return &Queries{repo: repo} }
 
 // GetProcessDefinition mengembalikan metadata dan XML asli.
-func (q *Queries) GetProcessDefinition(ctx context.Context, key int64) (domain.ProcessDefinition, []byte, error) {
+func (q *Queries) GetProcessDefinition(ctx context.Context, key string) (domain.ProcessDefinition, []byte, error) {
 	return q.repo.GetByKey(ctx, key)
 }
 

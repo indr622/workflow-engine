@@ -23,7 +23,7 @@ paralel, dan tidak membuat versi baru bila file tidak berubah (perilaku Zeebe).
   tersimpan. Penolakan dikirim sebagai Connect `InvalidArgument` dengan detail
   `DeploymentRejection` berisi semua issue.
 - **Key** int64 dari sequence global `engine_key_seq` (`internal/platform/keygen`), diambil di
-  dalam transaksi.
+  dalam transaksi. *Digantikan ADR-0011 (2026-10-28): key kini UUIDv7 yang dibuat engine.*
 - XML asli disimpan byte-per-byte di `deployment_resource.content` agar diagram tetap utuh.
 - Model ter-parse di-cache LRU per key dan diekspos lewat `api.ProcessDefinitions`; event
   `deployment.process_deployed` dipublikasikan **setelah commit** untuk versi baru saja. Kegagalan

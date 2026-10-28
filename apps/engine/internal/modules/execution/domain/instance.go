@@ -29,36 +29,36 @@ const (
 
 // DefinitionRef menunjuk versi process definition yang dijalankan instance.
 type DefinitionRef struct {
-	Key           int64
+	Key           string
 	BpmnProcessID string
 	Version       int32
 }
 
 // JoinKey mengidentifikasi counter sequence flow yang sudah sampai di gateway join.
 type JoinKey struct {
-	FlowScopeKey   int64
+	FlowScopeKey   string
 	GatewayID      string
 	SequenceFlowID string
 }
 
 // VariableKey mengidentifikasi variabel di sebuah scope.
 type VariableKey struct {
-	ScopeKey int64
+	ScopeKey string
 	Name     string
 }
 
 // Variable adalah satu variabel; Value adalah teks JSON ringkas (json.Compact) apa adanya.
 type Variable struct {
-	Key      int64
-	ScopeKey int64
+	Key      string
+	ScopeKey string
 	Name     string
 	Value    json.RawMessage
 }
 
 // Job adalah job terbuka milik sebuah service task.
 type Job struct {
-	Key                int64
-	ElementInstanceKey int64
+	Key                string
+	ElementInstanceKey string
 	ElementID          string
 	Type               string
 	Retries            int32
@@ -68,8 +68,8 @@ type Job struct {
 
 // Incident adalah incident terbuka.
 type Incident struct {
-	Key                int64
-	ElementInstanceKey int64
+	Key                string
+	ElementInstanceKey string
 	ElementID          string
 	Type               IncidentType
 	Message            string
@@ -79,15 +79,15 @@ type Incident struct {
 // command berikutnya. Element instance final, job selesai, dan incident yang sudah diselesaikan
 // tidak disimpan di sini; riwayatnya ada di proyeksi.
 type InstanceState struct {
-	Key        int64
+	Key        string
 	Definition DefinitionRef
 	Process    *bpmn.Process
 	Status     InstanceStatus
-	Elements   map[int64]*ElementInstance
+	Elements   map[string]*ElementInstance
 	TakenFlows map[JoinKey]int32
 	Variables  map[VariableKey]*Variable
-	Jobs       map[int64]*Job
-	Incidents  map[int64]*Incident
+	Jobs       map[string]*Job
+	Incidents  map[string]*Incident
 }
 
 // NewInstanceState membuat state kosong untuk instance baru dari model proses.
@@ -95,11 +95,11 @@ func NewInstanceState(def DefinitionRef, proc *bpmn.Process) *InstanceState {
 	return &InstanceState{
 		Definition: def,
 		Process:    proc,
-		Elements:   map[int64]*ElementInstance{},
+		Elements:   map[string]*ElementInstance{},
 		TakenFlows: map[JoinKey]int32{},
 		Variables:  map[VariableKey]*Variable{},
-		Jobs:       map[int64]*Job{},
-		Incidents:  map[int64]*Incident{},
+		Jobs:       map[string]*Job{},
+		Incidents:  map[string]*Incident{},
 	}
 }
 
@@ -111,7 +111,7 @@ type TakenFlow struct {
 
 // InstanceSnapshot adalah state runtime yang dimuat repository dari proyeksi.
 type InstanceSnapshot struct {
-	Key        int64
+	Key        string
 	Definition DefinitionRef
 	Status     InstanceStatus
 	Elements   []ElementInstance
@@ -152,7 +152,7 @@ func Restore(s *InstanceSnapshot, proc *bpmn.Process) *InstanceState {
 func (s *InstanceState) HasIncident() bool { return len(s.Incidents) > 0 }
 
 // ChildrenOf mengembalikan element instance non-final dengan flow scope tertentu, urut key naik.
-func (s *InstanceState) ChildrenOf(scopeKey int64) []*ElementInstance {
+func (s *InstanceState) ChildrenOf(scopeKey string) []*ElementInstance {
 	var out []*ElementInstance
 	for _, e := range s.Elements {
 		if e.FlowScopeKey == scopeKey && e.Key != scopeKey {

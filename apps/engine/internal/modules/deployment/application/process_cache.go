@@ -20,12 +20,12 @@ type ProcessCache struct {
 	capacity int
 
 	mu    sync.Mutex
-	items map[int64]*list.Element
+	items map[string]*list.Element
 	order *list.List // depan = paling baru dipakai
 }
 
 type cacheEntry struct {
-	key  int64
+	key  string
 	proc *bpmn.Process
 }
 
@@ -34,11 +34,11 @@ func NewProcessCache(repo domain.Repository, capacity int) *ProcessCache {
 	if capacity <= 0 {
 		capacity = 256
 	}
-	return &ProcessCache{repo: repo, capacity: capacity, items: map[int64]*list.Element{}, order: list.New()}
+	return &ProcessCache{repo: repo, capacity: capacity, items: map[string]*list.Element{}, order: list.New()}
 }
 
 // Put memasukkan model ke cache.
-func (c *ProcessCache) Put(key int64, proc *bpmn.Process) {
+func (c *ProcessCache) Put(key string, proc *bpmn.Process) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if el, ok := c.items[key]; ok {
@@ -54,7 +54,7 @@ func (c *ProcessCache) Put(key int64, proc *bpmn.Process) {
 	}
 }
 
-func (c *ProcessCache) get(key int64) (*bpmn.Process, bool) {
+func (c *ProcessCache) get(key string) (*bpmn.Process, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	el, ok := c.items[key]
@@ -73,7 +73,7 @@ func (c *ProcessCache) Len() int {
 }
 
 // GetByKey mengembalikan metadata dan model; parse dari XML tersimpan bila belum di cache.
-func (c *ProcessCache) GetByKey(ctx context.Context, key int64) (api.ProcessDefinition, *bpmn.Process, error) {
+func (c *ProcessCache) GetByKey(ctx context.Context, key string) (api.ProcessDefinition, *bpmn.Process, error) {
 	pd, content, err := c.repo.GetByKey(ctx, key)
 	if err != nil {
 		return api.ProcessDefinition{}, nil, mapNotFound(err)
@@ -98,11 +98,11 @@ func (c *ProcessCache) load(pd domain.ProcessDefinition, content []byte) (*bpmn.
 	}
 	defs, err := bpmn.Parse(bytes.NewReader(content))
 	if err != nil {
-		return nil, fmt.Errorf("parse stored definition %d: %w", pd.Key, err)
+		return nil, fmt.Errorf("parse stored definition %s: %w", pd.Key, err)
 	}
 	proc, ok := defs.Process(pd.BpmnProcessID)
 	if !ok {
-		return nil, fmt.Errorf("stored definition %d has no process %q", pd.Key, pd.BpmnProcessID)
+		return nil, fmt.Errorf("stored definition %s has no process %q", pd.Key, pd.BpmnProcessID)
 	}
 	c.Put(pd.Key, proc)
 	return proc, nil

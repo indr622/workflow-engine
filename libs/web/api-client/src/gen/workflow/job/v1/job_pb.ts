@@ -10,7 +10,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file workflow/job/v1/job.proto.
  */
 export const file_workflow_job_v1_job: GenFile = /*@__PURE__*/
-  fileDesc("Chl3b3JrZmxvdy9qb2IvdjEvam9iLnByb3RvEg93b3JrZmxvdy5qb2IudjEidwoPTGlzdEpvYnNSZXF1ZXN0EgwKBHR5cGUYASABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAiABKAMSEQoJb25seV9vcGVuGAMgASgIEhEKCXBhZ2Vfc2l6ZRgEIAEoBRISCgpwYWdlX3Rva2VuGAUgASgJIlMKEExpc3RKb2JzUmVzcG9uc2USJgoEam9icxgBIAMoCzIYLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSLMAgoHSm9iSW5mbxIPCgdqb2Jfa2V5GAEgASgDEgwKBHR5cGUYAiABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAyABKAMSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYBCABKAMSEgoKZWxlbWVudF9pZBgFIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYBiABKAkSDwoHcmV0cmllcxgHIAEoBRJDCg5jdXN0b21faGVhZGVycxgIIAMoCzIrLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvLkN1c3RvbUhlYWRlcnNFbnRyeRINCgVzdGF0ZRgJIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAogASgDGjQKEkN1c3RvbUhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKEkNvbXBsZXRlSm9iUmVxdWVzdBIPCgdqb2Jfa2V5GAEgASgDEhEKCXZhcmlhYmxlcxgCIAEoCSIVChNDb21wbGV0ZUpvYlJlc3BvbnNlMrsBCgpKb2JTZXJ2aWNlElEKCExpc3RKb2JzEiAud29ya2Zsb3cuam9iLnYxLkxpc3RKb2JzUmVxdWVzdBohLndvcmtmbG93LmpvYi52MS5MaXN0Sm9ic1Jlc3BvbnNlIgASWgoLQ29tcGxldGVKb2ISIy53b3JrZmxvdy5qb2IudjEuQ29tcGxldGVKb2JSZXF1ZXN0GiQud29ya2Zsb3cuam9iLnYxLkNvbXBsZXRlSm9iUmVzcG9uc2UiAEJKWkhnaXRodWIuY29tL2luZHI2MjIvd29ya2Zsb3ctZW5naW5lL2xpYnMvZ28vYXBpL2dlbi93b3JrZmxvdy9qb2IvdjE7am9idjFiBnByb3RvMw");
+  fileDesc("Chl3b3JrZmxvdy9qb2IvdjEvam9iLnByb3RvEg93b3JrZmxvdy5qb2IudjEidwoPTGlzdEpvYnNSZXF1ZXN0EgwKBHR5cGUYASABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAiABKAkSEQoJb25seV9vcGVuGAMgASgIEhEKCXBhZ2Vfc2l6ZRgEIAEoBRISCgpwYWdlX3Rva2VuGAUgASgJIlMKEExpc3RKb2JzUmVzcG9uc2USJgoEam9icxgBIAMoCzIYLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSLMAgoHSm9iSW5mbxIPCgdqb2Jfa2V5GAEgASgJEgwKBHR5cGUYAiABKAkSHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYAyABKAkSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYBCABKAkSEgoKZWxlbWVudF9pZBgFIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYBiABKAkSDwoHcmV0cmllcxgHIAEoBRJDCg5jdXN0b21faGVhZGVycxgIIAMoCzIrLndvcmtmbG93LmpvYi52MS5Kb2JJbmZvLkN1c3RvbUhlYWRlcnNFbnRyeRINCgVzdGF0ZRgJIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAogASgJGjQKEkN1c3RvbUhlYWRlcnNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIjgKEkNvbXBsZXRlSm9iUmVxdWVzdBIPCgdqb2Jfa2V5GAEgASgJEhEKCXZhcmlhYmxlcxgCIAEoCSIVChNDb21wbGV0ZUpvYlJlc3BvbnNlMrsBCgpKb2JTZXJ2aWNlElEKCExpc3RKb2JzEiAud29ya2Zsb3cuam9iLnYxLkxpc3RKb2JzUmVxdWVzdBohLndvcmtmbG93LmpvYi52MS5MaXN0Sm9ic1Jlc3BvbnNlIgASWgoLQ29tcGxldGVKb2ISIy53b3JrZmxvdy5qb2IudjEuQ29tcGxldGVKb2JSZXF1ZXN0GiQud29ya2Zsb3cuam9iLnYxLkNvbXBsZXRlSm9iUmVzcG9uc2UiAEJKWkhnaXRodWIuY29tL2luZHI2MjIvd29ya2Zsb3ctZW5naW5lL2xpYnMvZ28vYXBpL2dlbi93b3JrZmxvdy9qb2IvdjE7am9idjFiBnByb3RvMw");
 
 /**
  * @generated from message workflow.job.v1.ListJobsRequest
@@ -22,9 +22,9 @@ export type ListJobsRequest = Message<"workflow.job.v1.ListJobsRequest"> & {
   type: string;
 
   /**
-   * @generated from field: int64 process_instance_key = 2;
+   * @generated from field: string process_instance_key = 2;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 
   /**
    * Hanya job berstate CREATED.
@@ -80,9 +80,9 @@ export const ListJobsResponseSchema: GenMessage<ListJobsResponse> = /*@__PURE__*
  */
 export type JobInfo = Message<"workflow.job.v1.JobInfo"> & {
   /**
-   * @generated from field: int64 job_key = 1;
+   * @generated from field: string job_key = 1;
    */
-  jobKey: bigint;
+  jobKey: string;
 
   /**
    * @generated from field: string type = 2;
@@ -90,14 +90,14 @@ export type JobInfo = Message<"workflow.job.v1.JobInfo"> & {
   type: string;
 
   /**
-   * @generated from field: int64 process_instance_key = 3;
+   * @generated from field: string process_instance_key = 3;
    */
-  processInstanceKey: bigint;
+  processInstanceKey: string;
 
   /**
-   * @generated from field: int64 element_instance_key = 4;
+   * @generated from field: string element_instance_key = 4;
    */
-  elementInstanceKey: bigint;
+  elementInstanceKey: string;
 
   /**
    * @generated from field: string element_id = 5;
@@ -127,9 +127,9 @@ export type JobInfo = Message<"workflow.job.v1.JobInfo"> & {
   state: string;
 
   /**
-   * @generated from field: int64 process_definition_key = 10;
+   * @generated from field: string process_definition_key = 10;
    */
-  processDefinitionKey: bigint;
+  processDefinitionKey: string;
 };
 
 /**
@@ -144,9 +144,9 @@ export const JobInfoSchema: GenMessage<JobInfo> = /*@__PURE__*/
  */
 export type CompleteJobRequest = Message<"workflow.job.v1.CompleteJobRequest"> & {
   /**
-   * @generated from field: int64 job_key = 1;
+   * @generated from field: string job_key = 1;
    */
-  jobKey: bigint;
+  jobKey: string;
 
   /**
    * Dokumen JSON object; kosong berarti tanpa variabel.

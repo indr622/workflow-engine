@@ -19,11 +19,12 @@ import (
 type PostgresRepository struct {
 	pool *pgxpool.Pool
 	q    *db.Queries
+	keys keygen.Generator
 }
 
 // NewPostgresRepository membuat repository untuk pool yang diberikan.
-func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{pool: pool, q: db.New(pool)}
+func NewPostgresRepository(pool *pgxpool.Pool, keys keygen.Generator) *PostgresRepository {
+	return &PostgresRepository{pool: pool, q: db.New(pool), keys: keys}
 }
 
 var _ domain.Repository = (*PostgresRepository)(nil)
@@ -35,7 +36,7 @@ func (r *PostgresRepository) WithTx(ctx context.Context, fn func(ctx context.Con
 		return fmt.Errorf("begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), keys: keygen.NewPostgres(tx)}); err != nil {
+	if err := fn(ctx, &txRepository{q: r.q.WithTx(tx), keys: r.keys}); err != nil {
 		return err
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -45,7 +46,7 @@ func (r *PostgresRepository) WithTx(ctx context.Context, fn func(ctx context.Con
 }
 
 // GetByKey mengembalikan definition dan konten resource asli.
-func (r *PostgresRepository) GetByKey(ctx context.Context, key int64) (domain.ProcessDefinition, []byte, error) {
+func (r *PostgresRepository) GetByKey(ctx context.Context, key string) (domain.ProcessDefinition, []byte, error) {
 	row, err := r.q.GetProcessDefinitionByKey(ctx, key)
 	if err != nil {
 		return domain.ProcessDefinition{}, nil, mapErr(err)
@@ -108,7 +109,7 @@ func (r *PostgresRepository) List(ctx context.Context, q domain.ListQuery) ([]do
 
 type txRepository struct {
 	q    *db.Queries
-	keys *keygen.Postgres
+	keys keygen.Generator
 }
 
 func (t *txRepository) LockProcessID(ctx context.Context, tenantID, bpmnProcessID string) error {
@@ -131,7 +132,7 @@ func (t *txRepository) LatestByProcessID(ctx context.Context, tenantID, bpmnProc
 	return pd, err == nil, err
 }
 
-func (t *txRepository) NextKeys(ctx context.Context, n int) ([]int64, error) {
+func (t *txRepository) NextKeys(ctx context.Context, n int) ([]string, error) {
 	return t.keys.NextKeys(ctx, n)
 }
 
@@ -139,12 +140,16 @@ func (t *txRepository) SaveDeployment(ctx context.Context, d domain.Deployment) 
 	if err := t.q.InsertDeployment(ctx, db.InsertDeploymentParams{Key: d.Key, TenantID: d.TenantID}); err != nil {
 		return fmt.Errorf("insert deployment: %w", err)
 	}
-	resourceIDs := make(map[string]int64, len(d.Resources))
-	for _, r := range d.Resources {
-		id, err := t.q.InsertResource(ctx, db.InsertResourceParams{
-			DeploymentKey: d.Key, ResourceName: r.Name, Content: r.Content, Checksum: r.Checksum.Bytes(),
-		})
-		if err != nil {
+	resourceIDs := make(map[string]string, len(d.Resources))
+	ids, err := t.keys.NextKeys(ctx, len(d.Resources))
+	if err != nil {
+		return fmt.Errorf("resource ids: %w", err)
+	}
+	for i, r := range d.Resources {
+		id := ids[i]
+		if err := t.q.InsertResource(ctx, db.InsertResourceParams{
+			ID: id, DeploymentKey: d.Key, ResourceName: r.Name, Content: r.Content, Checksum: r.Checksum.Bytes(),
+		}); err != nil {
 			return fmt.Errorf("insert resource %q: %w", r.Name, err)
 		}
 		resourceIDs[r.Name] = id
@@ -165,11 +170,11 @@ func (t *txRepository) SaveDeployment(ctx context.Context, d domain.Deployment) 
 	return nil
 }
 
-func toDomain(key int64, tenantID, processID string, version int32, versionTag, name string, checksum []byte,
-	deploymentKey int64, createdAt pgtype.Timestamptz, resourceName string) (domain.ProcessDefinition, error) {
+func toDomain(key string, tenantID, processID string, version int32, versionTag, name string, checksum []byte,
+	deploymentKey string, createdAt pgtype.Timestamptz, resourceName string) (domain.ProcessDefinition, error) {
 	c, err := domain.ChecksumFromBytes(checksum)
 	if err != nil {
-		return domain.ProcessDefinition{}, fmt.Errorf("definition %d: %w", key, err)
+		return domain.ProcessDefinition{}, fmt.Errorf("definition %s: %w", key, err)
 	}
 	return domain.ProcessDefinition{
 		Key: key, TenantID: tenantID, BpmnProcessID: processID, Version: version, VersionTag: versionTag,

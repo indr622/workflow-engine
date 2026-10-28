@@ -72,7 +72,7 @@ type ProcessCandidate struct {
 
 // Deployment adalah aggregate hasil satu request deploy.
 type Deployment struct {
-	Key       int64
+	Key       string
 	TenantID  string
 	CreatedAt time.Time
 	Resources []Resource

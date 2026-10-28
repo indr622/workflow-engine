@@ -22,7 +22,7 @@ type DeployedDefinition struct {
 
 // DeployResult adalah hasil use case DeployResource.
 type DeployResult struct {
-	DeploymentKey int64
+	DeploymentKey string
 	Definitions   []DeployedDefinition
 	Warnings      []domain.Violation
 }
@@ -87,7 +87,7 @@ func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs [
 
 	var (
 		result    DeployResult
-		newModels = map[int64]*bpmn.Process{}
+		newModels = map[string]*bpmn.Process{}
 		events    []api.ProcessDeployed
 	)
 	err := uc.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
@@ -162,7 +162,7 @@ func (uc *DeployResource) Execute(ctx context.Context, tenantID string, inputs [
 		if err := uc.bus.Publish(ctx, ev); err != nil {
 			// Handler gagal tidak membatalkan deploy; outbox transaksional menyusul di Fase 3.
 			uc.log.Error("publish process deployed", slog.String("bpmn_process_id", ev.BpmnProcessID),
-				slog.Int64("key", ev.ProcessDefinitionKey), slog.Any("error", err))
+				slog.String("key", ev.ProcessDefinitionKey), slog.Any("error", err))
 		}
 	}
 	result.Warnings = warningsOnly(violations)

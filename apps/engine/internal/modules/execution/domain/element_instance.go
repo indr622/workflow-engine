@@ -65,13 +65,13 @@ func BpmnElementType(t bpmn.ElementType) string {
 
 // ElementInstance adalah satu aktivasi elemen di dalam process instance.
 type ElementInstance struct {
-	Key                int64
-	ProcessInstanceKey int64
-	// FlowScopeKey adalah element instance pembungkus; 0 untuk element instance PROCESS.
-	FlowScopeKey    int64
+	Key                string
+	ProcessInstanceKey string
+	// FlowScopeKey adalah element instance pembungkus; kosong untuk element instance PROCESS.
+	FlowScopeKey    string
 	ElementID       string
 	BpmnElementType string
 	State           ElementState
-	// IncidentKey adalah incident terbuka yang menahan elemen ini, 0 jika tidak ada.
-	IncidentKey int64
+	// IncidentKey adalah incident terbuka yang menahan elemen ini, kosong jika tidak ada.
+	IncidentKey string
 }

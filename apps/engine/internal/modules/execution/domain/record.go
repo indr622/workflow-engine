@@ -58,8 +58,8 @@ func ElementStateOf(i Intent) (ElementState, bool) {
 // menerapkan ulang seluruh record sebuah instance ke state kosong menghasilkan state yang sama.
 type Record struct {
 	// Key adalah key entitas: element instance, variable, job, atau incident.
-	Key                int64
-	ProcessInstanceKey int64
+	Key                string
+	ProcessInstanceKey string
 	ValueType          ValueType
 	Intent             Intent
 	Timestamp          time.Time
@@ -85,19 +85,19 @@ func (r *Record) ElementID() string {
 // ProcessInstanceValue adalah payload record PROCESS_INSTANCE (element instance dan sequence flow).
 type ProcessInstanceValue struct {
 	BpmnProcessID        string `json:"bpmnProcessId"`
-	ProcessDefinitionKey int64  `json:"processDefinitionKey"`
+	ProcessDefinitionKey string `json:"processDefinitionKey"`
 	Version              int32  `json:"version"`
 	ElementID            string `json:"elementId"`
 	BpmnElementType      string `json:"bpmnElementType"`
-	FlowScopeKey         int64  `json:"flowScopeKey"`
+	FlowScopeKey         string `json:"flowScopeKey"`
 }
 
 // ProcessInstanceCreationValue adalah payload record PROCESS_INSTANCE_CREATION.
 type ProcessInstanceCreationValue struct {
 	BpmnProcessID        string   `json:"bpmnProcessId"`
-	ProcessDefinitionKey int64    `json:"processDefinitionKey"`
+	ProcessDefinitionKey string   `json:"processDefinitionKey"`
 	Version              int32    `json:"version"`
-	ProcessInstanceKey   int64    `json:"processInstanceKey"`
+	ProcessInstanceKey   string   `json:"processInstanceKey"`
 	VariableNames        []string `json:"variableNames"`
 }
 
@@ -105,7 +105,7 @@ type ProcessInstanceCreationValue struct {
 type VariableValue struct {
 	Name     string          `json:"name"`
 	Value    json.RawMessage `json:"value"`
-	ScopeKey int64           `json:"scopeKey"`
+	ScopeKey string          `json:"scopeKey"`
 }
 
 // JobValue adalah payload record JOB.
@@ -113,10 +113,10 @@ type JobValue struct {
 	Type                 string        `json:"type"`
 	Retries              int32         `json:"retries"`
 	CustomHeaders        []bpmn.Header `json:"customHeaders"`
-	ElementInstanceKey   int64         `json:"elementInstanceKey"`
+	ElementInstanceKey   string        `json:"elementInstanceKey"`
 	ElementID            string        `json:"elementId"`
 	BpmnProcessID        string        `json:"bpmnProcessId"`
-	ProcessDefinitionKey int64         `json:"processDefinitionKey"`
+	ProcessDefinitionKey string        `json:"processDefinitionKey"`
 	Version              int32         `json:"version"`
 }
 
@@ -124,7 +124,7 @@ type JobValue struct {
 type IncidentValue struct {
 	ErrorType          IncidentType `json:"errorType"`
 	ErrorMessage       string       `json:"errorMessage"`
-	ElementInstanceKey int64        `json:"elementInstanceKey"`
+	ElementInstanceKey string       `json:"elementInstanceKey"`
 	ElementID          string       `json:"elementId"`
 }
 

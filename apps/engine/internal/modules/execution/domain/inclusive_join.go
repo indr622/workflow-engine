@@ -77,7 +77,7 @@ func upstreamOf(gateway bpmn.FlowNode, flow *bpmn.SequenceFlow) map[string]bool 
 // berada di posisi akhirnya. Mengembalikan true jika ada join yang diaktifkan.
 func (r *run) tryInclusiveJoins() (bool, error) {
 	type pending struct {
-		scopeKey int64
+		scopeKey string
 		gateway  bpmn.FlowNode
 	}
 	var candidates []pending
@@ -110,7 +110,7 @@ func (r *run) tryInclusiveJoins() (bool, error) {
 
 // joinReady: join siap jika tidak ada token aktif di scope yang berada di upstream incoming flow
 // yang belum punya token.
-func (r *run) joinReady(a *processAnalysis, scopeKey int64, g bpmn.FlowNode) bool {
+func (r *run) joinReady(a *processAnalysis, scopeKey string, g bpmn.FlowNode) bool {
 	var waiting []string
 	for _, in := range g.Incoming() {
 		if r.st.TakenFlows[JoinKey{FlowScopeKey: scopeKey, GatewayID: g.ID(), SequenceFlowID: in.ID()}] == 0 {
@@ -134,7 +134,7 @@ func (r *run) joinReady(a *processAnalysis, scopeKey int64, g bpmn.FlowNode) boo
 
 // tokenPositions mengembalikan id node tempat token aktif berada di scope: element instance
 // non-final dan gateway join lain yang punya counter.
-func (r *run) tokenPositions(scopeKey int64, exceptGateway string) []string {
+func (r *run) tokenPositions(scopeKey string, exceptGateway string) []string {
 	var out []string
 	for _, e := range r.st.ChildrenOf(scopeKey) {
 		out = append(out, e.ElementID)

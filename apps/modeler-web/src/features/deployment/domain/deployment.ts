@@ -16,7 +16,7 @@ export interface ValidationIssue {
 }
 
 export interface ProcessDefinition {
-  /** Key int64 ditampilkan sebagai string agar presisi tidak hilang. */
+  /** Key UUIDv7 process definition (ADR-0011). */
   key: string;
   bpmnProcessId: string;
   version: number;

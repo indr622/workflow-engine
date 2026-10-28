@@ -6,6 +6,8 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1;processv1";
 
+// Semua key (field berakhiran _key) adalah UUIDv7 dalam bentuk kanonik huruf kecil (ADR-0011).
+
 // ProcessInstanceService membuat, membaca, dan membatalkan process instance.
 service ProcessInstanceService {
   // CreateProcessInstance menjalankan versi proses yang dipilih sampai semua token berhenti di
@@ -23,7 +25,7 @@ service ProcessInstanceService {
 message CreateProcessInstanceRequest {
   oneof definition {
     // Key versi process definition tertentu.
-    int64 process_definition_key = 1;
+    string process_definition_key = 1;
     // bpmnProcessId dengan versi tertentu atau terbaru.
     ProcessDefinitionRef bpmn_process = 2;
   }
@@ -38,8 +40,8 @@ message ProcessDefinitionRef {
 }
 
 message CreateProcessInstanceResponse {
-  int64 process_instance_key = 1;
-  int64 process_definition_key = 2;
+  string process_instance_key = 1;
+  string process_definition_key = 2;
   string bpmn_process_id = 3;
   int32 version = 4;
   // State instance setelah command pertama selesai diproses.
@@ -47,7 +49,7 @@ message CreateProcessInstanceResponse {
 }
 
 message GetProcessInstanceRequest {
-  int64 process_instance_key = 1;
+  string process_instance_key = 1;
 }
 
 message GetProcessInstanceResponse {
@@ -60,8 +62,8 @@ message GetProcessInstanceResponse {
 }
 
 message ProcessInstance {
-  int64 process_instance_key = 1;
-  int64 process_definition_key = 2;
+  string process_instance_key = 1;
+  string process_definition_key = 2;
   string bpmn_process_id = 3;
   int32 version = 4;
   ProcessInstanceState state = 5;
@@ -78,15 +80,15 @@ enum ProcessInstanceState {
 }
 
 message ElementInstance {
-  int64 element_instance_key = 1;
-  // 0 untuk element instance PROCESS.
-  int64 flow_scope_key = 2;
+  string element_instance_key = 1;
+  // Kosong untuk element instance PROCESS.
+  string flow_scope_key = 2;
   string element_id = 3;
   // Nama tipe Zeebe, misalnya "SERVICE_TASK" atau "EXCLUSIVE_GATEWAY".
   string bpmn_element_type = 4;
   ElementInstanceState state = 5;
-  // Incident terbuka yang menahan elemen ini, 0 bila tidak ada.
-  int64 incident_key = 6;
+  // Incident terbuka yang menahan elemen ini, kosong bila tidak ada.
+  string incident_key = 6;
   google.protobuf.Timestamp start_time = 7;
   google.protobuf.Timestamp end_time = 8;
 }
@@ -102,15 +104,15 @@ enum ElementInstanceState {
 }
 
 message Variable {
-  int64 scope_key = 1;
+  string scope_key = 1;
   string name = 2;
   // Nilai JSON.
   string value = 3;
 }
 
 message Incident {
-  int64 incident_key = 1;
-  int64 element_instance_key = 2;
+  string incident_key = 1;
+  string element_instance_key = 2;
   string element_id = 3;
   // Misalnya "CONDITION_ERROR" atau "EXTRACT_VALUE_ERROR".
   string error_type = 4;
@@ -120,10 +122,10 @@ message Incident {
 }
 
 message Job {
-  int64 job_key = 1;
+  string job_key = 1;
   string type = 2;
   string element_id = 3;
-  int64 element_instance_key = 4;
+  string element_instance_key = 4;
   int32 retries = 5;
   // CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
   string state = 6;
@@ -131,7 +133,7 @@ message Job {
 
 message ListProcessInstancesRequest {
   string bpmn_process_id = 1;
-  int64 process_definition_key = 2;
+  string process_definition_key = 2;
   ProcessInstanceState state = 3;
   bool only_with_incident = 4;
   // Default 50, maksimum 500.
@@ -145,7 +147,7 @@ message ListProcessInstancesResponse {
 }
 
 message CancelProcessInstanceRequest {
-  int64 process_instance_key = 1;
+  string process_instance_key = 1;
 }
 
 message CancelProcessInstanceResponse {}

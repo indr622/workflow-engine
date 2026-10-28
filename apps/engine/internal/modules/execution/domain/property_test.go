@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"os"
+	"sort"
 	"strconv"
 	"testing"
 
@@ -202,12 +203,12 @@ func runGatewayProperty(t *testing.T, seed uint64) bool {
 	h := startInstance(t, proc, doc)
 	jobs := 0
 	for len(h.st.Jobs) > 0 {
-		keys := make([]int64, 0, len(h.st.Jobs))
+		keys := make([]string, 0, len(h.st.Jobs))
 		for k := range h.st.Jobs {
 			keys = append(keys, k)
 		}
 		// Pilih job acak secara deterministik: urutkan dulu agar iterasi map tidak berpengaruh.
-		sortInt64(keys)
+		sort.Strings(keys)
 		k := keys[rng.IntN(len(keys))]
 		if err := h.run(domain.CompleteJob{JobKey: k}); err != nil {
 			t.Errorf("seed %d: complete job: %v", seed, err)
@@ -242,12 +243,4 @@ func runGatewayProperty(t *testing.T, seed uint64) bool {
 		h.assertReplay()
 	}
 	return ok
-}
-
-func sortInt64(s []int64) {
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j] < s[j-1]; j-- {
-			s[j], s[j-1] = s[j-1], s[j]
-		}
-	}
 }

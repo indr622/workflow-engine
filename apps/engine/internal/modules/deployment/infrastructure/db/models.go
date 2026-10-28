@@ -9,14 +9,14 @@ import (
 )
 
 type Deployment struct {
-	Key       int64
+	Key       string
 	TenantID  string
 	CreatedAt pgtype.Timestamptz
 }
 
 type DeploymentResource struct {
-	ID            int64
-	DeploymentKey int64
+	ID            string
+	DeploymentKey string
 	ResourceName  string
 	Content       []byte
 	Checksum      []byte
@@ -29,14 +29,14 @@ type EngineMetadatum struct {
 }
 
 type ProcessDefinition struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
-	ResourceID    int64
+	ResourceID    string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 }

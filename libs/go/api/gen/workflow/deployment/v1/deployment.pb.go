@@ -222,7 +222,7 @@ func (x *DeployResourceRequest) GetResources() []*Resource {
 
 type DeployResourceResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	DeploymentKey      int64                  `protobuf:"varint,1,opt,name=deployment_key,json=deploymentKey,proto3" json:"deployment_key,omitempty"`
+	DeploymentKey      string                 `protobuf:"bytes,1,opt,name=deployment_key,json=deploymentKey,proto3" json:"deployment_key,omitempty"`
 	ProcessDefinitions []*ProcessDefinition   `protobuf:"bytes,2,rep,name=process_definitions,json=processDefinitions,proto3" json:"process_definitions,omitempty"`
 	Warnings           []*ValidationIssue     `protobuf:"bytes,3,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields      protoimpl.UnknownFields
@@ -259,11 +259,11 @@ func (*DeployResourceResponse) Descriptor() ([]byte, []int) {
 	return file_workflow_deployment_v1_deployment_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *DeployResourceResponse) GetDeploymentKey() int64 {
+func (x *DeployResourceResponse) GetDeploymentKey() string {
 	if x != nil {
 		return x.DeploymentKey
 	}
-	return 0
+	return ""
 }
 
 func (x *DeployResourceResponse) GetProcessDefinitions() []*ProcessDefinition {
@@ -471,13 +471,13 @@ func (x *ProcessSummary) GetElementCount() int32 {
 
 type ProcessDefinition struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	ProcessDefinitionKey int64                  `protobuf:"varint,1,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessDefinitionKey string                 `protobuf:"bytes,1,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	BpmnProcessId        string                 `protobuf:"bytes,2,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
 	Version              int32                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
 	VersionTag           string                 `protobuf:"bytes,4,opt,name=version_tag,json=versionTag,proto3" json:"version_tag,omitempty"`
 	Name                 string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
 	ResourceName         string                 `protobuf:"bytes,6,opt,name=resource_name,json=resourceName,proto3" json:"resource_name,omitempty"`
-	DeploymentKey        int64                  `protobuf:"varint,7,opt,name=deployment_key,json=deploymentKey,proto3" json:"deployment_key,omitempty"`
+	DeploymentKey        string                 `protobuf:"bytes,7,opt,name=deployment_key,json=deploymentKey,proto3" json:"deployment_key,omitempty"`
 	CreatedAt            *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// duplicate = true bila deploy ini tidak membuat versi baru karena resource identik.
 	Duplicate     bool `protobuf:"varint,9,opt,name=duplicate,proto3" json:"duplicate,omitempty"`
@@ -515,11 +515,11 @@ func (*ProcessDefinition) Descriptor() ([]byte, []int) {
 	return file_workflow_deployment_v1_deployment_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ProcessDefinition) GetProcessDefinitionKey() int64 {
+func (x *ProcessDefinition) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ProcessDefinition) GetBpmnProcessId() string {
@@ -557,11 +557,11 @@ func (x *ProcessDefinition) GetResourceName() string {
 	return ""
 }
 
-func (x *ProcessDefinition) GetDeploymentKey() int64 {
+func (x *ProcessDefinition) GetDeploymentKey() string {
 	if x != nil {
 		return x.DeploymentKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ProcessDefinition) GetCreatedAt() *timestamppb.Timestamp {
@@ -580,7 +580,7 @@ func (x *ProcessDefinition) GetDuplicate() bool {
 
 type GetProcessDefinitionRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	ProcessDefinitionKey int64                  `protobuf:"varint,1,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessDefinitionKey string                 `protobuf:"bytes,1,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -615,11 +615,11 @@ func (*GetProcessDefinitionRequest) Descriptor() ([]byte, []int) {
 	return file_workflow_deployment_v1_deployment_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *GetProcessDefinitionRequest) GetProcessDefinitionKey() int64 {
+func (x *GetProcessDefinitionRequest) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 type GetProcessDefinitionResponse struct {
@@ -953,7 +953,7 @@ const file_workflow_deployment_v1_deployment_proto_rawDesc = "" +
 	"\x15DeployResourceRequest\x12>\n" +
 	"\tresources\x18\x01 \x03(\v2 .workflow.deployment.v1.ResourceR\tresources\"\xe0\x01\n" +
 	"\x16DeployResourceResponse\x12%\n" +
-	"\x0edeployment_key\x18\x01 \x01(\x03R\rdeploymentKey\x12Z\n" +
+	"\x0edeployment_key\x18\x01 \x01(\tR\rdeploymentKey\x12Z\n" +
 	"\x13process_definitions\x18\x02 \x03(\v2).workflow.deployment.v1.ProcessDefinitionR\x12processDefinitions\x12C\n" +
 	"\bwarnings\x18\x03 \x03(\v2'.workflow.deployment.v1.ValidationIssueR\bwarnings\"\x94\x01\n" +
 	"\x17ValidateResourceRequest\x12>\n" +
@@ -971,19 +971,19 @@ const file_workflow_deployment_v1_deployment_proto_rawDesc = "" +
 	"versionTag\x12#\n" +
 	"\relement_count\x18\x05 \x01(\x05R\felementCount\"\xe5\x02\n" +
 	"\x11ProcessDefinition\x124\n" +
-	"\x16process_definition_key\x18\x01 \x01(\x03R\x14processDefinitionKey\x12&\n" +
+	"\x16process_definition_key\x18\x01 \x01(\tR\x14processDefinitionKey\x12&\n" +
 	"\x0fbpmn_process_id\x18\x02 \x01(\tR\rbpmnProcessId\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\x05R\aversion\x12\x1f\n" +
 	"\vversion_tag\x18\x04 \x01(\tR\n" +
 	"versionTag\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12#\n" +
 	"\rresource_name\x18\x06 \x01(\tR\fresourceName\x12%\n" +
-	"\x0edeployment_key\x18\a \x01(\x03R\rdeploymentKey\x129\n" +
+	"\x0edeployment_key\x18\a \x01(\tR\rdeploymentKey\x129\n" +
 	"\n" +
 	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1c\n" +
 	"\tduplicate\x18\t \x01(\bR\tduplicate\"S\n" +
 	"\x1bGetProcessDefinitionRequest\x124\n" +
-	"\x16process_definition_key\x18\x01 \x01(\x03R\x14processDefinitionKey\"\x93\x01\n" +
+	"\x16process_definition_key\x18\x01 \x01(\tR\x14processDefinitionKey\"\x93\x01\n" +
 	"\x1cGetProcessDefinitionResponse\x12X\n" +
 	"\x12process_definition\x18\x01 \x01(\v2).workflow.deployment.v1.ProcessDefinitionR\x11processDefinition\x12\x19\n" +
 	"\bbpmn_xml\x18\x02 \x01(\tR\abpmnXml\"\xa4\x01\n" +

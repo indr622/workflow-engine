@@ -185,13 +185,13 @@ func (x *CreateProcessInstanceRequest) GetDefinition() isCreateProcessInstanceRe
 	return nil
 }
 
-func (x *CreateProcessInstanceRequest) GetProcessDefinitionKey() int64 {
+func (x *CreateProcessInstanceRequest) GetProcessDefinitionKey() string {
 	if x != nil {
 		if x, ok := x.Definition.(*CreateProcessInstanceRequest_ProcessDefinitionKey); ok {
 			return x.ProcessDefinitionKey
 		}
 	}
-	return 0
+	return ""
 }
 
 func (x *CreateProcessInstanceRequest) GetBpmnProcess() *ProcessDefinitionRef {
@@ -216,7 +216,7 @@ type isCreateProcessInstanceRequest_Definition interface {
 
 type CreateProcessInstanceRequest_ProcessDefinitionKey struct {
 	// Key versi process definition tertentu.
-	ProcessDefinitionKey int64 `protobuf:"varint,1,opt,name=process_definition_key,json=processDefinitionKey,proto3,oneof"`
+	ProcessDefinitionKey string `protobuf:"bytes,1,opt,name=process_definition_key,json=processDefinitionKey,proto3,oneof"`
 }
 
 type CreateProcessInstanceRequest_BpmnProcess struct {
@@ -284,8 +284,8 @@ func (x *ProcessDefinitionRef) GetVersion() int32 {
 
 type CreateProcessInstanceResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	ProcessInstanceKey   int64                  `protobuf:"varint,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
-	ProcessDefinitionKey int64                  `protobuf:"varint,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessInstanceKey   string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ProcessDefinitionKey string                 `protobuf:"bytes,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	BpmnProcessId        string                 `protobuf:"bytes,3,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
 	Version              int32                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
 	// State instance setelah command pertama selesai diproses.
@@ -324,18 +324,18 @@ func (*CreateProcessInstanceResponse) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *CreateProcessInstanceResponse) GetProcessInstanceKey() int64 {
+func (x *CreateProcessInstanceResponse) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
-func (x *CreateProcessInstanceResponse) GetProcessDefinitionKey() int64 {
+func (x *CreateProcessInstanceResponse) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 func (x *CreateProcessInstanceResponse) GetBpmnProcessId() string {
@@ -361,7 +361,7 @@ func (x *CreateProcessInstanceResponse) GetState() ProcessInstanceState {
 
 type GetProcessInstanceRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	ProcessInstanceKey int64                  `protobuf:"varint,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ProcessInstanceKey string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -396,11 +396,11 @@ func (*GetProcessInstanceRequest) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetProcessInstanceRequest) GetProcessInstanceKey() int64 {
+func (x *GetProcessInstanceRequest) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
 type GetProcessInstanceResponse struct {
@@ -482,8 +482,8 @@ func (x *GetProcessInstanceResponse) GetJobs() []*Job {
 
 type ProcessInstance struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	ProcessInstanceKey   int64                  `protobuf:"varint,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
-	ProcessDefinitionKey int64                  `protobuf:"varint,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessInstanceKey   string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ProcessDefinitionKey string                 `protobuf:"bytes,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	BpmnProcessId        string                 `protobuf:"bytes,3,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
 	Version              int32                  `protobuf:"varint,4,opt,name=version,proto3" json:"version,omitempty"`
 	State                ProcessInstanceState   `protobuf:"varint,5,opt,name=state,proto3,enum=workflow.process.v1.ProcessInstanceState" json:"state,omitempty"`
@@ -524,18 +524,18 @@ func (*ProcessInstance) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ProcessInstance) GetProcessInstanceKey() int64 {
+func (x *ProcessInstance) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
-func (x *ProcessInstance) GetProcessDefinitionKey() int64 {
+func (x *ProcessInstance) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ProcessInstance) GetBpmnProcessId() string {
@@ -582,15 +582,15 @@ func (x *ProcessInstance) GetEndTime() *timestamppb.Timestamp {
 
 type ElementInstance struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	ElementInstanceKey int64                  `protobuf:"varint,1,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
-	// 0 untuk element instance PROCESS.
-	FlowScopeKey int64  `protobuf:"varint,2,opt,name=flow_scope_key,json=flowScopeKey,proto3" json:"flow_scope_key,omitempty"`
+	ElementInstanceKey string                 `protobuf:"bytes,1,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
+	// Kosong untuk element instance PROCESS.
+	FlowScopeKey string `protobuf:"bytes,2,opt,name=flow_scope_key,json=flowScopeKey,proto3" json:"flow_scope_key,omitempty"`
 	ElementId    string `protobuf:"bytes,3,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
 	// Nama tipe Zeebe, misalnya "SERVICE_TASK" atau "EXCLUSIVE_GATEWAY".
 	BpmnElementType string               `protobuf:"bytes,4,opt,name=bpmn_element_type,json=bpmnElementType,proto3" json:"bpmn_element_type,omitempty"`
 	State           ElementInstanceState `protobuf:"varint,5,opt,name=state,proto3,enum=workflow.process.v1.ElementInstanceState" json:"state,omitempty"`
-	// Incident terbuka yang menahan elemen ini, 0 bila tidak ada.
-	IncidentKey   int64                  `protobuf:"varint,6,opt,name=incident_key,json=incidentKey,proto3" json:"incident_key,omitempty"`
+	// Incident terbuka yang menahan elemen ini, kosong bila tidak ada.
+	IncidentKey   string                 `protobuf:"bytes,6,opt,name=incident_key,json=incidentKey,proto3" json:"incident_key,omitempty"`
 	StartTime     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	EndTime       *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -627,18 +627,18 @@ func (*ElementInstance) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *ElementInstance) GetElementInstanceKey() int64 {
+func (x *ElementInstance) GetElementInstanceKey() string {
 	if x != nil {
 		return x.ElementInstanceKey
 	}
-	return 0
+	return ""
 }
 
-func (x *ElementInstance) GetFlowScopeKey() int64 {
+func (x *ElementInstance) GetFlowScopeKey() string {
 	if x != nil {
 		return x.FlowScopeKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ElementInstance) GetElementId() string {
@@ -662,11 +662,11 @@ func (x *ElementInstance) GetState() ElementInstanceState {
 	return ElementInstanceState_ELEMENT_INSTANCE_STATE_UNSPECIFIED
 }
 
-func (x *ElementInstance) GetIncidentKey() int64 {
+func (x *ElementInstance) GetIncidentKey() string {
 	if x != nil {
 		return x.IncidentKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ElementInstance) GetStartTime() *timestamppb.Timestamp {
@@ -685,7 +685,7 @@ func (x *ElementInstance) GetEndTime() *timestamppb.Timestamp {
 
 type Variable struct {
 	state    protoimpl.MessageState `protogen:"open.v1"`
-	ScopeKey int64                  `protobuf:"varint,1,opt,name=scope_key,json=scopeKey,proto3" json:"scope_key,omitempty"`
+	ScopeKey string                 `protobuf:"bytes,1,opt,name=scope_key,json=scopeKey,proto3" json:"scope_key,omitempty"`
 	Name     string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Nilai JSON.
 	Value         string `protobuf:"bytes,3,opt,name=value,proto3" json:"value,omitempty"`
@@ -723,11 +723,11 @@ func (*Variable) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *Variable) GetScopeKey() int64 {
+func (x *Variable) GetScopeKey() string {
 	if x != nil {
 		return x.ScopeKey
 	}
-	return 0
+	return ""
 }
 
 func (x *Variable) GetName() string {
@@ -746,8 +746,8 @@ func (x *Variable) GetValue() string {
 
 type Incident struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	IncidentKey        int64                  `protobuf:"varint,1,opt,name=incident_key,json=incidentKey,proto3" json:"incident_key,omitempty"`
-	ElementInstanceKey int64                  `protobuf:"varint,2,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
+	IncidentKey        string                 `protobuf:"bytes,1,opt,name=incident_key,json=incidentKey,proto3" json:"incident_key,omitempty"`
+	ElementInstanceKey string                 `protobuf:"bytes,2,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
 	ElementId          string                 `protobuf:"bytes,3,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
 	// Misalnya "CONDITION_ERROR" atau "EXTRACT_VALUE_ERROR".
 	ErrorType     string                 `protobuf:"bytes,4,opt,name=error_type,json=errorType,proto3" json:"error_type,omitempty"`
@@ -788,18 +788,18 @@ func (*Incident) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *Incident) GetIncidentKey() int64 {
+func (x *Incident) GetIncidentKey() string {
 	if x != nil {
 		return x.IncidentKey
 	}
-	return 0
+	return ""
 }
 
-func (x *Incident) GetElementInstanceKey() int64 {
+func (x *Incident) GetElementInstanceKey() string {
 	if x != nil {
 		return x.ElementInstanceKey
 	}
-	return 0
+	return ""
 }
 
 func (x *Incident) GetElementId() string {
@@ -839,10 +839,10 @@ func (x *Incident) GetCreatedAt() *timestamppb.Timestamp {
 
 type Job struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	JobKey             int64                  `protobuf:"varint,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
+	JobKey             string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
 	Type               string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	ElementId          string                 `protobuf:"bytes,3,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
-	ElementInstanceKey int64                  `protobuf:"varint,4,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
+	ElementInstanceKey string                 `protobuf:"bytes,4,opt,name=element_instance_key,json=elementInstanceKey,proto3" json:"element_instance_key,omitempty"`
 	Retries            int32                  `protobuf:"varint,5,opt,name=retries,proto3" json:"retries,omitempty"`
 	// CREATED, COMPLETED, atau CANCELED. Menjadi enum di Fase 4.
 	State         string `protobuf:"bytes,6,opt,name=state,proto3" json:"state,omitempty"`
@@ -880,11 +880,11 @@ func (*Job) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *Job) GetJobKey() int64 {
+func (x *Job) GetJobKey() string {
 	if x != nil {
 		return x.JobKey
 	}
-	return 0
+	return ""
 }
 
 func (x *Job) GetType() string {
@@ -901,11 +901,11 @@ func (x *Job) GetElementId() string {
 	return ""
 }
 
-func (x *Job) GetElementInstanceKey() int64 {
+func (x *Job) GetElementInstanceKey() string {
 	if x != nil {
 		return x.ElementInstanceKey
 	}
-	return 0
+	return ""
 }
 
 func (x *Job) GetRetries() int32 {
@@ -925,7 +925,7 @@ func (x *Job) GetState() string {
 type ListProcessInstancesRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	BpmnProcessId        string                 `protobuf:"bytes,1,opt,name=bpmn_process_id,json=bpmnProcessId,proto3" json:"bpmn_process_id,omitempty"`
-	ProcessDefinitionKey int64                  `protobuf:"varint,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
+	ProcessDefinitionKey string                 `protobuf:"bytes,2,opt,name=process_definition_key,json=processDefinitionKey,proto3" json:"process_definition_key,omitempty"`
 	State                ProcessInstanceState   `protobuf:"varint,3,opt,name=state,proto3,enum=workflow.process.v1.ProcessInstanceState" json:"state,omitempty"`
 	OnlyWithIncident     bool                   `protobuf:"varint,4,opt,name=only_with_incident,json=onlyWithIncident,proto3" json:"only_with_incident,omitempty"`
 	// Default 50, maksimum 500.
@@ -972,11 +972,11 @@ func (x *ListProcessInstancesRequest) GetBpmnProcessId() string {
 	return ""
 }
 
-func (x *ListProcessInstancesRequest) GetProcessDefinitionKey() int64 {
+func (x *ListProcessInstancesRequest) GetProcessDefinitionKey() string {
 	if x != nil {
 		return x.ProcessDefinitionKey
 	}
-	return 0
+	return ""
 }
 
 func (x *ListProcessInstancesRequest) GetState() ProcessInstanceState {
@@ -1061,7 +1061,7 @@ func (x *ListProcessInstancesResponse) GetNextPageToken() string {
 
 type CancelProcessInstanceRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	ProcessInstanceKey int64                  `protobuf:"varint,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	ProcessInstanceKey string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1096,11 +1096,11 @@ func (*CancelProcessInstanceRequest) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{12}
 }
 
-func (x *CancelProcessInstanceRequest) GetProcessInstanceKey() int64 {
+func (x *CancelProcessInstanceRequest) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
 	}
-	return 0
+	return ""
 }
 
 type CancelProcessInstanceResponse struct {
@@ -1145,7 +1145,7 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\n" +
 	"*workflow/process/v1/process_instance.proto\x12\x13workflow.process.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x01\n" +
 	"\x1cCreateProcessInstanceRequest\x126\n" +
-	"\x16process_definition_key\x18\x01 \x01(\x03H\x00R\x14processDefinitionKey\x12N\n" +
+	"\x16process_definition_key\x18\x01 \x01(\tH\x00R\x14processDefinitionKey\x12N\n" +
 	"\fbpmn_process\x18\x02 \x01(\v2).workflow.process.v1.ProcessDefinitionRefH\x00R\vbpmnProcess\x12\x1c\n" +
 	"\tvariables\x18\x03 \x01(\tR\tvariablesB\f\n" +
 	"\n" +
@@ -1154,13 +1154,13 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\x0fbpmn_process_id\x18\x01 \x01(\tR\rbpmnProcessId\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\x05R\aversion\"\x8a\x02\n" +
 	"\x1dCreateProcessInstanceResponse\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\x03R\x12processInstanceKey\x124\n" +
-	"\x16process_definition_key\x18\x02 \x01(\x03R\x14processDefinitionKey\x12&\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x124\n" +
+	"\x16process_definition_key\x18\x02 \x01(\tR\x14processDefinitionKey\x12&\n" +
 	"\x0fbpmn_process_id\x18\x03 \x01(\tR\rbpmnProcessId\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\x05R\aversion\x12?\n" +
 	"\x05state\x18\x05 \x01(\x0e2).workflow.process.v1.ProcessInstanceStateR\x05state\"M\n" +
 	"\x19GetProcessInstanceRequest\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\x03R\x12processInstanceKey\"\xe8\x02\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\"\xe8\x02\n" +
 	"\x1aGetProcessInstanceResponse\x12O\n" +
 	"\x10process_instance\x18\x01 \x01(\v2$.workflow.process.v1.ProcessInstanceR\x0fprocessInstance\x12Q\n" +
 	"\x11element_instances\x18\x02 \x03(\v2$.workflow.process.v1.ElementInstanceR\x10elementInstances\x12;\n" +
@@ -1168,8 +1168,8 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\tincidents\x18\x04 \x03(\v2\x1d.workflow.process.v1.IncidentR\tincidents\x12,\n" +
 	"\x04jobs\x18\x05 \x03(\v2\x18.workflow.process.v1.JobR\x04jobs\"\x91\x03\n" +
 	"\x0fProcessInstance\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\x03R\x12processInstanceKey\x124\n" +
-	"\x16process_definition_key\x18\x02 \x01(\x03R\x14processDefinitionKey\x12&\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x124\n" +
+	"\x16process_definition_key\x18\x02 \x01(\tR\x14processDefinitionKey\x12&\n" +
 	"\x0fbpmn_process_id\x18\x03 \x01(\tR\rbpmnProcessId\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\x05R\aversion\x12?\n" +
 	"\x05state\x18\x05 \x01(\x0e2).workflow.process.v1.ProcessInstanceStateR\x05state\x12!\n" +
@@ -1178,23 +1178,23 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"start_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\"\x8a\x03\n" +
 	"\x0fElementInstance\x120\n" +
-	"\x14element_instance_key\x18\x01 \x01(\x03R\x12elementInstanceKey\x12$\n" +
-	"\x0eflow_scope_key\x18\x02 \x01(\x03R\fflowScopeKey\x12\x1d\n" +
+	"\x14element_instance_key\x18\x01 \x01(\tR\x12elementInstanceKey\x12$\n" +
+	"\x0eflow_scope_key\x18\x02 \x01(\tR\fflowScopeKey\x12\x1d\n" +
 	"\n" +
 	"element_id\x18\x03 \x01(\tR\telementId\x12*\n" +
 	"\x11bpmn_element_type\x18\x04 \x01(\tR\x0fbpmnElementType\x12?\n" +
 	"\x05state\x18\x05 \x01(\x0e2).workflow.process.v1.ElementInstanceStateR\x05state\x12!\n" +
-	"\fincident_key\x18\x06 \x01(\x03R\vincidentKey\x129\n" +
+	"\fincident_key\x18\x06 \x01(\tR\vincidentKey\x129\n" +
 	"\n" +
 	"start_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
 	"\bend_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\"Q\n" +
 	"\bVariable\x12\x1b\n" +
-	"\tscope_key\x18\x01 \x01(\x03R\bscopeKey\x12\x12\n" +
+	"\tscope_key\x18\x01 \x01(\tR\bscopeKey\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\tR\x05value\"\x99\x02\n" +
 	"\bIncident\x12!\n" +
-	"\fincident_key\x18\x01 \x01(\x03R\vincidentKey\x120\n" +
-	"\x14element_instance_key\x18\x02 \x01(\x03R\x12elementInstanceKey\x12\x1d\n" +
+	"\fincident_key\x18\x01 \x01(\tR\vincidentKey\x120\n" +
+	"\x14element_instance_key\x18\x02 \x01(\tR\x12elementInstanceKey\x12\x1d\n" +
 	"\n" +
 	"element_id\x18\x03 \x01(\tR\telementId\x12\x1d\n" +
 	"\n" +
@@ -1204,16 +1204,16 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb3\x01\n" +
 	"\x03Job\x12\x17\n" +
-	"\ajob_key\x18\x01 \x01(\x03R\x06jobKey\x12\x12\n" +
+	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x1d\n" +
 	"\n" +
 	"element_id\x18\x03 \x01(\tR\telementId\x120\n" +
-	"\x14element_instance_key\x18\x04 \x01(\x03R\x12elementInstanceKey\x12\x18\n" +
+	"\x14element_instance_key\x18\x04 \x01(\tR\x12elementInstanceKey\x12\x18\n" +
 	"\aretries\x18\x05 \x01(\x05R\aretries\x12\x14\n" +
 	"\x05state\x18\x06 \x01(\tR\x05state\"\xa6\x02\n" +
 	"\x1bListProcessInstancesRequest\x12&\n" +
 	"\x0fbpmn_process_id\x18\x01 \x01(\tR\rbpmnProcessId\x124\n" +
-	"\x16process_definition_key\x18\x02 \x01(\x03R\x14processDefinitionKey\x12?\n" +
+	"\x16process_definition_key\x18\x02 \x01(\tR\x14processDefinitionKey\x12?\n" +
 	"\x05state\x18\x03 \x01(\x0e2).workflow.process.v1.ProcessInstanceStateR\x05state\x12,\n" +
 	"\x12only_with_incident\x18\x04 \x01(\bR\x10onlyWithIncident\x12\x1b\n" +
 	"\tpage_size\x18\x05 \x01(\x05R\bpageSize\x12\x1d\n" +
@@ -1223,7 +1223,7 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\x11process_instances\x18\x01 \x03(\v2$.workflow.process.v1.ProcessInstanceR\x10processInstances\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"P\n" +
 	"\x1cCancelProcessInstanceRequest\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\x03R\x12processInstanceKey\"\x1f\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\"\x1f\n" +
 	"\x1dCancelProcessInstanceResponse*\xae\x01\n" +
 	"\x14ProcessInstanceState\x12&\n" +
 	"\"PROCESS_INSTANCE_STATE_UNSPECIFIED\x10\x00\x12!\n" +

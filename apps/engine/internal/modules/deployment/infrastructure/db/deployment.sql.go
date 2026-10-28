@@ -42,14 +42,14 @@ type GetLatestProcessDefinitionParams struct {
 }
 
 type GetLatestProcessDefinitionRow struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 	ResourceName  string
 }
@@ -88,14 +88,14 @@ type GetLatestProcessDefinitionWithContentParams struct {
 }
 
 type GetLatestProcessDefinitionWithContentRow struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 	ResourceName  string
 	Content       []byte
@@ -129,20 +129,20 @@ WHERE pd.key = $1
 `
 
 type GetProcessDefinitionByKeyRow struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 	ResourceName  string
 	Content       []byte
 }
 
-func (q *Queries) GetProcessDefinitionByKey(ctx context.Context, key int64) (GetProcessDefinitionByKeyRow, error) {
+func (q *Queries) GetProcessDefinitionByKey(ctx context.Context, key string) (GetProcessDefinitionByKeyRow, error) {
 	row := q.db.QueryRow(ctx, getProcessDefinitionByKey, key)
 	var i GetProcessDefinitionByKeyRow
 	err := row.Scan(
@@ -166,7 +166,7 @@ INSERT INTO deployment (key, tenant_id) VALUES ($1, $2)
 `
 
 type InsertDeploymentParams struct {
-	Key      int64
+	Key      string
 	TenantID string
 }
 
@@ -182,15 +182,15 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 `
 
 type InsertProcessDefinitionParams struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
-	ResourceID    int64
+	ResourceID    string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 }
 
 func (q *Queries) InsertProcessDefinition(ctx context.Context, arg InsertProcessDefinitionParams) error {
@@ -208,29 +208,28 @@ func (q *Queries) InsertProcessDefinition(ctx context.Context, arg InsertProcess
 	return err
 }
 
-const insertResource = `-- name: InsertResource :one
-INSERT INTO deployment_resource (deployment_key, resource_name, content, checksum)
-VALUES ($1, $2, $3, $4)
-RETURNING id
+const insertResource = `-- name: InsertResource :exec
+INSERT INTO deployment_resource (id, deployment_key, resource_name, content, checksum)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertResourceParams struct {
-	DeploymentKey int64
+	ID            string
+	DeploymentKey string
 	ResourceName  string
 	Content       []byte
 	Checksum      []byte
 }
 
-func (q *Queries) InsertResource(ctx context.Context, arg InsertResourceParams) (int64, error) {
-	row := q.db.QueryRow(ctx, insertResource,
+func (q *Queries) InsertResource(ctx context.Context, arg InsertResourceParams) error {
+	_, err := q.db.Exec(ctx, insertResource,
+		arg.ID,
 		arg.DeploymentKey,
 		arg.ResourceName,
 		arg.Content,
 		arg.Checksum,
 	)
-	var id int64
-	err := row.Scan(&id)
-	return id, err
+	return err
 }
 
 const listLatestProcessDefinitions = `-- name: ListLatestProcessDefinitions :many
@@ -257,14 +256,14 @@ type ListLatestProcessDefinitionsParams struct {
 }
 
 type ListLatestProcessDefinitionsRow struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 	ResourceName  string
 }
@@ -328,14 +327,14 @@ type ListProcessDefinitionsParams struct {
 }
 
 type ListProcessDefinitionsRow struct {
-	Key           int64
+	Key           string
 	TenantID      string
 	BpmnProcessID string
 	Version       int32
 	VersionTag    string
 	Name          string
 	Checksum      []byte
-	DeploymentKey int64
+	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
 	ResourceName  string
 }
