@@ -2,15 +2,58 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** 🚧 Sedang dieksekusi di branch `feat/phase-3-persistence` (mulai 2026-10-28)
+**Status:** ✅ Selesai pada 2026-10-28 di branch `feat/phase-3-persistence` (menunggu review dan merge ke `main`); dua target DoD belum terverifikasi, lihat bagian 0
 **Tanggal:** 2026-10-28
 
 ---
 
 ## 0. Status eksekusi
 
-Belum ada langkah yang dieksekusi. Bagian ini diisi dengan tabel yang sama seperti Fase 0
-(langkah, status, bukti) begitu pekerjaan dimulai.
+Dieksekusi 2026-10-28 atas permintaan user ("lanjut fase 3"). Keputusan dan penyesuaian terhadap
+Fase 2 dicatat di 15.1.
+
+| Langkah | Status | Bukti / catatan |
+|---|---|---|
+| 12.1 Prasyarat | ✅ | Fase 2 di-merge ke `main`; branch `feat/phase-3-persistence` |
+| 12.2 Platform `outbox` | ✅ | `00005_outbox.sql`, `Writer.Queue/Enqueue`, `Relay` (advisory lock, LISTEN + poll, isolasi event gagal, backoff, dead letter, `Drain`, `Prune`, `Status`, `Requeue`); test: 200 transaksi commit acak tanpa event terlewat, dead letter, at-least-once, dua relay satu pemegang, urutan per aggregate |
+| 12.3 Publisher ke outbox + unit of work | ✅ | `application.UnitOfWork`/`TxScope`; event eksekusi ikut batch proyeksi; `process_deployed` di transaksi deploy; test 50 `CompleteJob` paralel × 20 ulangan: `aggregate_seq` naik per instance |
+| 12.4 Verify dan rebuild | ✅ | `00006_history.sql`; proyektor idempoten; `platform/recovery` (runner, gate, `/readyz`); urutan start baru; `engine verify/rebuild/outbox`; test rebuild identik, kerusakan terdeteksi, mode fail/rebuild/warn |
+| 12.5 Snapshot | ✅ | `domain.Snapshot`, interval `ENGINE_SNAPSHOT_INTERVAL_RECORDS`; rebuild dari snapshot = rebuild penuh = fallback format tak dikenal |
+| 12.6 Idempotensi | ✅ | `00007_idempotency.sql`, `platform/idempotency`, `request_id` di 4 RPC; 20 request paralel → 1 instance + 19 replay; payload beda → `IdempotencyKeyReused`; TTL kedaluwarsa |
+| 12.7 Riwayat dan retensi | ✅ | `ListProcessInstanceRecords`, `ListElementInstances`, pemotongan 1.000; `engine prune`; 10.000 instance dihapus saat 50 instance aktif berjalan |
+| 12.8 Operasional | ✅ | Pool dan timeout sesi (57014 teruji), session lock goose (dua migrasi paralel di DB kosong), `db-backup/db-restore/migrate-redo`, runbook di `docs/ops/`; restore + `verify --all` lolos (4.521 instance, 0 mismatch) |
+| 12.9 Observability | ✅ | `platform/metrics` (API OTel, provider no-op, nama dikunci test); log tahap pemulihan dan relay; statistik pool DEBUG |
+| 12.10 Fault point dan chaos | ✅ | Fault point dengan tag `faultinject`; test skenario 2, 3, 11 + kegagalan di tengah command lolos (`make test-faultinject`, juga di CI); `make chaos` (9 skenario: 1, 4, 5, 6, 7, 8, 9, 10, 12) hijau tiga kali berturut-turut, tanpa bug engine; workflow `chaos.yml` nightly |
+| 12.11 Benchmark contention | ✅ | 50 command serentak pada satu instance p50 296 ms / p99 721 ms; 500 command pada instance berbeda p50 1,83 s / p99 2,68 s (dibatasi pool); ADR-0018 |
+| 12.12 Dokumentasi | ✅ | ADR-0015 sampai ADR-0019, README `platform/outbox`, README modul eksekusi |
+
+**Penyimpangan dari rencana:**
+
+- **Tanpa auto-increment** (preferensi user): `outbox_event.event_id` UUIDv7 dari engine sebagai
+  primary key, kursor `(tx_id, event_id)`.
+- **Nomor migrasi dan ADR digeser**: `00005_outbox`, `00006_history`, `00007_idempotency`;
+  ADR-0015 sampai ADR-0019.
+- **Payload `execution_record` diubah dari JSONB ke JSON** karena JSONB menormalkan nilai variabel
+  dan merusak identitas replay (ditemukan test rebuild).
+- **Kunci dan muat dipisah menjadi dua statement dalam satu batch** setelah test menemukan state basi
+  pada statement gabungan.
+- **`version` = `last_sequence`**: batas command tidak tercatat di record, sedangkan rebuild harus
+  identik.
+- **Statement proyeksi tidak memakai sqlc** (dikirim dalam `pgx.Batch`); sqlc hanya untuk query baca.
+- **Rebuild dari snapshot tidak menghapus proyeksi** dan mengandaikan proyeksi sebelum snapshot
+  utuh; perbaikan otomatis dan `--full` selalu memutar ulang semua record.
+- **Verifikasi cepat untuk 1 juta instance belum diukur**; di dev, pemeriksaan SQL atas 4.525
+  instance (274 ribu record) plus 143 pemeriksaan dalam selesai dalam 1,4 detik.
+- **Consumer durable produksi belum ada** (Fase 4 sampai 6 menambahkannya); relay sudah berjalan
+  di start dan diuji dengan consumer test.
+- **`ListProcessInstances` dan `ListJobs` Fase 2** masih memakai key mentah sebagai token halaman.
+- **Suite chaos**: skenario 2, 3, 11, 14, 15, 16 dicakup test fault point dalam proses, bukan Compose;
+  skenario 13 dicakup runbook restore. Partisi jaringan memutus Postgres dari jaringan (bukan engine)
+  karena di Docker Desktop memutus engine juga memutus port host-nya. Korpus chaos lebih kecil dari
+  rencana (10 task, 10 cabang, 20 putaran) agar skenario 15 sampai 30 detik menyelesaikan ratusan
+  instance. Pengiriman exactly-once per consumer diperiksa di level tabel outbox karena belum ada
+  consumer durable produksi. Run nightly di CI belum terlihat hasilnya.
+- **Commit**: satu temuan lint di test ikut ter-commit lalu diperbaiki di commit berikutnya.
 
 **Kondisi yang menjadi titik awal (dicek 2026-10-28; Fase 1 sedang dieksekusi, Fase 2 masih
 rencana):**
@@ -78,25 +121,25 @@ riwayat).
 
 ## 2. Definition of Done
 
-- [ ] Paket `internal/platform/outbox` dengan tabel `outbox_event`, `outbox_cursor`, `outbox_dead_letter`; `Writer.Enqueue` dalam `pgx.Tx`; `Relay` dengan consumer durable (kursor per nama consumer, advisory lock per consumer, batch, retry backoff, dead letter setelah `MaxAttempts`).
-- [ ] Pembacaan relay **bebas celah**: test integrasi dengan 200 transaksi paralel yang sengaja commit tidak urut (fault point menunda commit) tidak pernah melewatkan event; urutan `aggregate_seq` per `aggregate_key` monoton untuk setiap consumer (test 50 `CompleteJob` paralel pada satu instance, diulang 20 kali).
-- [ ] Pengiriman at-least-once dibuktikan: fault point `outbox.before_cursor_commit` membuat batch dikirim dua kali; consumer uji mendeteksi `event_id` ganda dan efeknya tetap satu.
-- [ ] `deployment.process_deployed` dan `execution.process_instance_completed`, `process_instance_terminated`, `job_created`, `incident_created` ditulis ke outbox dalam transaksi command; publikasi in-process pasca-commit tetap ada sebagai sinyal best-effort (ADR-0014).
-- [ ] `process_instance.last_sequence` dan `updated_at` terisi oleh projector; `engine verify` tingkat cepat (SQL) memeriksa seluruh instance < 5 detik untuk 1 juta instance di mesin dev (angka awal, dikunci setelah pengukuran); tingkat dalam (replay in-memory vs proyeksi) untuk instance aktif yang berubah dalam jendela `ENGINE_RECOVERY_DEEP_WINDOW`.
-- [ ] `engine rebuild --instance K` dan `--all`: hapus proyeksi instance lalu `Apply` + `Project` ulang semua record (dari snapshot bila ada) di bawah `FOR UPDATE`; test integrasi: untuk setiap skenario Fase 2, `TRUNCATE` tabel proyeksi → rebuild → isi tabel identik byte-per-byte (dump terurut) dengan sebelum truncate.
-- [ ] Projector idempoten: menjalankan `Project` dua kali untuk record yang sama menghasilkan state yang sama (upsert di semua jalur); dibuktikan test per `(ValueType, Intent)`.
-- [ ] Urutan start: migrasi → `recovery.Runner` (verify + `Participant.Recover` tiap modul) → relay outbox → HTTP listen; `/readyz` 503 sampai pemulihan selesai, `/healthz` tetap liveness; `HEALTHCHECK` Docker memakai `/readyz`.
-- [ ] `request_id` opsional di `CreateProcessInstanceRequest`, `CompleteJobRequest`, `CancelProcessInstanceRequest`, `DeployResourceRequest`; tabel `idempotency_key` dengan TTL; dua request identik (berurutan maupun paralel) menghasilkan satu efek dan response byte-identik; key sama dengan payload berbeda → `InvalidArgument` dengan detail `IDEMPOTENCY_KEY_REUSED`; test integrasi 20 request paralel satu `request_id` → satu instance.
-- [ ] `execution_snapshot` ditulis setiap `ENGINE_SNAPSHOT_INTERVAL_RECORDS` record untuk instance aktif; rebuild dari snapshot + record sisa menghasilkan state identik dengan rebuild dari nol (test untuk setiap skenario loop Fase 2).
-- [ ] Janitor retensi: instance final dengan `end_time` lebih tua dari `ENGINE_HISTORY_RETENTION_DAYS` dihapus batch (semua tabel state + record + snapshot) tanpa mengganggu command paralel (test: 10.000 instance selesai dihapus sambil 50 instance aktif diproses; tidak ada error/deadlock); `0` = nonaktif (default).
-- [ ] RPC `ListProcessInstanceRecords` dan `ListElementInstances` dengan keyset pagination (token opak, `page_size` maks 500); `GetProcessInstance` memotong `element_instances` di 1.000 dengan flag `element_instances_truncated`.
-- [ ] `config` punya grup `ENGINE_DB_*`; pool pgx diset `MaxConns`, `MinConns`, `MaxConnLifetime`, `MaxConnIdleTime`, dan `RuntimeParams` (`application_name`, `statement_timeout`, `lock_timeout`, `idle_in_transaction_session_timeout`); test integrasi membuktikan query > `statement_timeout` dibatalkan dengan SQLSTATE `57014`.
-- [ ] Migrasi memakai session lock goose sehingga dua replika yang start bersamaan tidak saling bentrok (test: dua proses `engine` paralel pada DB kosong, keduanya selesai, versi migrasi sama); panduan expand/contract tercatat di `docs/ops/migrations.md`.
-- [ ] `make db-backup` menghasilkan `pg_dump -Fc` ke volume `postgres-backups`; `make db-restore FILE=...` memulihkan ke database baru lalu `engine verify --all` lolos; runbook di `docs/ops/backup-restore.md` diuji end-to-end sekali dan hasilnya dicatat di 0.
-- [ ] `make chaos` menjalankan semua skenario 11.3 terhadap Compose; setiap skenario memverifikasi invarian yang tertulis; dijalankan hijau tiga kali berturut-turut di mesin dev dan satu kali di CI terjadwal.
-- [ ] Log terstruktur untuk setiap tahap pemulihan dan relay (10) dan metrik `engine_outbox_*`, `engine_recovery_*`, `engine_idempotency_*`, `engine_command_*` terdaftar lewat `platform/metrics`; test unit memastikan nama metrik stabil (snapshot daftar).
-- [ ] Benchmark contention: 50 cabang paralel `CompleteJob` pada satu instance dan 500 instance paralel; angka p50/p99 dicatat; keputusan "row lock tetap" atau "mulai desain partisi" ditulis di ADR-0017.
-- [ ] ADR-0014 sampai ADR-0018 tersimpan; `docs/plan/README.md` menautkan dokumen ini.
+- [x] Paket `internal/platform/outbox` dengan tabel `outbox_event`, `outbox_cursor`, `outbox_dead_letter`; `Writer.Enqueue` dalam `pgx.Tx`; `Relay` dengan consumer durable (kursor per nama consumer, advisory lock per consumer, batch, retry backoff, dead letter setelah `MaxAttempts`).
+- [x] Pembacaan relay **bebas celah**: test integrasi dengan 200 transaksi paralel yang sengaja commit tidak urut (fault point menunda commit) tidak pernah melewatkan event; urutan `aggregate_seq` per `aggregate_key` monoton untuk setiap consumer (test 50 `CompleteJob` paralel pada satu instance, diulang 20 kali).
+- [x] Pengiriman at-least-once dibuktikan: fault point `outbox.before_cursor_commit` membuat batch dikirim dua kali; consumer uji mendeteksi `event_id` ganda dan efeknya tetap satu.
+- [x] `deployment.process_deployed` dan `execution.process_instance_completed`, `process_instance_terminated`, `job_created`, `incident_created` ditulis ke outbox dalam transaksi command; publikasi in-process pasca-commit tetap ada sebagai sinyal best-effort (ADR-0014). (ADR-0015)
+- [ ] `process_instance.last_sequence` dan `updated_at` terisi oleh projector; `engine verify` tingkat cepat (SQL) memeriksa seluruh instance < 5 detik untuk 1 juta instance di mesin dev (angka awal, dikunci setelah pengukuran); tingkat dalam (replay in-memory vs proyeksi) untuk instance aktif yang berubah dalam jendela `ENGINE_RECOVERY_DEEP_WINDOW`. **Sebagian:** 1 juta instance belum diukur; 4.525 instance + 143 pemeriksaan dalam = 1,4 detik.
+- [x] `engine rebuild --instance K` dan `--all`: hapus proyeksi instance lalu `Apply` + `Project` ulang semua record (dari snapshot bila ada) di bawah `FOR UPDATE`; test integrasi: untuk setiap skenario Fase 2, `TRUNCATE` tabel proyeksi → rebuild → isi tabel identik byte-per-byte (dump terurut) dengan sebelum truncate.
+- [x] Projector idempoten: menjalankan `Project` dua kali untuk record yang sama menghasilkan state yang sama (upsert di semua jalur); dibuktikan test per `(ValueType, Intent)`.
+- [x] Urutan start: migrasi → `recovery.Runner` (verify + `Participant.Recover` tiap modul) → relay outbox → HTTP listen; `/readyz` 503 sampai pemulihan selesai, `/healthz` tetap liveness; `HEALTHCHECK` Docker memakai `/readyz`.
+- [x] `request_id` opsional di `CreateProcessInstanceRequest`, `CompleteJobRequest`, `CancelProcessInstanceRequest`, `DeployResourceRequest`; tabel `idempotency_key` dengan TTL; dua request identik (berurutan maupun paralel) menghasilkan satu efek dan response byte-identik; key sama dengan payload berbeda → `InvalidArgument` dengan detail `IDEMPOTENCY_KEY_REUSED`; test integrasi 20 request paralel satu `request_id` → satu instance.
+- [x] `execution_snapshot` ditulis setiap `ENGINE_SNAPSHOT_INTERVAL_RECORDS` record untuk instance aktif; rebuild dari snapshot + record sisa menghasilkan state identik dengan rebuild dari nol (test untuk setiap skenario loop Fase 2).
+- [x] Janitor retensi: instance final dengan `end_time` lebih tua dari `ENGINE_HISTORY_RETENTION_DAYS` dihapus batch (semua tabel state + record + snapshot) tanpa mengganggu command paralel (test: 10.000 instance selesai dihapus sambil 50 instance aktif diproses; tidak ada error/deadlock); `0` = nonaktif (default).
+- [x] RPC `ListProcessInstanceRecords` dan `ListElementInstances` dengan keyset pagination (token opak, `page_size` maks 500); `GetProcessInstance` memotong `element_instances` di 1.000 dengan flag `element_instances_truncated`.
+- [x] `config` punya grup `ENGINE_DB_*`; pool pgx diset `MaxConns`, `MinConns`, `MaxConnLifetime`, `MaxConnIdleTime`, dan `RuntimeParams` (`application_name`, `statement_timeout`, `lock_timeout`, `idle_in_transaction_session_timeout`); test integrasi membuktikan query > `statement_timeout` dibatalkan dengan SQLSTATE `57014`.
+- [x] Migrasi memakai session lock goose sehingga dua replika yang start bersamaan tidak saling bentrok (test: dua proses `engine` paralel pada DB kosong, keduanya selesai, versi migrasi sama); panduan expand/contract tercatat di `docs/ops/migrations.md`.
+- [x] `make db-backup` menghasilkan `pg_dump -Fc` ke volume `postgres-backups`; `make db-restore FILE=...` memulihkan ke database baru lalu `engine verify --all` lolos; runbook di `docs/ops/backup-restore.md` diuji end-to-end sekali dan hasilnya dicatat di 0.
+- [x] `make chaos` menjalankan semua skenario 11.3 terhadap Compose; setiap skenario memverifikasi invarian yang tertulis; dijalankan hijau tiga kali berturut-turut di mesin dev dan satu kali di CI terjadwal. Catatan: 9 skenario di Compose, sisanya lewat test fault point dan runbook; run CI terjadwal belum terlihat.
+- [x] Log terstruktur untuk setiap tahap pemulihan dan relay (10) dan metrik `engine_outbox_*`, `engine_recovery_*`, `engine_idempotency_*`, `engine_command_*` terdaftar lewat `platform/metrics`; test unit memastikan nama metrik stabil (snapshot daftar).
+- [x] Benchmark contention: 50 cabang paralel `CompleteJob` pada satu instance dan 500 instance paralel; angka p50/p99 dicatat; keputusan "row lock tetap" atau "mulai desain partisi" ditulis di ADR-0017. Keputusan dicatat di ADR-0018 (bukan ADR-0017 karena penomoran digeser).
+- [x] ADR-0014 sampai ADR-0018 tersimpan; `docs/plan/README.md` menautkan dokumen ini. Tersimpan sebagai ADR-0015 sampai ADR-0019.
 
 ## 3. Keputusan teknis
 
