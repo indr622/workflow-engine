@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 )
 
 // Model baca atas proyeksi. Berbeda dari state runtime domain: memuat juga riwayat (elemen
@@ -52,32 +54,10 @@ type IncidentView struct {
 }
 
 // Header adalah satu custom header job.
-type Header struct {
-	Key   string
-	Value string
-}
+type Header = api.Header
 
-// JobView adalah job beserta konteksnya.
-type JobView struct {
-	Key                  string
-	Type                 string
-	ProcessInstanceKey   string
-	ElementInstanceKey   string
-	ElementID            string
-	BpmnProcessID        string
-	ProcessDefinitionKey string
-	Retries              int32
-	CustomHeaders        []Header
-	State                string
-	CreatedAt            time.Time
-	// Lease dan kegagalan terakhir (Fase 4); kosong/nil bila tidak ada.
-	Worker          string
-	Deadline        *time.Time
-	ActivatableAt   *time.Time
-	ErrorMessage    string
-	ErrorCode       string
-	ActivationCount int32
-}
+// JobView adalah job beserta konteks, lease, dan kegagalan terakhirnya.
+type JobView = api.JobInfo
 
 // InstanceDetail adalah satu instance lengkap.
 type InstanceDetail struct {
@@ -101,14 +81,31 @@ type InstanceFilter struct {
 }
 
 // JobFilter memfilter daftar job.
-type JobFilter struct {
-	Type               string
+type JobFilter = api.JobFilter
+
+// IncidentFilter memfilter daftar incident lintas instance.
+type IncidentFilter struct {
 	ProcessInstanceKey string
+	ErrorType          string
 	OnlyOpen           bool
-	// State memfilter satu state; kosong berarti semua.
-	State    string
-	AfterKey string
-	Limit    int32
+	AfterKey           string
+	Limit              int32
+}
+
+// IncidentInfo adalah satu incident beserta konteks instance-nya.
+type IncidentInfo struct {
+	Key                  string
+	ProcessInstanceKey   string
+	ElementInstanceKey   string
+	ElementID            string
+	BpmnProcessID        string
+	ProcessDefinitionKey string
+	ErrorType            string
+	ErrorMessage         string
+	JobKey               string
+	State                string
+	CreatedAt            time.Time
+	ResolvedAt           *time.Time
 }
 
 // ReadModel adalah port baca proyeksi, diimplementasikan infrastructure.
@@ -116,6 +113,7 @@ type ReadModel interface {
 	GetInstance(ctx context.Context, key string) (InstanceDetail, error)
 	ListInstances(ctx context.Context, f InstanceFilter) ([]InstanceSummary, error)
 	ListJobs(ctx context.Context, f JobFilter) ([]JobView, error)
+	ListIncidents(ctx context.Context, f IncidentFilter) ([]IncidentInfo, error)
 }
 
 // Batas halaman.
@@ -161,6 +159,23 @@ func (q *Queries) ListJobs(ctx context.Context, f JobFilter) ([]JobView, string,
 	limit := f.Limit
 	f.Limit++
 	page, err := q.read.ListJobs(ctx, f)
+	if err != nil {
+		return nil, "", err
+	}
+	next := ""
+	if int32(len(page)) > limit { //nolint:gosec // panjang halaman dibatasi MaxPageSize
+		page = page[:limit]
+		next = page[len(page)-1].Key
+	}
+	return page, next, nil
+}
+
+// ListIncidents mengembalikan satu halaman incident terbaru dahulu dan key untuk halaman berikutnya.
+func (q *Queries) ListIncidents(ctx context.Context, f IncidentFilter) ([]IncidentInfo, string, error) {
+	f.Limit = pageSize(f.Limit)
+	limit := f.Limit
+	f.Limit++
+	page, err := q.read.ListIncidents(ctx, f)
 	if err != nil {
 		return nil, "", err
 	}

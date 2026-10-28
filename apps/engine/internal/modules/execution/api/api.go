@@ -1,8 +1,12 @@
 // Package api adalah kontrak publik modul execution untuk modul lain: membuat dan membatalkan
-// process instance, menyelesaikan job, dan event yang dipublikasikan setelah commit.
+// process instance, protokol job worker, incident, variabel, dan event yang dipublikasikan setelah
+// commit.
 package api
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // CreateInstanceRequest memilih versi proses lewat DefinitionKey, atau BpmnProcessID dengan
 // Version (0 = terbaru). Variables adalah dokumen JSON object; kosong berarti tanpa variabel.
@@ -41,10 +45,18 @@ type ProcessInstances interface {
 	CreateProcessInstance(ctx context.Context, req CreateInstanceRequest) (CreateInstanceResult, error)
 	// CancelProcessInstance mengembalikan replayed = true bila klaim request_id sudah pernah dijalankan.
 	CancelProcessInstance(ctx context.Context, processInstanceKey string, idem *Idempotency) (replayed bool, err error)
+	// CreateProcessInstanceWithResult membuat instance lalu menunggu sampai selesai atau timeout
+	// (ErrResultTimeout, instance tetap berjalan). fetchVariables kosong berarti semua variabel.
+	CreateProcessInstanceWithResult(ctx context.Context, req CreateInstanceRequest, fetchVariables []string,
+		timeout time.Duration) (InstanceResult, error)
 }
 
-// Jobs menyelesaikan job service task. Modul job Fase 4 membangun protokol worker di atasnya.
-type Jobs interface {
-	// CompleteJob mengembalikan replayed = true bila klaim request_id sudah pernah dijalankan.
-	CompleteJob(ctx context.Context, jobKey string, variables []byte, idem *Idempotency) (replayed bool, err error)
+// ResultTimeoutError dikembalikan CreateProcessInstanceWithResult bila instance belum selesai saat
+// timeout habis.
+type ResultTimeoutError struct {
+	ProcessInstanceKey string
+}
+
+func (e *ResultTimeoutError) Error() string {
+	return "process instance " + e.ProcessInstanceKey + " did not complete before the request timeout"
 }

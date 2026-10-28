@@ -116,6 +116,27 @@ func (r *PostgresRepository) ListJobs(ctx context.Context, f application.JobFilt
 	return out, nil
 }
 
+// ListIncidents memenuhi application.ReadModel.
+func (r *PostgresRepository) ListIncidents(ctx context.Context, f application.IncidentFilter) ([]application.IncidentInfo, error) {
+	rows, err := r.q.ListIncidentsPage(ctx, db.ListIncidentsPageParams{
+		ProcessInstanceKey: f.ProcessInstanceKey, ErrorType: f.ErrorType, OnlyOpen: f.OnlyOpen,
+		AfterKey: f.AfterKey, PageLimit: f.Limit,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list incidents: %w", err)
+	}
+	out := make([]application.IncidentInfo, 0, len(rows))
+	for _, i := range rows {
+		out = append(out, application.IncidentInfo{
+			Key: i.Key, ProcessInstanceKey: i.ProcessInstanceKey, ElementInstanceKey: i.ElementInstanceKey,
+			ElementID: i.ElementID, BpmnProcessID: i.BpmnProcessID, ProcessDefinitionKey: i.ProcessDefinitionKey,
+			ErrorType: i.ErrorType, ErrorMessage: i.ErrorMessage, JobKey: deref(i.JobKey), State: i.State,
+			CreatedAt: i.CreatedAt.Time, ResolvedAt: optTime(i.ResolvedAt),
+		})
+	}
+	return out, nil
+}
+
 func summary(key, defKey, processID string, version int32, state string, hasIncident bool,
 	start, end pgtype.Timestamptz) application.InstanceSummary {
 	return application.InstanceSummary{

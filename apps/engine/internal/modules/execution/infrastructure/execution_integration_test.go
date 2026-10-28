@@ -482,7 +482,7 @@ func view(s *domain.InstanceState) map[string]any {
 	jobs := []domain.Job{}
 	for _, j := range s.Jobs {
 		c := *j
-		if c.CustomHeaders == nil {
+		if len(c.CustomHeaders) == 0 {
 			c.CustomHeaders = nil
 		}
 		jobs = append(jobs, c)

@@ -39,6 +39,7 @@ type Commands struct {
 	bus       eventbus.Bus
 	log       *slog.Logger
 	cfg       Config
+	waiter    *waiter
 }
 
 var (
@@ -55,7 +56,7 @@ func NewCommands(uow UnitOfWork, defs deploymentapi.ProcessDefinitions, processo
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Commands{uow: uow, defs: defs, processor: processor, keys: keys, bus: bus, log: log, cfg: cfg}
+	return &Commands{uow: uow, defs: defs, processor: processor, keys: keys, bus: bus, log: log, cfg: cfg, waiter: newWaiter(bus)}
 }
 
 // ErrDefinitionRequired dikembalikan bila request tidak memilih process definition.

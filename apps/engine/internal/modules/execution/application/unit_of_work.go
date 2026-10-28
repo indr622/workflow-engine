@@ -2,7 +2,9 @@ package application
 
 import (
 	"context"
+	"time"
 
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/idempotency"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
@@ -38,4 +40,20 @@ type UnitOfWork interface {
 	JobRef(ctx context.Context, jobKey string) (instanceKey, definitionKey string, err error)
 	// DefinitionKeyOf mengembalikan process definition sebuah instance; domain.ErrInstanceNotFound bila tidak ada.
 	DefinitionKeyOf(ctx context.Context, instanceKey string) (string, error)
+	// IncidentRef mengembalikan instance pemilik incident; domain.ErrIncidentNotFound bila tidak ada.
+	IncidentRef(ctx context.Context, incidentKey string) (instanceKey, definitionKey string, err error)
+	// ScopeRef mengembalikan instance pemilik scope variabel (key process instance atau element
+	// instance); domain.ErrScopeNotFound bila tidak ada.
+	ScopeRef(ctx context.Context, scopeKey string) (instanceKey, definitionKey string, err error)
+	LeaseStore
+	ResultReader
+}
+
+// LeaseStore mengelola lease job di luar record log (ADR-0020): tanpa row lock instance, dengan
+// FOR UPDATE SKIP LOCKED, dan jam Postgres sebagai acuan deadline.
+type LeaseStore interface {
+	ActivateJobs(ctx context.Context, q api.ActivationQuery) ([]api.ActivatedJob, error)
+	// ExtendLease: domain.ErrJobNotFound bila job tidak ada, domain.ErrJobNotActivated bila bukan ACTIVATED.
+	ExtendLease(ctx context.Context, jobKey string, timeout time.Duration) error
+	ReleaseExpiredLeases(ctx context.Context, limit int) ([]api.ReleasedJob, error)
 }
