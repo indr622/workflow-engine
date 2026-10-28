@@ -60,10 +60,9 @@ Langkah yang dijalankan target:
 Verifikasi restore adalah bagian Definition of Done, bukan opsional. Restore yang tidak lolos
 `verify --all` tidak boleh dipromosikan.
 
-> **Catatan:** subperintah `engine verify` ditambahkan oleh langkah pemulihan Fase 3 (12.4/12.5).
-> Sampai subperintah itu ada, langkah 4 gagal; langkah 1–3 tetap dapat dipakai. Hati-hati: binary
-> yang belum mengenal `verify` mengabaikan argumen dan menjalankan server engine biasa terhadap
-> `TARGET_DB` (dengan `ENGINE_MIGRATE=false`), jadi hentikan dengan Ctrl+C bila itu terjadi.
+> **Catatan:** `engine verify` tersedia sejak Fase 3 dan keluar dengan kode 3 bila ada mismatch.
+> Subperintah yang tidak dikenal kini keluar dengan error, bukan menjalankan server. Backup dari
+> skema lebih lama perlu migrasi dulu (`ENGINE_MIGRATE=true` sekali) sebelum `verify`.
 
 Langkah manual setelah verifikasi lolos (promosi):
 
@@ -119,3 +118,4 @@ docker compose -f infra/docker/docker-compose.yml exec -T postgres \
 | Tanggal | Lingkungan | Hasil |
 |---|---|---|
 | 2026-10-28 | compose dev, Postgres 18, DB `workflow` 32 MB (123 deployment, 1547 process instance, 38629 execution record, migrasi versi 5) | `db-backup` menghasilkan `workflow-20261028T094107Z.dump` (1,6 MB); `db-backup-list` menampilkannya; `db-restore` ke `workflow_restore_test`: `createdb` + `pg_restore --exit-on-error` sukses, jumlah baris tabel utama dan versi migrasi sama dengan sumber; langkah `verify --all` gagal karena subperintah belum ada (binary saat itu juga tidak terkompilasi akibat perubahan paralel di modul eksekusi). Database restore di-drop setelahnya. |
+| 2026-10-28 | compose dev, Postgres 18, migrasi versi 7 (outbox, riwayat, idempotensi) | `db-backup` menghasilkan `workflow-20261028T141723Z.dump` (9,4 MB); `db-restore` ke `workflow_restore_check` lalu `engine verify --all` terhadap database hasil restore: **4.521 instance diperiksa, 0 mismatch**, exit 0, total 36 detik. Database restore di-drop setelahnya. Runbook lolos end-to-end. |
