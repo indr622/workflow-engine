@@ -163,6 +163,16 @@ func (s *InstanceState) ChildrenOf(scopeKey string) []*ElementInstance {
 	return out
 }
 
+// hasChildren mengembalikan true jika scope masih punya element instance non-final, tanpa alokasi.
+func (s *InstanceState) hasChildren(scopeKey string) bool {
+	for _, e := range s.Elements {
+		if e.FlowScopeKey == scopeKey && e.Key != scopeKey {
+			return true
+		}
+	}
+	return false
+}
+
 // SortedTakenFlows mengembalikan counter join urut (scope, gateway, flow) untuk iterasi deterministik.
 func (s *InstanceState) SortedTakenFlows() []TakenFlow {
 	out := make([]TakenFlow, 0, len(s.TakenFlows))

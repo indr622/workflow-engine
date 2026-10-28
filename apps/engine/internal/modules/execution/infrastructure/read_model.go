@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -128,12 +127,4 @@ func jobView(key, typ, piKey, elemKey, elemID, processID, defKey string, retries
 		BpmnProcessID: processID, ProcessDefinitionKey: defKey, Retries: retries, CustomHeaders: hs,
 		State: state, CreatedAt: created.Time,
 	}, nil
-}
-
-func optTime(t pgtype.Timestamptz) *time.Time {
-	if !t.Valid {
-		return nil
-	}
-	v := t.Time
-	return &v
 }

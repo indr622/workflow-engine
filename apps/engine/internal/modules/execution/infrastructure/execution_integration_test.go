@@ -435,7 +435,7 @@ func assertReplay(t *testing.T, f *fixture, piKey string, active bool) {
 	var snap *domain.InstanceSnapshot
 	err := f.repo.WithTx(ctx, func(ctx context.Context, tx domain.TxRepository) error {
 		var err error
-		snap, err = tx.LoadRuntimeState(ctx, piKey)
+		snap, err = tx.LockAndLoad(ctx, piKey)
 		return err
 	})
 	if err != nil {
@@ -487,5 +487,58 @@ func view(s *domain.InstanceState) map[string]any {
 	return map[string]any{
 		"key": s.Key, "definition": s.Definition, "status": s.Status, "elements": elements,
 		"flows": s.SortedTakenFlows(), "variables": vars, "jobs": jobs, "incidents": incidents,
+	}
+}
+
+func linear20XML() string {
+	var b strings.Builder
+	b.WriteString(header + `<bpmn:startEvent id="start"/><bpmn:endEvent id="end"/>`)
+	prev := "start"
+	for i := 0; i < 20; i++ {
+		id := fmt.Sprintf("t%d", i)
+		b.WriteString(serviceTask(id, "work") + flow("f"+id, prev, id))
+		prev = id
+	}
+	b.WriteString(flow("fend", prev, "end") + footer)
+	return b.String()
+}
+
+// TestLinear20Latency mengukur create + 20 CompleteJob berurutan terhadap Postgres lokal dan
+// mencetak p50/p95 (target DoD: p50 < 50 ms total).
+func TestLinear20Latency(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	processID := f.deployXML(t, "linear20", linear20XML())
+	const runs = 30
+	durations := make([]time.Duration, 0, runs)
+	for i := 0; i < runs; i++ {
+		// Hanya waktu command yang diukur; ListJobs untuk mencari job berikutnya tidak dihitung.
+		var spent time.Duration
+		start := time.Now()
+		created, err := f.commands.CreateProcessInstance(ctx, api.CreateInstanceRequest{BpmnProcessID: processID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		spent += time.Since(start)
+		for j := 0; j < 20; j++ {
+			jobs, _, err := f.queries.ListJobs(ctx, application.JobFilter{ProcessInstanceKey: created.ProcessInstanceKey, OnlyOpen: true, Limit: 1})
+			if err != nil || len(jobs) != 1 {
+				t.Fatalf("step %d: jobs %d, %v", j, len(jobs), err)
+			}
+			start = time.Now()
+			if err := f.commands.CompleteJob(ctx, jobs[0].Key, nil); err != nil {
+				t.Fatal(err)
+			}
+			spent += time.Since(start)
+		}
+		durations = append(durations, spent)
+	}
+	sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
+	p50, p95 := durations[runs/2], durations[runs*95/100]
+	t.Logf("create + 20 CompleteJob: p50=%v p95=%v", p50, p95)
+	// Target 50 ms berlaku untuk Postgres native (round trip ~0,1 ms). Di Docker Desktop Windows
+	// satu round trip ~1,2 ms, jadi di sini hanya sanity check agar regresi besar tetap tertangkap.
+	if p50 > time.Second {
+		t.Fatalf("p50 %v: regression, a command should take a few round trips", p50)
 	}
 }

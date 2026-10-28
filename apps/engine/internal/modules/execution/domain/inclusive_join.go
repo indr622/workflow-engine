@@ -80,6 +80,9 @@ func (r *run) tryInclusiveJoins() (bool, error) {
 		scopeKey string
 		gateway  bpmn.FlowNode
 	}
+	if len(r.st.TakenFlows) == 0 || len(r.p.analysis(r.st.Process).upstream) == 0 {
+		return false, nil
+	}
 	var candidates []pending
 	seen := map[[2]any]bool{}
 	for _, tf := range r.st.SortedTakenFlows() {

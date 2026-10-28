@@ -105,11 +105,11 @@ func (c *Commands) CompleteJob(ctx context.Context, jobKey string, variables []b
 	if err != nil {
 		return err
 	}
-	piKey, err := c.repo.InstanceKeyOfJob(ctx, jobKey)
+	piKey, defKey, err := c.repo.JobRef(ctx, jobKey)
 	if err != nil {
 		return fmt.Errorf("complete job: %w", err)
 	}
-	proc, err := c.processOf(ctx, piKey)
+	proc, err := c.process(ctx, defKey)
 	if err != nil {
 		return fmt.Errorf("complete job: %w", err)
 	}
@@ -169,6 +169,10 @@ func (c *Commands) processOf(ctx context.Context, instanceKey string) (*bpmn.Pro
 	if err != nil {
 		return nil, err
 	}
+	return c.process(ctx, defKey)
+}
+
+func (c *Commands) process(ctx context.Context, defKey string) (*bpmn.Process, error) {
 	_, proc, err := c.defs.GetByKey(ctx, defKey)
 	if err != nil {
 		return nil, fmt.Errorf("load process definition %s: %w", defKey, err)
@@ -178,10 +182,7 @@ func (c *Commands) processOf(ctx context.Context, instanceKey string) (*bpmn.Pro
 
 // lockAndLoad mengunci instance lalu memuat state runtime-nya.
 func lockAndLoad(ctx context.Context, tx domain.TxRepository, key string, proc *bpmn.Process) (*domain.InstanceState, error) {
-	if err := tx.LockInstance(ctx, key); err != nil {
-		return nil, err
-	}
-	snap, err := tx.LoadRuntimeState(ctx, key)
+	snap, err := tx.LockAndLoad(ctx, key)
 	if err != nil {
 		return nil, err
 	}

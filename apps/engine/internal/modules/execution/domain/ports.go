@@ -38,18 +38,18 @@ type Clock interface {
 // sebelum row lock diambil.
 type Repository interface {
 	WithTx(ctx context.Context, fn func(ctx context.Context, tx TxRepository) error) error
-	// InstanceKeyOfJob mengembalikan process instance pemilik job; ErrJobNotFound bila tidak ada.
-	InstanceKeyOfJob(ctx context.Context, jobKey string) (string, error)
+	// JobRef mengembalikan process instance pemilik job beserta process definition-nya;
+	// ErrJobNotFound bila job tidak ada.
+	JobRef(ctx context.Context, jobKey string) (instanceKey, definitionKey string, err error)
 	// DefinitionKeyOf mengembalikan process definition sebuah instance; ErrInstanceNotFound bila tidak ada.
 	DefinitionKeyOf(ctx context.Context, instanceKey string) (string, error)
 }
 
 // TxRepository adalah operasi di dalam transaksi satu command.
 type TxRepository interface {
-	// LockInstance mengunci baris process instance (FOR UPDATE); ErrInstanceNotFound bila tidak ada.
-	LockInstance(ctx context.Context, key string) error
-	// LoadRuntimeState memuat state runtime instance yang sudah dikunci.
-	LoadRuntimeState(ctx context.Context, key string) (*InstanceSnapshot, error)
+	// LockAndLoad mengunci baris process instance (FOR UPDATE) dan memuat state runtime-nya dalam
+	// satu round trip; ErrInstanceNotFound bila tidak ada.
+	LockAndLoad(ctx context.Context, key string) (*InstanceSnapshot, error)
 	// AppendAndProject menambahkan record ke log dan memperbarui proyeksi, dengan state akhir
 	// sebagai sumber nilai turunan (counter join, has_incident).
 	AppendAndProject(ctx context.Context, records []Record, state *InstanceState) error

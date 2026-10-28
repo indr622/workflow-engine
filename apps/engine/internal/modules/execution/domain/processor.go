@@ -474,7 +474,7 @@ func (r *run) tryCompleteScope(scopeKey string) error {
 	if !ok || scope.State != ElementActivated {
 		return nil
 	}
-	if len(r.st.ChildrenOf(scopeKey)) > 0 {
+	if r.st.hasChildren(scopeKey) {
 		return nil
 	}
 	for k := range r.st.TakenFlows {
