@@ -272,7 +272,10 @@ type CompleteJobRequest struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	JobKey string                 `protobuf:"bytes,1,opt,name=job_key,json=jobKey,proto3" json:"job_key,omitempty"`
 	// Dokumen JSON object; kosong berarti tanpa variabel.
-	Variables     string `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
+	Variables string `protobuf:"bytes,2,opt,name=variables,proto3" json:"variables,omitempty"`
+	// Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+	// (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+	RequestId     string `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -317,6 +320,13 @@ func (x *CompleteJobRequest) GetJobKey() string {
 func (x *CompleteJobRequest) GetVariables() string {
 	if x != nil {
 		return x.Variables
+	}
+	return ""
+}
+
+func (x *CompleteJobRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
 	}
 	return ""
 }
@@ -387,10 +397,12 @@ const file_workflow_job_v1_job_proto_rawDesc = "" +
 	" \x01(\tR\x14processDefinitionKey\x1a@\n" +
 	"\x12CustomHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"K\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
 	"\x12CompleteJobRequest\x12\x17\n" +
 	"\ajob_key\x18\x01 \x01(\tR\x06jobKey\x12\x1c\n" +
-	"\tvariables\x18\x02 \x01(\tR\tvariables\"\x15\n" +
+	"\tvariables\x18\x02 \x01(\tR\tvariables\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"\x15\n" +
 	"\x13CompleteJobResponse2\xbb\x01\n" +
 	"\n" +
 	"JobService\x12Q\n" +

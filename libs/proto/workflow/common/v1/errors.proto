@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package workflow.common.v1;
+
+option go_package = "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/common/v1;commonv1";
+
+// IdempotencyKeyReused adalah detail error INVALID_ARGUMENT bila request_id yang sama dipakai untuk
+// request yang berbeda (ADR-0017).
+message IdempotencyKeyReused {
+  // Scope klaim: tenant + "/" + nama RPC lengkap.
+  string scope = 1;
+  string request_id = 2;
+}

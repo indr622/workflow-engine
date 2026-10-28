@@ -177,8 +177,11 @@ func (x *Resource) GetContent() []byte {
 }
 
 type DeployResourceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resources     []*Resource            `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	Resources []*Resource            `protobuf:"bytes,1,rep,name=resources,proto3" json:"resources,omitempty"`
+	// Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+	// (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -218,6 +221,13 @@ func (x *DeployResourceRequest) GetResources() []*Resource {
 		return x.Resources
 	}
 	return nil
+}
+
+func (x *DeployResourceRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
 }
 
 type DeployResourceResponse struct {
@@ -949,9 +959,11 @@ const file_workflow_deployment_v1_deployment_proto_rawDesc = "" +
 	"'workflow/deployment/v1/deployment.proto\x12\x16workflow.deployment.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"8\n" +
 	"\bResource\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\fR\acontent\"W\n" +
+	"\acontent\x18\x02 \x01(\fR\acontent\"v\n" +
 	"\x15DeployResourceRequest\x12>\n" +
-	"\tresources\x18\x01 \x03(\v2 .workflow.deployment.v1.ResourceR\tresources\"\xe0\x01\n" +
+	"\tresources\x18\x01 \x03(\v2 .workflow.deployment.v1.ResourceR\tresources\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\xe0\x01\n" +
 	"\x16DeployResourceResponse\x12%\n" +
 	"\x0edeployment_key\x18\x01 \x01(\tR\rdeploymentKey\x12Z\n" +
 	"\x13process_definitions\x18\x02 \x03(\v2).workflow.deployment.v1.ProcessDefinitionR\x12processDefinitions\x12C\n" +

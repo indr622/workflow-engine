@@ -29,6 +29,9 @@ message Resource {
 
 message DeployResourceRequest {
   repeated Resource resources = 1;
+  // Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+  // (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+  string request_id = 2;
 }
 
 message DeployResourceResponse {

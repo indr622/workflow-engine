@@ -31,6 +31,9 @@ message CreateProcessInstanceRequest {
   }
   // Dokumen JSON object; kosong berarti tanpa variabel.
   string variables = 3;
+  // Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+  // (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+  string request_id = 4;
 }
 
 message ProcessDefinitionRef {
@@ -148,6 +151,9 @@ message ListProcessInstancesResponse {
 
 message CancelProcessInstanceRequest {
   string process_instance_key = 1;
+  // Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+  // (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+  string request_id = 2;
 }
 
 message CancelProcessInstanceResponse {}

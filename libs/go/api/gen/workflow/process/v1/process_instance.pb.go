@@ -143,7 +143,10 @@ type CreateProcessInstanceRequest struct {
 	//	*CreateProcessInstanceRequest_BpmnProcess
 	Definition isCreateProcessInstanceRequest_Definition `protobuf_oneof:"definition"`
 	// Dokumen JSON object; kosong berarti tanpa variabel.
-	Variables     string `protobuf:"bytes,3,opt,name=variables,proto3" json:"variables,omitempty"`
+	Variables string `protobuf:"bytes,3,opt,name=variables,proto3" json:"variables,omitempty"`
+	// Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+	// (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+	RequestId     string `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -206,6 +209,13 @@ func (x *CreateProcessInstanceRequest) GetBpmnProcess() *ProcessDefinitionRef {
 func (x *CreateProcessInstanceRequest) GetVariables() string {
 	if x != nil {
 		return x.Variables
+	}
+	return ""
+}
+
+func (x *CreateProcessInstanceRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
 	}
 	return ""
 }
@@ -1062,8 +1072,11 @@ func (x *ListProcessInstancesResponse) GetNextPageToken() string {
 type CancelProcessInstanceRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	ProcessInstanceKey string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Opsional, 1 sampai 128 byte. Request dengan request_id yang sama dalam masa berlaku
+	// (ENGINE_IDEMPOTENCY_TTL) dijalankan sekali; ulangan mendapat response yang sama.
+	RequestId     string `protobuf:"bytes,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CancelProcessInstanceRequest) Reset() {
@@ -1099,6 +1112,13 @@ func (*CancelProcessInstanceRequest) Descriptor() ([]byte, []int) {
 func (x *CancelProcessInstanceRequest) GetProcessInstanceKey() string {
 	if x != nil {
 		return x.ProcessInstanceKey
+	}
+	return ""
+}
+
+func (x *CancelProcessInstanceRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
 	}
 	return ""
 }
@@ -1143,11 +1163,13 @@ var File_workflow_process_v1_process_instance_proto protoreflect.FileDescriptor
 
 const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\n" +
-	"*workflow/process/v1/process_instance.proto\x12\x13workflow.process.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd2\x01\n" +
+	"*workflow/process/v1/process_instance.proto\x12\x13workflow.process.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf1\x01\n" +
 	"\x1cCreateProcessInstanceRequest\x126\n" +
 	"\x16process_definition_key\x18\x01 \x01(\tH\x00R\x14processDefinitionKey\x12N\n" +
 	"\fbpmn_process\x18\x02 \x01(\v2).workflow.process.v1.ProcessDefinitionRefH\x00R\vbpmnProcess\x12\x1c\n" +
-	"\tvariables\x18\x03 \x01(\tR\tvariablesB\f\n" +
+	"\tvariables\x18\x03 \x01(\tR\tvariables\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\tR\trequestIdB\f\n" +
 	"\n" +
 	"definition\"X\n" +
 	"\x14ProcessDefinitionRef\x12&\n" +
@@ -1221,9 +1243,11 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"\x99\x01\n" +
 	"\x1cListProcessInstancesResponse\x12Q\n" +
 	"\x11process_instances\x18\x01 \x03(\v2$.workflow.process.v1.ProcessInstanceR\x10processInstances\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"P\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"o\n" +
 	"\x1cCancelProcessInstanceRequest\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\"\x1f\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x02 \x01(\tR\trequestId\"\x1f\n" +
 	"\x1dCancelProcessInstanceResponse*\xae\x01\n" +
 	"\x14ProcessInstanceState\x12&\n" +
 	"\"PROCESS_INSTANCE_STATE_UNSPECIFIED\x10\x00\x12!\n" +
