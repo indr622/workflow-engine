@@ -2,7 +2,7 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** ✅ Selesai pada 2026-10-28 di branch `feat/phase-3-persistence` (menunggu review dan merge ke `main`); dua target DoD belum terverifikasi, lihat bagian 0
+**Status:** ✅ Selesai pada 2026-10-28, di-merge ke `main` (fast-forward dari `feat/phase-3-persistence`, tanpa PR atas permintaan user); dua target DoD belum terverifikasi, lihat bagian 0
 **Tanggal:** 2026-10-28
 
 ---
