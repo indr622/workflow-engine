@@ -151,7 +151,7 @@ WHERE (pi.state = 'ACTIVE' AND last.intent IN ('ELEMENT_COMPLETED', 'ELEMENT_TER
    OR (pi.state = 'TERMINATED' AND last.intent <> 'ELEMENT_TERMINATED')`},
 		{"orphan_job", `SELECT j.process_instance_key::text, format('open job %s on element instance %s in state %s', j.key, j.element_instance_key, COALESCE(e.state, 'missing'))
 FROM job j LEFT JOIN element_instance e ON e.key = j.element_instance_key
-WHERE j.state = 'CREATED' AND (e.key IS NULL OR e.state <> 'ACTIVATED')`},
+WHERE j.state IN ('CREATED', 'ACTIVATED', 'FAILED', 'ERROR_THROWN') AND (e.key IS NULL OR e.state <> 'ACTIVATED')`},
 		{"has_incident", `SELECT pi.key::text, format('has_incident=%s open incidents=%s', pi.has_incident, COALESCE(i.n, 0))
 FROM process_instance pi
 LEFT JOIN (SELECT process_instance_key, COUNT(*) AS n FROM incident WHERE state = 'CREATED' GROUP BY 1) i

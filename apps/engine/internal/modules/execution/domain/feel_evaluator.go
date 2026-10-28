@@ -94,6 +94,37 @@ func (e *FeelEvaluator) EvaluateInt(expr bpmn.Expression, vars VariableLookup) (
 	return n, nil
 }
 
+// EvaluateStringList memisah literal dengan koma (spasi di tepi dibuang, item kosong dilewati),
+// atau mengevaluasi FEEL yang harus menghasilkan list string.
+func (e *FeelEvaluator) EvaluateStringList(expr bpmn.Expression, vars VariableLookup) ([]string, error) {
+	if !expr.IsFEEL {
+		var out []string
+		for _, part := range strings.Split(expr.Raw, ",") {
+			if p := strings.TrimSpace(part); p != "" {
+				out = append(out, p)
+			}
+		}
+		return out, nil
+	}
+	v, err := e.evaluate(expr, vars)
+	if err != nil {
+		return nil, err
+	}
+	items, ok := v.Items()
+	if !ok {
+		return nil, fmt.Errorf("expected a list of strings but got %s", describe(v))
+	}
+	out := make([]string, 0, len(items))
+	for _, it := range items {
+		s, ok := it.String()
+		if !ok {
+			return nil, fmt.Errorf("expected a list of strings but an item is %s", describe(it))
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}
+
 func describe(v feel.Value) string {
 	if v.IsNull() {
 		return "null"

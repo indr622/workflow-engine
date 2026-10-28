@@ -26,6 +26,8 @@ type ExpressionEvaluator interface {
 	EvaluateBool(expr bpmn.Expression, vars VariableLookup) (bool, error)
 	EvaluateString(expr bpmn.Expression, vars VariableLookup) (string, error)
 	EvaluateInt(expr bpmn.Expression, vars VariableLookup) (int64, error)
+	// EvaluateStringList: literal dipisah koma; FEEL harus menghasilkan list string.
+	EvaluateStringList(expr bpmn.Expression, vars VariableLookup) ([]string, error)
 }
 
 // Clock memberi waktu sekarang; di-inject agar Processor deterministik.

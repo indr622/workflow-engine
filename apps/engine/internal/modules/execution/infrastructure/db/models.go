@@ -51,6 +51,23 @@ type ExecutionRecord struct {
 	CreatedAt          pgtype.Timestamptz
 }
 
+type ExecutionSnapshot struct {
+	ProcessInstanceKey string
+	Sequence           int32
+	FormatVersion      int32
+	State              []byte
+	CreatedAt          pgtype.Timestamptz
+}
+
+type IdempotencyKey struct {
+	Scope       string
+	Key         string
+	RequestHash []byte
+	Response    []byte
+	CreatedAt   pgtype.Timestamptz
+	ExpiresAt   pgtype.Timestamptz
+}
+
 type Incident struct {
 	Key                string
 	ProcessInstanceKey string
@@ -61,6 +78,7 @@ type Incident struct {
 	State              string
 	CreatedAt          pgtype.Timestamptz
 	ResolvedAt         pgtype.Timestamptz
+	JobKey             *string
 }
 
 type Job struct {
@@ -77,6 +95,56 @@ type Job struct {
 	State                    string
 	CreatedAt                pgtype.Timestamptz
 	UpdatedAt                pgtype.Timestamptz
+	ActivatableAt            pgtype.Timestamptz
+	Worker                   *string
+	Deadline                 pgtype.Timestamptz
+	ActivatedAt              pgtype.Timestamptz
+	ActivationCount          int32
+	TimeoutCount             int32
+	ErrorMessage             *string
+	ErrorCode                *string
+}
+
+type Message struct {
+	Key            string
+	TenantID       string
+	Name           string
+	CorrelationKey string
+	MessageID      *string
+	Variables      []byte
+	PublishedAt    pgtype.Timestamptz
+	ExpiresAt      pgtype.Timestamptz
+}
+
+type OutboxCursor struct {
+	Consumer  string
+	TxID      pgtype.Uint64
+	EventID   string
+	Attempts  int32
+	LastError *string
+	UpdatedAt pgtype.Timestamptz
+}
+
+type OutboxDeadLetter struct {
+	Consumer     string
+	EventID      string
+	Topic        string
+	AggregateKey string
+	Payload      []byte
+	Error        string
+	Attempts     int32
+	FailedAt     pgtype.Timestamptz
+}
+
+type OutboxEvent struct {
+	EventID       string
+	TxID          pgtype.Uint64
+	Topic         string
+	AggregateType string
+	AggregateKey  string
+	AggregateSeq  int32
+	Payload       []byte
+	CreatedAt     pgtype.Timestamptz
 }
 
 type ProcessDefinition struct {
@@ -103,6 +171,8 @@ type ProcessInstance struct {
 	Version                  int64
 	StartTime                pgtype.Timestamptz
 	EndTime                  pgtype.Timestamptz
+	LastSequence             int32
+	UpdatedAt                pgtype.Timestamptz
 }
 
 type TakenSequenceFlow struct {

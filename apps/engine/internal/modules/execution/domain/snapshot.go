@@ -10,7 +10,9 @@ import (
 
 // SnapshotFormatVersion adalah versi format Snapshot. Naikkan setiap kali InstanceState berubah
 // bentuk (mis. Fase 5 menambah timer); snapshot versi lain diabaikan dan rebuild mulai dari nol.
-const SnapshotFormatVersion = 1
+//
+// Versi 2 (Fase 4): job membawa state FAILED/ERROR_THROWN dan incident membawa JobKey.
+const SnapshotFormatVersion = 2
 
 // ErrSnapshotFormat menandai snapshot dengan versi format yang tidak dikenal.
 var ErrSnapshotFormat = errors.New("unsupported snapshot format version")

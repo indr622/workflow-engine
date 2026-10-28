@@ -31,14 +31,16 @@ WHERE process_instance_key = $1
 ORDER BY key;
 
 -- name: ListJobs :many
--- Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu).
+-- Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu). Job "open" = belum final.
 SELECT key, process_instance_key, element_instance_key, element_id, bpmn_process_id,
-       process_definition_key, type, retries, custom_headers, state, created_at
+       process_definition_key, type, retries, custom_headers, state, created_at,
+       worker, deadline, activatable_at, error_message, error_code, activation_count
 FROM job
 WHERE (sqlc.arg(job_type)::text = '' OR type = sqlc.arg(job_type)::text)
   AND (NULLIF(sqlc.arg(process_instance_key)::text, '')::uuid IS NULL
        OR process_instance_key = NULLIF(sqlc.arg(process_instance_key)::text, '')::uuid)
-  AND (NOT sqlc.arg(only_open)::bool OR state = 'CREATED')
+  AND (NOT sqlc.arg(only_open)::bool OR state IN ('CREATED', 'ACTIVATED', 'FAILED', 'ERROR_THROWN'))
+  AND (sqlc.arg(job_state)::text = '' OR state = sqlc.arg(job_state)::text)
   AND (NULLIF(sqlc.arg(after_key)::text, '')::uuid IS NULL
        OR key < NULLIF(sqlc.arg(after_key)::text, '')::uuid)
 ORDER BY key DESC
@@ -49,6 +51,28 @@ SELECT key, element_instance_key, element_id, error_type, error_message, state, 
 FROM incident
 WHERE process_instance_key = $1
 ORDER BY key;
+
+-- name: GetIncidentRef :one
+SELECT i.process_instance_key, pi.process_definition_key, i.state
+FROM incident i
+JOIN process_instance pi ON pi.key = i.process_instance_key
+WHERE i.key = $1;
+
+-- name: ListIncidentsPage :many
+-- Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu).
+SELECT i.key, i.process_instance_key, i.element_instance_key, i.element_id, pi.bpmn_process_id,
+       pi.process_definition_key, i.error_type, i.error_message, i.job_key, i.state, i.created_at,
+       i.resolved_at
+FROM incident i
+JOIN process_instance pi ON pi.key = i.process_instance_key
+WHERE (NULLIF(sqlc.arg(process_instance_key)::text, '')::uuid IS NULL
+       OR i.process_instance_key = NULLIF(sqlc.arg(process_instance_key)::text, '')::uuid)
+  AND (sqlc.arg(error_type)::text = '' OR i.error_type = sqlc.arg(error_type)::text)
+  AND (NOT sqlc.arg(only_open)::bool OR i.state = 'CREATED')
+  AND (NULLIF(sqlc.arg(after_key)::text, '')::uuid IS NULL
+       OR i.key < NULLIF(sqlc.arg(after_key)::text, '')::uuid)
+ORDER BY i.key DESC
+LIMIT sqlc.arg(page_limit);
 
 -- name: ListRecords :many
 SELECT process_instance_key, sequence, record_key, value_type, intent, element_id, payload, created_at

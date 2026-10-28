@@ -28,7 +28,8 @@ func (r *PostgresRepository) GetInstance(ctx context.Context, key string) (appli
 	if err != nil {
 		return application.InstanceDetail{}, fmt.Errorf("get instance %s: %w", key, err)
 	}
-	d := application.InstanceDetail{Instance: summary(pi)}
+	d := application.InstanceDetail{Instance: summary(pi.Key, pi.ProcessDefinitionKey, pi.BpmnProcessID,
+		pi.ProcessDefinitionVersion, pi.State, pi.HasIncident, pi.StartTime, pi.EndTime)}
 
 	elements, err := r.q.ListElementInstances(ctx, key)
 	if err != nil {
@@ -86,7 +87,8 @@ func (r *PostgresRepository) ListInstances(ctx context.Context, f application.In
 	}
 	out := make([]application.InstanceSummary, 0, len(rows))
 	for _, pi := range rows {
-		out = append(out, summary(pi))
+		out = append(out, summary(pi.Key, pi.ProcessDefinitionKey, pi.BpmnProcessID,
+			pi.ProcessDefinitionVersion, pi.State, pi.HasIncident, pi.StartTime, pi.EndTime))
 	}
 	return out, nil
 }
@@ -94,7 +96,8 @@ func (r *PostgresRepository) ListInstances(ctx context.Context, f application.In
 // ListJobs memenuhi application.ReadModel.
 func (r *PostgresRepository) ListJobs(ctx context.Context, f application.JobFilter) ([]application.JobView, error) {
 	rows, err := r.q.ListJobs(ctx, db.ListJobsParams{
-		JobType: f.Type, ProcessInstanceKey: f.ProcessInstanceKey, OnlyOpen: f.OnlyOpen, AfterKey: f.AfterKey, PageLimit: f.Limit,
+		JobType: f.Type, ProcessInstanceKey: f.ProcessInstanceKey, OnlyOpen: f.OnlyOpen, JobState: f.State,
+		AfterKey: f.AfterKey, PageLimit: f.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list jobs: %w", err)
@@ -106,16 +109,18 @@ func (r *PostgresRepository) ListJobs(ctx context.Context, f application.JobFilt
 		if err != nil {
 			return nil, err
 		}
+		view.Worker, view.ErrorMessage, view.ErrorCode = deref(j.Worker), deref(j.ErrorMessage), deref(j.ErrorCode)
+		view.Deadline, view.ActivatableAt, view.ActivationCount = optTime(j.Deadline), optTime(j.ActivatableAt), j.ActivationCount
 		out = append(out, view)
 	}
 	return out, nil
 }
 
-func summary(pi db.ProcessInstance) application.InstanceSummary {
+func summary(key, defKey, processID string, version int32, state string, hasIncident bool,
+	start, end pgtype.Timestamptz) application.InstanceSummary {
 	return application.InstanceSummary{
-		Key: pi.Key, ProcessDefinitionKey: pi.ProcessDefinitionKey, BpmnProcessID: pi.BpmnProcessID,
-		Version: pi.ProcessDefinitionVersion, State: pi.State, HasIncident: pi.HasIncident,
-		StartTime: pi.StartTime.Time, EndTime: optTime(pi.EndTime),
+		Key: key, ProcessDefinitionKey: defKey, BpmnProcessID: processID, Version: version, State: state,
+		HasIncident: hasIncident, StartTime: start.Time, EndTime: optTime(end),
 	}
 }
 

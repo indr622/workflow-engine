@@ -20,7 +20,7 @@ type Limits struct {
 	MaxRecordsPerCommand int
 }
 
-// Command adalah perintah eksternal: CreateInstance, CompleteJob, atau CancelInstance.
+// Command adalah perintah eksternal terhadap satu process instance.
 type Command interface{ isCommand() }
 
 // CreateInstance membuat process instance baru pada state kosong.
@@ -37,9 +37,52 @@ type CompleteJob struct {
 // CancelInstance menghentikan seluruh element instance aktif dan menandai instance TERMINATED.
 type CancelInstance struct{}
 
-func (CreateInstance) isCommand() {}
-func (CompleteJob) isCommand()    {}
-func (CancelInstance) isCommand() {}
+// FailJob menetapkan retries tersisa job. Retries 0 membuat incident JOB_NO_RETRIES; selain itu
+// job dapat diaktifkan lagi setelah RetryBackoff.
+type FailJob struct {
+	JobKey       string
+	Retries      int32
+	RetryBackoff time.Duration
+	ErrorMessage string
+	Variables    []NamedValue
+}
+
+// ThrowError melempar BPMN error dari job. Fase 4 belum punya catch event, sehingga selalu
+// berakhir dengan incident UNHANDLED_ERROR_EVENT.
+type ThrowError struct {
+	JobKey       string
+	ErrorCode    string
+	ErrorMessage string
+	Variables    []NamedValue
+}
+
+// UpdateJobRetries mengubah retries job yang belum final tanpa menyelesaikan incident-nya.
+type UpdateJobRetries struct {
+	JobKey  string
+	Retries int32
+}
+
+// ResolveIncident menyelesaikan incident terbuka lalu menjalankan ulang langkah yang gagal.
+type ResolveIncident struct {
+	IncidentKey string
+}
+
+// SetVariables menulis variabel ke scope process instance. ScopeKey boleh key instance atau
+// element instance aktif; Local hanya didukung pada scope instance sampai Fase 7.
+type SetVariables struct {
+	ScopeKey  string
+	Variables []NamedValue
+	Local     bool
+}
+
+func (CreateInstance) isCommand()   {}
+func (CompleteJob) isCommand()      {}
+func (CancelInstance) isCommand()   {}
+func (FailJob) isCommand()          {}
+func (ThrowError) isCommand()       {}
+func (UpdateJobRetries) isCommand() {}
+func (ResolveIncident) isCommand()  {}
+func (SetVariables) isCommand()     {}
 
 // Processor menjalankan command secara murni dan deterministik: state, command, key, dan jam
 // yang sama selalu menghasilkan record yang sama. Aman dipakai bersama banyak goroutine.
@@ -73,6 +116,16 @@ func (p *Processor) Process(st *InstanceState, cmd Command, keys KeyGenerator) (
 		err = r.completeJob(c)
 	case CancelInstance:
 		err = r.cancelInstance()
+	case FailJob:
+		err = r.failJob(c)
+	case ThrowError:
+		err = r.throwError(c)
+	case UpdateJobRetries:
+		err = r.updateJobRetries(c)
+	case ResolveIncident:
+		err = r.resolveIncident(c)
+	case SetVariables:
+		err = r.setVariables(c)
 	default:
 		err = fmt.Errorf("unknown command %T", cmd)
 	}
@@ -89,6 +142,8 @@ const (
 	workActivate workKind = iota + 1
 	workTakeFlow
 	workComplete
+	// workResume menjalankan ulang perilaku aktivasi elemen yang tertahan incident di ACTIVATING.
+	workResume
 )
 
 type work struct {
@@ -189,24 +244,38 @@ func (r *run) createInstance(c CreateInstance) error {
 	return r.loop()
 }
 
-func (r *run) completeJob(c CompleteJob) error {
+// activatableJob mengembalikan job yang boleh diselesaikan, digagalkan, atau melempar error:
+// state CREATED (termasuk yang sedang di-lease worker) pada elemen ACTIVATED.
+func (r *run) activatableJob(jobKey string) (*Job, *ElementInstance, error) {
 	if r.st.Status != InstanceActive {
-		return ErrInstanceNotActive
+		return nil, nil, ErrInstanceNotActive
 	}
-	job, ok := r.st.Jobs[c.JobKey]
-	if !ok {
-		return ErrJobNotActive
+	job, ok := r.st.Jobs[jobKey]
+	if !ok || job.State != JobCreated {
+		return nil, nil, ErrJobNotActive
 	}
 	el, ok := r.st.Elements[job.ElementInstanceKey]
 	if !ok || el.State != ElementActivated {
-		return ErrJobNotActive
+		return nil, nil, ErrJobNotActive
 	}
+	return job, el, nil
+}
+
+func (r *run) jobValue(j *Job) *JobValue {
 	d := r.st.Definition
-	if err := r.emit(job.Key, ValueJob, IntentCompleted, &JobValue{
-		Type: job.Type, Retries: job.Retries, CustomHeaders: job.CustomHeaders,
-		ElementInstanceKey: job.ElementInstanceKey, ElementID: job.ElementID,
+	return &JobValue{
+		Type: j.Type, Retries: j.Retries, CustomHeaders: j.CustomHeaders,
+		ElementInstanceKey: j.ElementInstanceKey, ElementID: j.ElementID,
 		BpmnProcessID: d.BpmnProcessID, ProcessDefinitionKey: d.Key, Version: d.Version,
-	}); err != nil {
+	}
+}
+
+func (r *run) completeJob(c CompleteJob) error {
+	job, el, err := r.activatableJob(c.JobKey)
+	if err != nil {
+		return err
+	}
+	if err := r.emit(job.Key, ValueJob, IntentCompleted, r.jobValue(job)); err != nil {
 		return err
 	}
 	if err := r.mergeVariables(c.Variables); err != nil {
@@ -267,14 +336,8 @@ func (r *run) cancelJobsOf(elemKey string) error {
 		}
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
-	d := r.st.Definition
 	for _, k := range keys {
-		j := r.st.Jobs[k]
-		if err := r.emit(k, ValueJob, IntentCanceled, &JobValue{
-			Type: j.Type, Retries: j.Retries, CustomHeaders: j.CustomHeaders,
-			ElementInstanceKey: j.ElementInstanceKey, ElementID: j.ElementID,
-			BpmnProcessID: d.BpmnProcessID, ProcessDefinitionKey: d.Key, Version: d.Version,
-		}); err != nil {
+		if err := r.emit(k, ValueJob, IntentCanceled, r.jobValue(r.st.Jobs[k])); err != nil {
 			return err
 		}
 	}
@@ -289,9 +352,7 @@ func (r *run) resolveIncidents() error {
 	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 	for _, k := range keys {
 		inc := r.st.Incidents[k]
-		if err := r.emit(k, ValueIncident, IntentResolved, &IncidentValue{
-			ErrorType: inc.Type, ErrorMessage: inc.Message, ElementInstanceKey: inc.ElementInstanceKey, ElementID: inc.ElementID,
-		}); err != nil {
+		if err := r.emit(k, ValueIncident, IntentResolved, incidentValue(inc)); err != nil {
 			return err
 		}
 	}
@@ -339,6 +400,8 @@ func (r *run) loop() error {
 				err = r.takeFlow(w.flow, w.scopeKey)
 			case workComplete:
 				err = r.complete(w.elemKey)
+			case workResume:
+				err = r.resume(w.elemKey)
 			}
 			if err != nil {
 				return err
@@ -381,6 +444,12 @@ func (r *run) activate(node bpmn.FlowNode, scopeKey string) error {
 			"execution limit of %d records per command exceeded while activating %q; the process probably loops without a wait state",
 			r.p.limits.MaxRecordsPerCommand, node.ID()))
 	}
+	return r.behave(el, node)
+}
+
+// behave menjalankan perilaku aktivasi elemen yang sudah ACTIVATING: pass-through, pilihan gateway,
+// atau pembuatan job. Dipanggil saat aktivasi dan saat incident elemen diselesaikan.
+func (r *run) behave(el *ElementInstance, node bpmn.FlowNode) error {
 	switch node.Type() {
 	case bpmn.StartEventType, bpmn.EndEventType, bpmn.TaskType, bpmn.ManualTaskType, bpmn.ParallelGatewayType:
 		return r.passThrough(el, node.Outgoing())
@@ -398,6 +467,8 @@ func (r *run) activate(node bpmn.FlowNode, scopeKey string) error {
 		return r.passThrough(el, flows)
 	case bpmn.ServiceTaskType:
 		return r.activateServiceTask(el, node)
+	case bpmn.UserTaskType:
+		return r.activateUserTask(el, node)
 	default:
 		return fmt.Errorf("%w: %s %q", ErrUnsupportedElement, node.Type(), node.ID())
 	}
@@ -489,13 +560,25 @@ func (r *run) tryCompleteScope(scopeKey string) error {
 }
 
 func (r *run) raiseIncident(el *ElementInstance, t IncidentType, msg string) error {
+	return r.raiseJobIncident(el, t, msg, "")
+}
+
+// raiseJobIncident membuat incident; jobKey diisi untuk incident milik job.
+func (r *run) raiseJobIncident(el *ElementInstance, t IncidentType, msg, jobKey string) error {
 	key, err := r.nextKey()
 	if err != nil {
 		return err
 	}
 	return r.emit(key, ValueIncident, IntentCreated, &IncidentValue{
-		ErrorType: t, ErrorMessage: msg, ElementInstanceKey: el.Key, ElementID: el.ElementID,
+		ErrorType: t, ErrorMessage: msg, ElementInstanceKey: el.Key, ElementID: el.ElementID, JobKey: jobKey,
 	})
+}
+
+func incidentValue(inc *Incident) *IncidentValue {
+	return &IncidentValue{
+		ErrorType: inc.Type, ErrorMessage: inc.Message, ElementInstanceKey: inc.ElementInstanceKey,
+		ElementID: inc.ElementID, JobKey: inc.JobKey,
+	}
 }
 
 func (r *run) node(id string) (bpmn.FlowNode, error) {
@@ -512,7 +595,11 @@ func (r *run) node(id string) (bpmn.FlowNode, error) {
 
 // IsDomainError mengembalikan true untuk error yang berasal dari aturan domain (bukan bug/I/O).
 func IsDomainError(err error) bool {
-	for _, e := range []error{ErrInstanceNotFound, ErrInstanceNotActive, ErrJobNotFound, ErrJobNotActive, ErrInvalidVariables, ErrNoNoneStartEvent} {
+	for _, e := range []error{
+		ErrInstanceNotFound, ErrInstanceNotActive, ErrJobNotFound, ErrJobNotActive, ErrJobNotActivated, ErrJobNotOpen,
+		ErrIncidentNotFound, ErrIncidentAlreadyResolved, ErrScopeNotFound, ErrLocalScopeNotSupported,
+		ErrInvalidVariables, ErrNoNoneStartEvent,
+	} {
 		if errors.Is(err, e) {
 			return true
 		}

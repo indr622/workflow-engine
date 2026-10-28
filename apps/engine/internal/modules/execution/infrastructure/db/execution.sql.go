@@ -11,6 +11,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getIncidentRef = `-- name: GetIncidentRef :one
+SELECT i.process_instance_key, pi.process_definition_key, i.state
+FROM incident i
+JOIN process_instance pi ON pi.key = i.process_instance_key
+WHERE i.key = $1
+`
+
+type GetIncidentRefRow struct {
+	ProcessInstanceKey   string
+	ProcessDefinitionKey string
+	State                string
+}
+
+func (q *Queries) GetIncidentRef(ctx context.Context, key string) (GetIncidentRefRow, error) {
+	row := q.db.QueryRow(ctx, getIncidentRef, key)
+	var i GetIncidentRefRow
+	err := row.Scan(&i.ProcessInstanceKey, &i.ProcessDefinitionKey, &i.State)
+	return i, err
+}
+
 const getJobRef = `-- name: GetJobRef :one
 SELECT j.process_instance_key, pi.process_definition_key
 FROM job j
@@ -37,9 +57,22 @@ FROM process_instance
 WHERE key = $1
 `
 
-func (q *Queries) GetProcessInstanceRow(ctx context.Context, key string) (ProcessInstance, error) {
+type GetProcessInstanceRowRow struct {
+	Key                      string
+	TenantID                 string
+	ProcessDefinitionKey     string
+	BpmnProcessID            string
+	ProcessDefinitionVersion int32
+	State                    string
+	HasIncident              bool
+	Version                  int64
+	StartTime                pgtype.Timestamptz
+	EndTime                  pgtype.Timestamptz
+}
+
+func (q *Queries) GetProcessInstanceRow(ctx context.Context, key string) (GetProcessInstanceRowRow, error) {
 	row := q.db.QueryRow(ctx, getProcessInstanceRow, key)
-	var i ProcessInstance
+	var i GetProcessInstanceRowRow
 	err := row.Scan(
 		&i.Key,
 		&i.TenantID,
@@ -138,24 +171,106 @@ func (q *Queries) ListIncidents(ctx context.Context, processInstanceKey string) 
 	return items, nil
 }
 
+const listIncidentsPage = `-- name: ListIncidentsPage :many
+SELECT i.key, i.process_instance_key, i.element_instance_key, i.element_id, pi.bpmn_process_id,
+       pi.process_definition_key, i.error_type, i.error_message, i.job_key, i.state, i.created_at,
+       i.resolved_at
+FROM incident i
+JOIN process_instance pi ON pi.key = i.process_instance_key
+WHERE (NULLIF($1::text, '')::uuid IS NULL
+       OR i.process_instance_key = NULLIF($1::text, '')::uuid)
+  AND ($2::text = '' OR i.error_type = $2::text)
+  AND (NOT $3::bool OR i.state = 'CREATED')
+  AND (NULLIF($4::text, '')::uuid IS NULL
+       OR i.key < NULLIF($4::text, '')::uuid)
+ORDER BY i.key DESC
+LIMIT $5
+`
+
+type ListIncidentsPageParams struct {
+	ProcessInstanceKey string
+	ErrorType          string
+	OnlyOpen           bool
+	AfterKey           string
+	PageLimit          int32
+}
+
+type ListIncidentsPageRow struct {
+	Key                  string
+	ProcessInstanceKey   string
+	ElementInstanceKey   string
+	ElementID            string
+	BpmnProcessID        string
+	ProcessDefinitionKey string
+	ErrorType            string
+	ErrorMessage         string
+	JobKey               *string
+	State                string
+	CreatedAt            pgtype.Timestamptz
+	ResolvedAt           pgtype.Timestamptz
+}
+
+// Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu).
+func (q *Queries) ListIncidentsPage(ctx context.Context, arg ListIncidentsPageParams) ([]ListIncidentsPageRow, error) {
+	rows, err := q.db.Query(ctx, listIncidentsPage,
+		arg.ProcessInstanceKey,
+		arg.ErrorType,
+		arg.OnlyOpen,
+		arg.AfterKey,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIncidentsPageRow
+	for rows.Next() {
+		var i ListIncidentsPageRow
+		if err := rows.Scan(
+			&i.Key,
+			&i.ProcessInstanceKey,
+			&i.ElementInstanceKey,
+			&i.ElementID,
+			&i.BpmnProcessID,
+			&i.ProcessDefinitionKey,
+			&i.ErrorType,
+			&i.ErrorMessage,
+			&i.JobKey,
+			&i.State,
+			&i.CreatedAt,
+			&i.ResolvedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listJobs = `-- name: ListJobs :many
 SELECT key, process_instance_key, element_instance_key, element_id, bpmn_process_id,
-       process_definition_key, type, retries, custom_headers, state, created_at
+       process_definition_key, type, retries, custom_headers, state, created_at,
+       worker, deadline, activatable_at, error_message, error_code, activation_count
 FROM job
 WHERE ($1::text = '' OR type = $1::text)
   AND (NULLIF($2::text, '')::uuid IS NULL
        OR process_instance_key = NULLIF($2::text, '')::uuid)
-  AND (NOT $3::bool OR state = 'CREATED')
-  AND (NULLIF($4::text, '')::uuid IS NULL
-       OR key < NULLIF($4::text, '')::uuid)
+  AND (NOT $3::bool OR state IN ('CREATED', 'ACTIVATED', 'FAILED', 'ERROR_THROWN'))
+  AND ($4::text = '' OR state = $4::text)
+  AND (NULLIF($5::text, '')::uuid IS NULL
+       OR key < NULLIF($5::text, '')::uuid)
 ORDER BY key DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListJobsParams struct {
 	JobType            string
 	ProcessInstanceKey string
 	OnlyOpen           bool
+	JobState           string
 	AfterKey           string
 	PageLimit          int32
 }
@@ -172,14 +287,21 @@ type ListJobsRow struct {
 	CustomHeaders        []byte
 	State                string
 	CreatedAt            pgtype.Timestamptz
+	Worker               *string
+	Deadline             pgtype.Timestamptz
+	ActivatableAt        pgtype.Timestamptz
+	ErrorMessage         *string
+	ErrorCode            *string
+	ActivationCount      int32
 }
 
-// Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu).
+// Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu). Job "open" = belum final.
 func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]ListJobsRow, error) {
 	rows, err := q.db.Query(ctx, listJobs,
 		arg.JobType,
 		arg.ProcessInstanceKey,
 		arg.OnlyOpen,
+		arg.JobState,
 		arg.AfterKey,
 		arg.PageLimit,
 	)
@@ -202,6 +324,12 @@ func (q *Queries) ListJobs(ctx context.Context, arg ListJobsParams) ([]ListJobsR
 			&i.CustomHeaders,
 			&i.State,
 			&i.CreatedAt,
+			&i.Worker,
+			&i.Deadline,
+			&i.ActivatableAt,
+			&i.ErrorMessage,
+			&i.ErrorCode,
+			&i.ActivationCount,
 		); err != nil {
 			return nil, err
 		}
@@ -293,8 +421,21 @@ type ListProcessInstancesParams struct {
 	PageLimit            int32
 }
 
+type ListProcessInstancesRow struct {
+	Key                      string
+	TenantID                 string
+	ProcessDefinitionKey     string
+	BpmnProcessID            string
+	ProcessDefinitionVersion int32
+	State                    string
+	HasIncident              bool
+	Version                  int64
+	StartTime                pgtype.Timestamptz
+	EndTime                  pgtype.Timestamptz
+}
+
 // Keyset pagination: terbaru dahulu (UUIDv7 terurut waktu).
-func (q *Queries) ListProcessInstances(ctx context.Context, arg ListProcessInstancesParams) ([]ProcessInstance, error) {
+func (q *Queries) ListProcessInstances(ctx context.Context, arg ListProcessInstancesParams) ([]ListProcessInstancesRow, error) {
 	rows, err := q.db.Query(ctx, listProcessInstances,
 		arg.TenantID,
 		arg.BpmnProcessID,
@@ -308,9 +449,9 @@ func (q *Queries) ListProcessInstances(ctx context.Context, arg ListProcessInsta
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ProcessInstance
+	var items []ListProcessInstancesRow
 	for rows.Next() {
-		var i ProcessInstance
+		var i ListProcessInstancesRow
 		if err := rows.Scan(
 			&i.Key,
 			&i.TenantID,

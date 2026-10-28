@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 
@@ -117,6 +118,11 @@ func (r *run) activateServiceTask(el *ElementInstance, node bpmn.FlowNode) error
 			return r.raiseIncident(el, IncidentExtractValueError, fmt.Sprintf("failed to evaluate job retries of %q: %v", node.ID(), err))
 		}
 	}
+	return r.createJob(el, jobType, int32(retries), act.Headers())
+}
+
+// createJob menandai elemen ACTIVATED lalu membuat job; elemen menunggu job selesai.
+func (r *run) createJob(el *ElementInstance, jobType string, retries int32, headers []bpmn.Header) error {
 	if err := r.emitElement(el, IntentElementActivated); err != nil {
 		return err
 	}
@@ -126,8 +132,81 @@ func (r *run) activateServiceTask(el *ElementInstance, node bpmn.FlowNode) error
 	}
 	d := r.st.Definition
 	return r.emit(jobKey, ValueJob, IntentCreated, &JobValue{
-		Type: jobType, Retries: int32(retries), CustomHeaders: act.Headers(),
+		Type: jobType, Retries: retries, CustomHeaders: headers,
 		ElementInstanceKey: el.Key, ElementID: el.ElementID,
 		BpmnProcessID: d.BpmnProcessID, ProcessDefinitionKey: d.Key, Version: d.Version,
 	})
+}
+
+// Tipe job dan header user task berbasis job worker, sama dengan Zeebe (ADR-0021).
+const (
+	UserTaskJobType              = "io.camunda.zeebe:userTask"
+	UserTaskHeaderAssignee       = "io.camunda.zeebe:assignee"
+	UserTaskHeaderCandidateGroup = "io.camunda.zeebe:candidateGroups"
+	UserTaskHeaderCandidateUsers = "io.camunda.zeebe:candidateUsers"
+	UserTaskHeaderFormKey        = "io.camunda.zeebe:formKey"
+	UserTaskHeaderDueDate        = "io.camunda.zeebe:dueDate"
+	UserTaskHeaderFollowUpDate   = "io.camunda.zeebe:followUpDate"
+	// userTaskJobRetries adalah retries job user task di Zeebe.
+	userTaskJobRetries = 1
+)
+
+// activateUserTask menjalankan user task tanpa zeebe:userTask sebagai job bertipe
+// io.camunda.zeebe:userTask. Atribut assignment, form, dan jadwal menjadi header; header kosong
+// tidak ditulis.
+func (r *run) activateUserTask(el *ElementInstance, node bpmn.FlowNode) error {
+	act, ok := node.(*bpmn.Activity)
+	if !ok {
+		return fmt.Errorf("%w: user task %q is not an activity", ErrInvalidRecord, node.ID())
+	}
+	ut := act.UserTask()
+	var headers []bpmn.Header
+	single := func(name string, expr bpmn.Expression) error {
+		if expr.IsEmpty() {
+			return nil
+		}
+		v, err := r.p.evaluator.EvaluateString(expr, r.st)
+		if err != nil {
+			return fmt.Errorf("failed to evaluate %s of %q: %w", name, node.ID(), err)
+		}
+		if v != "" {
+			headers = append(headers, bpmn.Header{Key: name, Value: v})
+		}
+		return nil
+	}
+	list := func(name string, expr bpmn.Expression) error {
+		if expr.IsEmpty() {
+			return nil
+		}
+		items, err := r.p.evaluator.EvaluateStringList(expr, r.st)
+		if err != nil {
+			return fmt.Errorf("failed to evaluate %s of %q: %w", name, node.ID(), err)
+		}
+		if len(items) == 0 {
+			return nil
+		}
+		raw, err := json.Marshal(items)
+		if err != nil {
+			return err
+		}
+		headers = append(headers, bpmn.Header{Key: name, Value: string(raw)})
+		return nil
+	}
+	steps := []func() error{
+		func() error { return single(UserTaskHeaderAssignee, ut.Assignee) },
+		func() error { return list(UserTaskHeaderCandidateGroup, ut.CandidateGroups) },
+		func() error { return list(UserTaskHeaderCandidateUsers, ut.CandidateUsers) },
+		func() error { return single(UserTaskHeaderDueDate, ut.DueDate) },
+		func() error { return single(UserTaskHeaderFollowUpDate, ut.FollowUpDate) },
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
+			return r.raiseIncident(el, IncidentExtractValueError, err.Error())
+		}
+	}
+	if ut.FormKey != "" {
+		headers = append(headers, bpmn.Header{Key: UserTaskHeaderFormKey, Value: ut.FormKey})
+	}
+	headers = append(headers, act.Headers()...)
+	return r.createJob(el, UserTaskJobType, userTaskJobRetries, headers)
 }

@@ -36,6 +36,9 @@ const (
 	IntentCompleted          Intent = "COMPLETED"
 	IntentCanceled           Intent = "CANCELED"
 	IntentResolved           Intent = "RESOLVED"
+	IntentFailed             Intent = "FAILED"
+	IntentErrorThrown        Intent = "ERROR_THROWN"
+	IntentRetriesUpdated     Intent = "RETRIES_UPDATED"
 )
 
 // elementIntentState memetakan intent element ke state yang dihasilkannya.
@@ -118,6 +121,12 @@ type JobValue struct {
 	BpmnProcessID        string        `json:"bpmnProcessId"`
 	ProcessDefinitionKey string        `json:"processDefinitionKey"`
 	Version              int32         `json:"version"`
+	// ErrorMessage diisi FAILED dan ERROR_THROWN.
+	ErrorMessage string `json:"errorMessage,omitempty"`
+	// ErrorCode diisi ERROR_THROWN.
+	ErrorCode string `json:"errorCode,omitempty"`
+	// RetryBackoffMs diisi FAILED: job dapat diaktifkan lagi pada timestamp record + backoff.
+	RetryBackoffMs int64 `json:"retryBackoff,omitempty"`
 }
 
 // IncidentValue adalah payload record INCIDENT.
@@ -126,6 +135,7 @@ type IncidentValue struct {
 	ErrorMessage       string       `json:"errorMessage"`
 	ElementInstanceKey string       `json:"elementInstanceKey"`
 	ElementID          string       `json:"elementId"`
+	JobKey             string       `json:"jobKey,omitempty"`
 }
 
 // NewRecordValue mengembalikan pointer payload kosong untuk ValueType, untuk deserialisasi.

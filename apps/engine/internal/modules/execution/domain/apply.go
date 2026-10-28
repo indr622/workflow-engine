@@ -63,6 +63,27 @@ func Apply(st *InstanceState, r *Record) error {
 				return invalid(r, "job is not open")
 			}
 			delete(st.Jobs, r.Key)
+		case IntentFailed:
+			job, exists := st.Jobs[r.Key]
+			if !exists || job.State != JobCreated {
+				return invalid(r, "job is not activatable")
+			}
+			job.Retries = v.Retries
+			if v.Retries <= 0 {
+				job.State = JobFailed
+			}
+		case IntentErrorThrown:
+			job, exists := st.Jobs[r.Key]
+			if !exists || job.State != JobCreated {
+				return invalid(r, "job is not activatable")
+			}
+			job.State = JobErrorThrown
+		case IntentRetriesUpdated:
+			job, exists := st.Jobs[r.Key]
+			if !exists {
+				return invalid(r, "job is not open")
+			}
+			job.Retries = v.Retries
 		default:
 			return invalid(r, "unknown job intent")
 		}
@@ -80,7 +101,7 @@ func Apply(st *InstanceState, r *Record) error {
 			}
 			st.Incidents[r.Key] = &Incident{
 				Key: r.Key, ElementInstanceKey: v.ElementInstanceKey, ElementID: v.ElementID,
-				Type: v.ErrorType, Message: v.ErrorMessage,
+				Type: v.ErrorType, Message: v.ErrorMessage, JobKey: v.JobKey,
 			}
 			el.IncidentKey = r.Key
 		case IntentResolved:
@@ -91,6 +112,11 @@ func Apply(st *InstanceState, r *Record) error {
 			if el, ok := st.Elements[v.ElementInstanceKey]; ok && el.IncidentKey == r.Key {
 				el.IncidentKey = ""
 			}
+			// Seperti Zeebe, menyelesaikan incident job mengembalikan job ke antrean aktivasi:
+			// job ERROR_THROWN selalu, job FAILED hanya bila retries sudah dinaikkan.
+			if job, ok := st.Jobs[v.JobKey]; ok && v.JobKey != "" && JobMadeActivatableOnResolve(job.State, job.Retries) {
+				job.State = JobCreated
+			}
 		default:
 			return invalid(r, "unknown incident intent")
 		}
@@ -98,6 +124,12 @@ func Apply(st *InstanceState, r *Record) error {
 	default:
 		return invalid(r, "unknown value type")
 	}
+}
+
+// JobMadeActivatableOnResolve mengembalikan true bila menyelesaikan incident milik job dengan
+// state dan retries ini membuat job dapat diaktifkan lagi. Proyektor memakai aturan yang sama.
+func JobMadeActivatableOnResolve(state JobState, retries int32) bool {
+	return state == JobErrorThrown || (state == JobFailed && retries > 0)
 }
 
 func applyElement(st *InstanceState, r *Record, v *ProcessInstanceValue) error {

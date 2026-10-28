@@ -15,9 +15,10 @@ const (
 	CodeExpressionSyntaxError  = "EXPRESSION_SYNTAX_ERROR"
 )
 
-// checkExpressions mengompilasi setiap kondisi sequence flow dan ekspresi task definition di proses
-// executable dengan subset FEEL engine. Ekspresi di luar subset ditolak saat deploy agar tidak
-// menjadi incident saat runtime; Fase 7 memperluas subset tanpa mengubah pemanggil.
+// checkExpressions mengompilasi setiap kondisi sequence flow, ekspresi task definition, dan atribut
+// user task job-based di proses executable dengan subset FEEL engine. Ekspresi di luar subset
+// ditolak saat deploy agar tidak menjadi incident saat runtime; Fase 7 memperluas subset tanpa
+// mengubah pemanggil.
 func checkExpressions(resourceName string, defs *bpmn.Definitions) []domain.Violation {
 	var out []domain.Violation
 	for _, proc := range defs.Processes() {
@@ -66,6 +67,14 @@ func checkExpressions(resourceName string, defs *bpmn.Definitions) []domain.Viol
 						def := x.TaskDefinition()
 						check(x, "job type", def.Type, true)
 						check(x, "job retries", def.Retries, true)
+					}
+					if x.Type() == bpmn.UserTaskType {
+						ut := x.UserTask()
+						check(x, "assignee", ut.Assignee, false)
+						check(x, "candidate groups", ut.CandidateGroups, false)
+						check(x, "candidate users", ut.CandidateUsers, false)
+						check(x, "due date", ut.DueDate, false)
+						check(x, "follow-up date", ut.FollowUpDate, false)
 					}
 					if inner := x.Inner(); inner != nil {
 						walk(inner)

@@ -70,6 +70,13 @@ type JobView struct {
 	CustomHeaders        []Header
 	State                string
 	CreatedAt            time.Time
+	// Lease dan kegagalan terakhir (Fase 4); kosong/nil bila tidak ada.
+	Worker          string
+	Deadline        *time.Time
+	ActivatableAt   *time.Time
+	ErrorMessage    string
+	ErrorCode       string
+	ActivationCount int32
 }
 
 // InstanceDetail adalah satu instance lengkap.
@@ -98,8 +105,10 @@ type JobFilter struct {
 	Type               string
 	ProcessInstanceKey string
 	OnlyOpen           bool
-	AfterKey           string
-	Limit              int32
+	// State memfilter satu state; kosong berarti semua.
+	State    string
+	AfterKey string
+	Limit    int32
 }
 
 // ReadModel adalah port baca proyeksi, diimplementasikan infrastructure.

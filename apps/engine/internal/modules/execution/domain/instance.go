@@ -17,14 +17,18 @@ const (
 	InstanceTerminated InstanceStatus = "TERMINATED"
 )
 
-// JobState adalah state job. Fase 4 menambah ACTIVATED, FAILED, TIMED_OUT, ERROR_THROWN.
+// JobState adalah state job. ACTIVATED hanya ada di proyeksi sebagai lease (ADR-0020); bagi
+// Processor job yang sedang dipegang worker tetap CREATED.
 type JobState string
 
-// State job Fase 2.
+// State job.
 const (
-	JobCreated   JobState = "CREATED"
-	JobCompleted JobState = "COMPLETED"
-	JobCanceled  JobState = "CANCELED"
+	JobCreated     JobState = "CREATED"
+	JobActivated   JobState = "ACTIVATED"
+	JobCompleted   JobState = "COMPLETED"
+	JobFailed      JobState = "FAILED"
+	JobErrorThrown JobState = "ERROR_THROWN"
+	JobCanceled    JobState = "CANCELED"
 )
 
 // DefinitionRef menunjuk versi process definition yang dijalankan instance.
@@ -55,7 +59,8 @@ type Variable struct {
 	Value    json.RawMessage
 }
 
-// Job adalah job terbuka milik sebuah service task.
+// Job adalah job yang belum final milik sebuah task: CREATED, FAILED (retries habis), atau
+// ERROR_THROWN (menunggu incident diselesaikan).
 type Job struct {
 	Key                string
 	ElementInstanceKey string
@@ -73,6 +78,8 @@ type Incident struct {
 	ElementID          string
 	Type               IncidentType
 	Message            string
+	// JobKey diisi untuk incident milik job (JOB_NO_RETRIES, UNHANDLED_ERROR_EVENT).
+	JobKey string `json:",omitempty"`
 }
 
 // InstanceState adalah state RUNTIME satu process instance: hanya yang dibutuhkan untuk memproses

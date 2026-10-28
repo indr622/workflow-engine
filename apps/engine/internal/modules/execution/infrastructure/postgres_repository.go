@@ -180,11 +180,11 @@ SELECT pi.process_definition_key::text, pi.bpmn_process_id, pi.process_definitio
     FROM variable v WHERE v.process_instance_key = pi.key), '[]'),
   COALESCE((SELECT json_agg(json_build_object(
       'key', j.key, 'elementInstanceKey', j.element_instance_key, 'elementId', j.element_id,
-      'type', j.type, 'retries', j.retries, 'customHeaders', j.custom_headers) ORDER BY j.key)
-    FROM job j WHERE j.process_instance_key = pi.key AND j.state = 'CREATED'), '[]'),
+      'type', j.type, 'retries', j.retries, 'customHeaders', j.custom_headers, 'state', j.state) ORDER BY j.key)
+    FROM job j WHERE j.process_instance_key = pi.key AND j.state IN ('CREATED', 'ACTIVATED', 'FAILED', 'ERROR_THROWN')), '[]'),
   COALESCE((SELECT json_agg(json_build_object(
       'key', i.key, 'elementInstanceKey', i.element_instance_key, 'elementId', i.element_id,
-      'errorType', i.error_type, 'errorMessage', i.error_message) ORDER BY i.key)
+      'errorType', i.error_type, 'errorMessage', i.error_message, 'jobKey', i.job_key) ORDER BY i.key)
     FROM incident i WHERE i.process_instance_key = pi.key AND i.state = 'CREATED'), '[]')
 FROM process_instance pi
 WHERE pi.key = $1`
@@ -219,14 +219,16 @@ type loadedJob struct {
 	Type               string        `json:"type"`
 	Retries            int32         `json:"retries"`
 	CustomHeaders      []bpmn.Header `json:"customHeaders"`
+	State              string        `json:"state"`
 }
 
 type loadedIncident struct {
-	Key                string `json:"key"`
-	ElementInstanceKey string `json:"elementInstanceKey"`
-	ElementID          string `json:"elementId"`
-	ErrorType          string `json:"errorType"`
-	ErrorMessage       string `json:"errorMessage"`
+	Key                string  `json:"key"`
+	ElementInstanceKey string  `json:"elementInstanceKey"`
+	ElementID          string  `json:"elementId"`
+	ErrorType          string  `json:"errorType"`
+	ErrorMessage       string  `json:"errorMessage"`
+	JobKey             *string `json:"jobKey"`
 }
 
 func (t *txRepository) LockAndLoad(ctx context.Context, key string) (*domain.InstanceSnapshot, error) {
@@ -310,15 +312,20 @@ func (t *txRepository) decodeLoaded(key string, row pgx.Row) (*domain.InstanceSn
 		snap.Variables = append(snap.Variables, domain.Variable{Key: v.Key, ScopeKey: v.ScopeKey, Name: v.Name, Value: json.RawMessage(v.Value)})
 	}
 	for _, j := range jobs {
+		// Lease (ACTIVATED) tidak tercatat di record (ADR-0020): bagi Processor job itu CREATED.
+		state := domain.JobState(j.State)
+		if state == domain.JobActivated {
+			state = domain.JobCreated
+		}
 		snap.Jobs = append(snap.Jobs, domain.Job{
 			Key: j.Key, ElementInstanceKey: j.ElementInstanceKey, ElementID: j.ElementID, Type: j.Type,
-			Retries: j.Retries, CustomHeaders: j.CustomHeaders, State: domain.JobCreated,
+			Retries: j.Retries, CustomHeaders: j.CustomHeaders, State: state,
 		})
 	}
 	for _, inc := range incidents {
 		snap.Incidents = append(snap.Incidents, domain.Incident{
 			Key: inc.Key, ElementInstanceKey: inc.ElementInstanceKey, ElementID: inc.ElementID,
-			Type: domain.IncidentType(inc.ErrorType), Message: inc.ErrorMessage,
+			Type: domain.IncidentType(inc.ErrorType), Message: inc.ErrorMessage, JobKey: deref(inc.JobKey),
 		})
 	}
 	return snap, nil
@@ -346,10 +353,20 @@ VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`
     (key, process_instance_key, element_instance_key, element_id, bpmn_process_id, process_definition_key,
      process_definition_version, type, retries, custom_headers, state, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'CREATED', $11, $11) ON CONFLICT (key) DO NOTHING`
-	sqlUpdateJob      = `UPDATE job SET state = $2, updated_at = $3 WHERE key = $1`
+	// Setiap transisi job dari record membersihkan lease (worker, deadline).
+	sqlFinishJob = `UPDATE job SET state = $2, updated_at = $3, worker = NULL, deadline = NULL WHERE key = $1`
+	sqlFailJob   = `UPDATE job SET state = $2, retries = $3, error_message = $4, activatable_at = $5,
+    updated_at = $6, worker = NULL, deadline = NULL WHERE key = $1`
+	sqlThrowJobError = `UPDATE job SET state = 'ERROR_THROWN', error_code = $2, error_message = $3,
+    updated_at = $4, worker = NULL, deadline = NULL WHERE key = $1`
+	sqlUpdateJobRetries = `UPDATE job SET retries = $2, updated_at = $3 WHERE key = $1`
+	// sqlRecurJob mengembalikan job ke antrean saat incident-nya diselesaikan; syaratnya sama dengan
+	// domain.JobMadeActivatableOnResolve.
+	sqlRecurJob = `UPDATE job SET state = 'CREATED', activatable_at = NULL, updated_at = $2
+WHERE key = $1 AND (state = 'ERROR_THROWN' OR (state = 'FAILED' AND retries > 0))`
 	sqlInsertIncident = `INSERT INTO incident
-    (key, process_instance_key, element_instance_key, element_id, error_type, error_message, state, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, 'CREATED', $7) ON CONFLICT (key) DO NOTHING`
+    (key, process_instance_key, element_instance_key, element_id, error_type, error_message, job_key, state, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, 'CREATED', $8) ON CONFLICT (key) DO NOTHING`
 	sqlResolveIncident = `UPDATE incident SET state = 'RESOLVED', resolved_at = $2 WHERE key = $1`
 	sqlDeleteFlows     = `DELETE FROM taken_sequence_flow WHERE process_instance_key = $1`
 	sqlInsertFlows     = `INSERT INTO taken_sequence_flow (process_instance_key, flow_scope_key, gateway_id, sequence_flow_id, count)
@@ -465,31 +482,64 @@ func project(b *pgx.Batch, r *domain.Record) error {
 			b.Queue(sqlUpdateVariable, r.Key, string(v.Value), ts)
 		}
 	case *domain.JobValue:
-		if r.Intent == domain.IntentCreated {
-			headers, err := json.Marshal(nonNilHeaders(v.CustomHeaders))
-			if err != nil {
-				return err
-			}
-			b.Queue(sqlInsertJob, r.Key, r.ProcessInstanceKey, v.ElementInstanceKey, v.ElementID, v.BpmnProcessID,
-				v.ProcessDefinitionKey, v.Version, v.Type, v.Retries, headers, ts)
-		} else {
-			state := domain.JobCompleted
-			if r.Intent == domain.IntentCanceled {
-				state = domain.JobCanceled
-			}
-			b.Queue(sqlUpdateJob, r.Key, string(state), ts)
-		}
+		return projectJob(b, r, v)
 	case *domain.IncidentValue:
 		if r.Intent == domain.IntentCreated {
 			b.Queue(sqlInsertIncident, r.Key, r.ProcessInstanceKey, v.ElementInstanceKey, v.ElementID,
-				string(v.ErrorType), v.ErrorMessage, ts)
+				string(v.ErrorType), v.ErrorMessage, optString(v.JobKey), ts)
 			b.Queue(sqlSetElementIncident, v.ElementInstanceKey, r.Key)
 		} else {
 			b.Queue(sqlResolveIncident, r.Key, ts)
 			b.Queue(sqlSetElementIncident, v.ElementInstanceKey, nil)
+			if v.JobKey != "" {
+				b.Queue(sqlRecurJob, v.JobKey, ts)
+			}
 		}
 	}
 	return nil
+}
+
+func projectJob(b *pgx.Batch, r *domain.Record, v *domain.JobValue) error {
+	ts := r.Timestamp
+	switch r.Intent {
+	case domain.IntentCreated:
+		headers, err := json.Marshal(nonNilHeaders(v.CustomHeaders))
+		if err != nil {
+			return err
+		}
+		b.Queue(sqlInsertJob, r.Key, r.ProcessInstanceKey, v.ElementInstanceKey, v.ElementID, v.BpmnProcessID,
+			v.ProcessDefinitionKey, v.Version, v.Type, v.Retries, headers, ts)
+	case domain.IntentCompleted:
+		b.Queue(sqlFinishJob, r.Key, string(domain.JobCompleted), ts)
+	case domain.IntentCanceled:
+		b.Queue(sqlFinishJob, r.Key, string(domain.JobCanceled), ts)
+	case domain.IntentFailed:
+		state := domain.JobCreated
+		if v.Retries <= 0 {
+			state = domain.JobFailed
+		}
+		// activatable_at diturunkan dari timestamp record agar rebuild menghasilkan nilai yang sama.
+		var activatable *time.Time
+		if v.Retries > 0 && v.RetryBackoffMs > 0 {
+			at := ts.Add(time.Duration(v.RetryBackoffMs) * time.Millisecond)
+			activatable = &at
+		}
+		b.Queue(sqlFailJob, r.Key, string(state), v.Retries, optString(v.ErrorMessage), activatable, ts)
+	case domain.IntentErrorThrown:
+		b.Queue(sqlThrowJobError, r.Key, v.ErrorCode, optString(v.ErrorMessage), ts)
+	case domain.IntentRetriesUpdated:
+		b.Queue(sqlUpdateJobRetries, r.Key, v.Retries, ts)
+	default:
+		return fmt.Errorf("%w: unknown job intent %s", domain.ErrInvalidRecord, r.Intent)
+	}
+	return nil
+}
+
+func optString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func projectElement(b *pgx.Batch, r *domain.Record, v *domain.ProcessInstanceValue) {
