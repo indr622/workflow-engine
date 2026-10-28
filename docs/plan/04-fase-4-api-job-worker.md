@@ -2,15 +2,20 @@
 
 **Proyek:** Workflow Engine (kompatibel konsep Camunda 8 / BPMN 2.0)
 **Stack:** Go (engine utama) + React (UI) dalam monorepo Nx
-**Status:** Draft rencana — belum dieksekusi
+**Status:** Sedang dieksekusi di branch `feat/phase-4-job-worker`
 **Tanggal:** 2026-10-28
 
 ---
 
 ## 0. Status eksekusi
 
-Belum ada langkah yang dieksekusi. Bagian ini diisi dengan tabel yang sama seperti Fase 0
-(langkah, status, bukti) begitu pekerjaan dimulai.
+| Langkah | Status | Bukti |
+|---|---|---|
+| 13.1 Prasyarat dan branch | Selesai | Branch `feat/phase-4-job-worker` dari `main` 3ef985f; keputusan penyesuaian di 16.1 |
+
+Kondisi awal di bawah ditulis saat Fase 1 masih berjalan; keputusan 16.1 menyesuaikannya dengan
+Fase 2 dan 3 yang sudah di-merge (key UUIDv7, outbox, idempotensi `request_id`, nomor migrasi dan
+ADR).
 
 **Kondisi repo yang menjadi titik awal (dicek 2026-10-28, Fase 1 sedang dieksekusi; Fase 2 dan 3
 masih draft):**
@@ -1401,7 +1406,29 @@ Setiap pertanyaan diberi rekomendasi. Keputusan final dicatat di 16.1 setelah re
 
 ### 16.1 Keputusan
 
-Belum ada. Diisi dengan tabel yang sama seperti 9.1 dokumen Fase 1.
+Dicatat 2026-10-28 saat eksekusi dimulai, setelah Fase 2 dan 3 di-merge ke `main`. Rekomendasi 16.2
+diterima seluruhnya kecuali yang disebut di bawah; baris berikut juga menyesuaikan rencana dengan
+kondisi repo yang sebenarnya.
+
+| # | Keputusan | Alasan |
+|---|---|---|
+| 1 | Branch `feat/phase-4-job-worker` (bukan `feat/phase-4-job-worker-api`) | Sudah dibuat dari `main` 3ef985f |
+| 2 | Semua key di proto baru adalah **string UUIDv7** (`job_key`, `incident_key`, `scope_key`, `message_key`, `process_instance_key`, …), bukan `int64` seperti contoh bagian 5.4 dan 8 | ADR-0011; konsisten dengan proto Fase 2–3 |
+| 3 | Migrasi bernama `00008_job_worker.sql`; `message.key` bertipe `UUID` | Nomor 00005–00007 dipakai Fase 3 |
+| 4 | ADR Fase 4: **ADR-0020** protokol job worker (long polling, `SKIP LOCKED`, lease di luar record log), **ADR-0021** user task job-based, **ADR-0022** buffer message, **ADR-0023** hardening API dan kebijakan versi | ADR-0017–0019 sudah dipakai Fase 3 (idempotensi, contention, snapshot) |
+| 5 | `ErrorInfo` masuk paket yang sudah ada `workflow.common.v1` di file baru `error_info.proto`, di samping `errors.proto` (`IdempotencyKeyReused`) | Paket sudah ada sejak Fase 3 |
+| 6 | `PageRequest`/`PageResponse` **tidak** dibuat; `ListIncidents` memakai `page_size`/`page_token` langsung dengan token opak `platform/paging` | Konsisten dengan semua RPC daftar Fase 2–3 |
+| 7 | RPC mutasi baru yang menulis record (`FailJob`, `ThrowError`, `UpdateJobRetries`, `ResolveIncident`, `SetVariables`) menerima `request_id` (pola ADR-0017). `UpdateJobTimeout` (lease, tanpa record), `PublishMessage` (dedup lewat `message_id`), dan `ActivateJobs` tidak | ADR-0017 menyatakan RPC mutasi baru mengikuti pola yang sama |
+| 8 | Notifier long polling berlangganan event bus in-process `execution.job_created` (sudah dipublikasikan pasca-commit sejak Fase 2) + polling cadangan 1 s; outbox **tidak** dipakai untuk notifier. Job yang kembali dapat diaktifkan (backoff habis, resolve) ditangkap polling cadangan; sweeper membangunkan notifier secara langsung | Outbox at-least-once dengan jeda poll relay; sinyal bangun cukup best-effort karena polling cadangan menutup sisanya |
+| 9 | Lease kompatibel dengan verifikasi Fase 3: pemuatan state memetakan `ACTIVATED` ke `CREATED`, pemeriksaan cepat `orphan_job` mencakup `ACTIVATED`/`FAILED`/`ERROR_THROWN`. Rebuild proyeksi mengembalikan job ke `CREATED` tanpa lease (dicatat di ADR-0020) | Lease tidak ada di record; replay tidak boleh melaporkannya sebagai selisih |
+| 10 | `activatable_at` = timestamp record `JOB FAILED` + `retry_back_off` (jam engine, deterministik untuk replay); `deadline` lease memakai `now()` Postgres | Proyeksi harus bisa dibangun ulang identik dari record; lease tidak |
+| 11 | `SnapshotFormatVersion` naik ke **2** (job membawa state, retries, pesan error) | ADR-0019: perubahan bentuk state wajib menaikkan versi |
+| 12 | `CompleteJob`/`FailJob`/`ThrowError` hanya diterima pada job `CREATED` (termasuk lease `ACTIVATED`); job `FAILED`/`ERROR_THROWN` ditolak `FailedPrecondition` `JOB_NOT_ACTIVE` | Sama dengan Zeebe: job gagal tidak bisa diselesaikan sebelum incident diselesaikan |
+| 13 | `ResolveIncident` pada `UNHANDLED_ERROR_EVENT` membuat job **dapat diaktifkan lagi** (bukan incident baru seperti draf 6.1); pada `JOB_NO_RETRIES` dengan retries masih 0 menghasilkan incident baru | Resolver incident Zeebe mengembalikan job `ERROR_THROWN` ke antrean; diverifikasi di suite paritas `worker` |
+| 14 | Perakitan engine dipindah dari `cmd/engine/wiring.go` ke paket `internal/app` (`app.Build`) agar e2e bisa merakit engine yang sama | Bagian 9.5 |
+| 15 | Batas request 16 MiB untuk semua handler (sebelumnya 2 MiB di execution); dokumen variabel tetap dibatasi `ENGINE_MAX_VARIABLES_BYTES` | Bagian 8.6 |
+| 16 | Metrik sweeper dan long polling memakai `platform/metrics` (OpenTelemetry, Fase 3), bukan expvar | Platform metrik sudah ada |
+| 17 | protovalidate: `buf.build/go/protovalidate` v1.4.0 dan dep buf `buf.build/bufbuild/protovalidate`; validasi format key memakai aturan `string.uuid` | Kedua sumber dapat dijangkau; versi lebih dari dua minggu |
 
 ### 16.2 Pertanyaan dan rekomendasi
 
