@@ -24,6 +24,29 @@ type Config struct {
 	MaxVariablesBytes int `env:"ENGINE_MAX_VARIABLES_BYTES" envDefault:"1048576"`
 	// DB adalah grup ENGINE_DB_*: ukuran pool dan timeout sesi Postgres (rencana Fase 3, 9.1).
 	DB DB
+	// Recovery mengatur pemulihan saat start (Fase 3, 5.2).
+	Recovery Recovery
+	// Outbox mengatur relay outbox (Fase 3, 4.3).
+	Outbox Outbox
+	// JanitorInterval adalah jeda antar putaran janitor (outbox, idempotensi, retensi).
+	JanitorInterval time.Duration `env:"ENGINE_JANITOR_INTERVAL" envDefault:"1m"`
+}
+
+// Recovery mengatur verifikasi proyeksi saat start.
+type Recovery struct {
+	// OnMismatch: fail (default), rebuild, atau warn.
+	OnMismatch string        `env:"ENGINE_RECOVERY_ON_MISMATCH" envDefault:"fail"`
+	DeepWindow time.Duration `env:"ENGINE_RECOVERY_DEEP_WINDOW" envDefault:"10m"`
+	DeepSample int           `env:"ENGINE_RECOVERY_DEEP_SAMPLE" envDefault:"100"`
+	Timeout    time.Duration `env:"ENGINE_RECOVERY_TIMEOUT" envDefault:"10m"`
+}
+
+// Outbox mengatur relay dan retensi outbox.
+type Outbox struct {
+	PollInterval time.Duration `env:"ENGINE_OUTBOX_POLL_INTERVAL" envDefault:"200ms"`
+	BatchSize    int           `env:"ENGINE_OUTBOX_BATCH_SIZE" envDefault:"100"`
+	Retention    time.Duration `env:"ENGINE_OUTBOX_RETENTION" envDefault:"24h"`
+	MaxAttempts  int           `env:"ENGINE_OUTBOX_MAX_ATTEMPTS" envDefault:"10"`
 }
 
 // DB mengatur pool pgx dan timeout sesi. MaxConns 0 berarti max(4, 2*NumCPU).

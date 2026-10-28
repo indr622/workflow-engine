@@ -1,9 +1,11 @@
-// Command engine adalah composition root workflow engine: memuat konfigurasi,
-// merakit semua modul, menjalankan migrasi, lalu melayani HTTP/Connect.
+// Command engine adalah composition root workflow engine: memuat konfigurasi, merakit semua modul,
+// menjalankan migrasi dan pemulihan, lalu melayani HTTP/Connect. Subperintah admin (verify,
+// rebuild, prune, outbox) memakai perakitan yang sama tanpa server HTTP.
 package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -13,50 +15,58 @@ import (
 	"syscall"
 	"time"
 
-	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
-	deploymentapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
-	deploymentinfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/infrastructure"
-	deploymentifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/interfaces"
-	executionapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
-	executiondomain "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
-	executioninfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure"
-	executionifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/interfaces"
-	healthapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/health/api"
-	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/application"
-	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/infrastructure"
-	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/interfaces"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/config"
-	"github.com/indr622/workflow-engine/apps/engine/internal/platform/db"
-	"github.com/indr622/workflow-engine/apps/engine/internal/platform/eventbus"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/httpserver"
-	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/logger"
 	"github.com/indr622/workflow-engine/apps/engine/internal/platform/outbox"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/recovery"
 )
-
-// Pastikan use case health memenuhi kontrak publik modulnya.
-var _ healthapi.Checker = (*application.CheckHealth)(nil)
-
-// systemClock memenuhi port Clock domain execution dengan jam sistem (UTC).
-type systemClock struct{}
-
-func (systemClock) Now() time.Time { return time.Now().UTC() }
 
 // version diisi saat build lewat -ldflags "-X main.version=...".
 var version = "dev"
 
+const usage = `usage: engine [command]
+
+commands:
+  serve (default)   run migrations and recovery, then serve HTTP/Connect
+  healthcheck       exit 0 when the local engine is ready (Docker HEALTHCHECK)
+  verify            check projections against execution records (--all, --instance KEY, --json)
+  rebuild           rebuild projections from execution records (--instance KEY | --all)
+  prune             delete finished instances older than the retention (--older-than, --dry-run)
+  outbox            outbox status, or requeue a dead letter (status | requeue --consumer C --event-id E)
+`
+
 func main() {
-	// Subperintah "healthcheck" dipakai HEALTHCHECK Docker karena image distroless tidak punya curl.
-	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
-		os.Exit(healthcheck())
+	cmd, args := "serve", os.Args[1:]
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		cmd, args = args[0], args[1:]
 	}
-	if err := run(); err != nil {
-		fmt.Fprintf(os.Stderr, "engine: %v\n", err)
-		os.Exit(1)
+	var code int
+	switch cmd {
+	case "serve":
+		code = exitCode(serve())
+	case "healthcheck":
+		code = healthcheck()
+	case "verify", "rebuild", "prune", "outbox":
+		code = admin(cmd, args)
+	case "help", "-h", "--help":
+		fmt.Print(usage)
+	default:
+		fmt.Fprintf(os.Stderr, "engine: unknown command %q\n\n%s", cmd, usage)
+		code = 2
 	}
+	os.Exit(code)
 }
 
-// healthcheck memanggil /healthz pada engine lokal dan mengembalikan exit code 0 jika serving.
+func exitCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	fmt.Fprintf(os.Stderr, "engine: %v\n", err)
+	return 1
+}
+
+// healthcheck memanggil /readyz pada engine lokal; exit 0 hanya bila engine sudah ready.
 func healthcheck() int {
 	addr := os.Getenv("ENGINE_HTTP_ADDR")
 	if addr == "" {
@@ -64,7 +74,7 @@ func healthcheck() int {
 	}
 	client := http.Client{Timeout: 3 * time.Second}
 	resp, err := client.Get( //nolint:gosec // alamat dari konfigurasi lokal engine, bukan input pengguna
-		"http://127.0.0.1" + addr[strings.LastIndex(addr, ":"):] + "/healthz")
+		"http://127.0.0.1" + addr[strings.LastIndex(addr, ":"):] + "/readyz")
 	if err != nil {
 		return 1
 	}
@@ -75,54 +85,74 @@ func healthcheck() int {
 	return 0
 }
 
-func run() error {
+// serve menjalankan urutan start Fase 3 (5.2): migrasi → server HTTP mendengarkan (liveness saja)
+// → pemulihan → relay outbox dan janitor → ready.
+func serve() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
 	log := logger.New(cfg.LogLevel)
 	log.Info("starting engine", slog.String("version", version))
+	onMismatch, err := recovery.ParseOnMismatch(cfg.Recovery.OnMismatch)
+	if err != nil {
+		return err
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := db.Connect(ctx, cfg.DBConfig())
+	app, err := assemble(ctx, cfg, log)
 	if err != nil {
 		return err
 	}
-	defer pool.Close()
+	defer app.pool.Close()
 
-	if cfg.Migrate {
-		if err := db.Migrate(ctx, pool, log); err != nil {
-			return err
+	gate := recovery.NewGate()
+	app.mux.Handle("/readyz", gate.ReadyzHandler())
+	handler := gate.Middleware(httpserver.CORS(cfg.CORSOrigins, app.mux), "/healthz", "/readyz")
+	srv := httpserver.New(cfg.HTTPAddr, handler, log)
+	serverErr := make(chan error, 1)
+	go func() { serverErr <- srv.Run(ctx, cfg.ShutdownTimeout) }()
+
+	runner := recovery.Runner{
+		Verifiers: []recovery.Verifier{app.recovery}, OnMismatch: onMismatch,
+		Timeout: cfg.Recovery.Timeout, Log: log, Gate: gate,
+	}
+	if _, err := runner.Run(ctx); err != nil {
+		stop()
+		if serr := <-serverErr; serr != nil {
+			log.Warn("http server stopped", slog.Any("error", serr))
 		}
+		return err
 	}
 
-	// Event bus in-process dan generator key UUIDv7 dibagi semua modul.
-	bus := eventbus.NewInMemory()
-	keys := keygen.New()
+	go func() {
+		if err := app.relay.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Error("outbox relay stopped", slog.Any("error", err))
+		}
+	}()
+	go janitor(ctx, app, cfg, log)
 
-	mux := http.NewServeMux()
+	gate.SetReady()
+	log.Info("engine ready", slog.String("addr", cfg.HTTPAddr))
+	return <-serverErr
+}
 
-	// Modul health.
-	checkHealth := application.NewCheckHealth(version, 3*time.Second, infrastructure.NewPostgresProbe(pool))
-	interfaces.NewHandler(checkHealth).Register(mux)
-
-	// Modul deployment.
-	deploymentRepo := deploymentinfra.NewPostgresRepository(pool, keys)
-	processCache := deploymentapp.NewProcessCache(deploymentRepo, 256)
-	deployResource := deploymentapp.NewDeployResource(deploymentRepo, bus, processCache, nil, log)
-	deploymentifc.NewHandler(deployResource, deploymentapp.NewQueries(deploymentRepo)).Register(mux)
-	var _ deploymentapi.ProcessDefinitions = processCache
-
-	// Modul execution: hanya bergantung pada deployment lewat api.ProcessDefinitions.
-	executionRepo := executioninfra.NewPostgresRepository(pool, outbox.NewWriter(keys))
-	processor := executiondomain.NewProcessor(executiondomain.NewFeelEvaluator(), systemClock{},
-		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
-	commands := executionapp.NewCommands(executionRepo, processCache, processor,
-		executioninfra.NewKeyGenerator(keys), bus, log, executionapp.Config{MaxVariablesBytes: cfg.MaxVariablesBytes})
-	executionifc.NewHandler(commands, commands, executionapp.NewQueries(executionRepo)).Register(mux)
-
-	srv := httpserver.New(cfg.HTTPAddr, httpserver.CORS(cfg.CORSOrigins, mux), log)
-	return srv.Run(ctx, cfg.ShutdownTimeout)
+// janitor menjalankan pembersihan berkala: outbox yang sudah dilewati semua consumer.
+func janitor(ctx context.Context, app *application, cfg config.Config, log *slog.Logger) {
+	t := time.NewTicker(cfg.JanitorInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		if n, err := outbox.Prune(ctx, app.pool, cfg.Outbox.Retention); err != nil {
+			log.Warn("outbox prune failed", slog.Any("error", err))
+		} else if n > 0 {
+			log.Info("outbox pruned", slog.Int64("events", n))
+		}
+	}
 }

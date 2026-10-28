@@ -176,20 +176,15 @@ type loadedIncident struct {
 }
 
 func (t *txRepository) LockAndLoad(ctx context.Context, key string) (*domain.InstanceSnapshot, error) {
-	var (
-		defKey, processID, state                          string
-		version, lastSeq                                  int32
-		elementsJSON, flowsJSON, varsJSON, jobsJSON, incJ []byte
-	)
 	b := &pgx.Batch{}
 	b.Queue(lockSQL, key)
 	b.Queue(loadSQL, key)
 	br := t.tx.SendBatch(ctx, b)
 	var locked string
 	err := br.QueryRow().Scan(&locked)
+	var snap *domain.InstanceSnapshot
 	if err == nil {
-		err = br.QueryRow().Scan(
-			&defKey, &processID, &version, &state, &lastSeq, &elementsJSON, &flowsJSON, &varsJSON, &jobsJSON, &incJ)
+		snap, err = t.decodeLoaded(key, br.QueryRow())
 	}
 	if cerr := br.Close(); err == nil {
 		err = cerr
@@ -199,6 +194,30 @@ func (t *txRepository) LockAndLoad(ctx context.Context, key string) (*domain.Ins
 	}
 	if err != nil {
 		return nil, fmt.Errorf("lock and load instance %s: %w", key, err)
+	}
+	return snap, nil
+}
+
+// load memuat state runtime tanpa mengunci (untuk verifikasi dalam di transaksi read only).
+func (t *txRepository) load(ctx context.Context, key string) (*domain.InstanceSnapshot, error) {
+	snap, err := t.decodeLoaded(key, t.tx.QueryRow(ctx, loadSQL, key))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrInstanceNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("load instance %s: %w", key, err)
+	}
+	return snap, nil
+}
+
+func (t *txRepository) decodeLoaded(key string, row pgx.Row) (*domain.InstanceSnapshot, error) {
+	var (
+		defKey, processID, state                          string
+		version, lastSeq                                  int32
+		elementsJSON, flowsJSON, varsJSON, jobsJSON, incJ []byte
+	)
+	if err := row.Scan(&defKey, &processID, &version, &state, &lastSeq, &elementsJSON, &flowsJSON, &varsJSON, &jobsJSON, &incJ); err != nil {
+		return nil, err
 	}
 	t.lastSequence = lastSeq
 	snap := &domain.InstanceSnapshot{
@@ -255,36 +274,42 @@ func (t *txRepository) LockAndLoad(ctx context.Context, key string) (*domain.Ins
 const (
 	sqlInsertProcessInstance = `INSERT INTO process_instance
     (key, process_definition_key, bpmn_process_id, process_definition_version, state, start_time)
-VALUES ($1, $2, $3, $4, 'ACTIVE', $5)`
+VALUES ($1, $2, $3, $4, 'ACTIVE', $5)
+ON CONFLICT (key) DO UPDATE SET
+    process_definition_key = EXCLUDED.process_definition_key, bpmn_process_id = EXCLUDED.bpmn_process_id,
+    process_definition_version = EXCLUDED.process_definition_version, state = 'ACTIVE',
+    start_time = EXCLUDED.start_time, end_time = NULL, has_incident = false`
 	sqlFinishProcessInstance = `UPDATE process_instance SET state = $2, end_time = $3 WHERE key = $1`
 	sqlInsertElement         = `INSERT INTO element_instance
     (key, process_instance_key, flow_scope_key, element_id, bpmn_element_type, state, start_time)
-VALUES ($1, $2, $3, $4, $5, $6, $7)`
+VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (key) DO NOTHING`
 	sqlUpdateElement      = `UPDATE element_instance SET state = $2, end_time = $3 WHERE key = $1`
 	sqlSetElementIncident = `UPDATE element_instance SET incident_key = $2 WHERE key = $1`
 	sqlInsertVariable     = `INSERT INTO variable (key, process_instance_key, scope_key, name, value, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6)`
+VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`
 	sqlUpdateVariable = `UPDATE variable SET value = $2, updated_at = $3 WHERE key = $1`
 	sqlInsertJob      = `INSERT INTO job
     (key, process_instance_key, element_instance_key, element_id, bpmn_process_id, process_definition_key,
      process_definition_version, type, retries, custom_headers, state, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'CREATED', $11, $11)`
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'CREATED', $11, $11) ON CONFLICT (key) DO NOTHING`
 	sqlUpdateJob      = `UPDATE job SET state = $2, updated_at = $3 WHERE key = $1`
 	sqlInsertIncident = `INSERT INTO incident
     (key, process_instance_key, element_instance_key, element_id, error_type, error_message, state, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, 'CREATED', $7)`
+VALUES ($1, $2, $3, $4, $5, $6, 'CREATED', $7) ON CONFLICT (key) DO NOTHING`
 	sqlResolveIncident = `UPDATE incident SET state = 'RESOLVED', resolved_at = $2 WHERE key = $1`
 	sqlDeleteFlows     = `DELETE FROM taken_sequence_flow WHERE process_instance_key = $1`
 	sqlInsertFlows     = `INSERT INTO taken_sequence_flow (process_instance_key, flow_scope_key, gateway_id, sequence_flow_id, count)
 SELECT $1, unnest($2::uuid[]), unnest($3::text[]), unnest($4::text[]), unnest($5::int[])`
+	// sqlTouchInstance menulis penanda proyeksi dari record terakhir (deterministik untuk rebuild):
+	// version = last_sequence, updated_at = waktu record terakhir.
 	sqlTouchInstance = `UPDATE process_instance
-SET version = version + 1,
+SET last_sequence = $2::int, version = $2::int, updated_at = $3,
     has_incident = EXISTS (SELECT 1 FROM incident i WHERE i.process_instance_key = $1 AND i.state = 'CREATED')
 WHERE key = $1`
 	sqlInsertRecords = `INSERT INTO execution_record
     (process_instance_key, sequence, record_key, value_type, intent, element_id, payload, created_at)
 SELECT $1, unnest($2::int[]), unnest($3::uuid[]), unnest($4::text[]), unnest($5::text[]),
-       unnest($6::text[]), unnest($7::jsonb[]), unnest($8::timestamptz[])`
+       unnest($6::text[]), unnest($7::json[]), unnest($8::timestamptz[])`
 )
 
 // AppendAndProject menulis proyeksi per record, counter join dari state akhir, lalu record ke log,
@@ -299,15 +324,8 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 			return err
 		}
 	}
-	b.Queue(sqlDeleteFlows, st.Key)
-	if flows := st.SortedTakenFlows(); len(flows) > 0 {
-		scopes, gateways, ids, counts := make([]string, len(flows)), make([]string, len(flows)), make([]string, len(flows)), make([]int32, len(flows))
-		for i, f := range flows {
-			scopes[i], gateways[i], ids[i], counts[i] = f.FlowScopeKey, f.GatewayID, f.SequenceFlowID, f.Count
-		}
-		b.Queue(sqlInsertFlows, st.Key, scopes, gateways, ids, counts)
-	}
-	b.Queue(sqlTouchInstance, st.Key)
+	last := records[len(records)-1]
+	queueFinalize(b, st, t.lastSequence+int32(len(records)), last.Timestamp) //nolint:gosec // dibatasi Limits
 
 	n := len(records)
 	seqs, keys, types, intents := make([]int32, n), make([]string, n), make([]string, n), make([]string, n)
@@ -345,6 +363,19 @@ func (t *txRepository) AppendAndProject(ctx context.Context, records []domain.Re
 	}
 	t.lastSequence += int32(n) //nolint:gosec // record per command dibatasi Limits
 	return nil
+}
+
+// queueFinalize mengantrekan nilai turunan state akhir: counter join dan penanda proyeksi.
+func queueFinalize(b *pgx.Batch, st *domain.InstanceState, lastSequence int32, lastAt time.Time) {
+	b.Queue(sqlDeleteFlows, st.Key)
+	if flows := st.SortedTakenFlows(); len(flows) > 0 {
+		scopes, gateways, ids, counts := make([]string, len(flows)), make([]string, len(flows)), make([]string, len(flows)), make([]int32, len(flows))
+		for i, f := range flows {
+			scopes[i], gateways[i], ids[i], counts[i] = f.FlowScopeKey, f.GatewayID, f.SequenceFlowID, f.Count
+		}
+		b.Queue(sqlInsertFlows, st.Key, scopes, gateways, ids, counts)
+	}
+	b.Queue(sqlTouchInstance, st.Key, lastSequence, lastAt)
 }
 
 // project mengantrekan statement proyeksi untuk satu record. Fungsi ini juga dipakai rebuild
