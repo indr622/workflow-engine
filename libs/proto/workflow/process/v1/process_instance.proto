@@ -20,6 +20,10 @@ service ProcessInstanceService {
   rpc ListProcessInstances(ListProcessInstancesRequest) returns (ListProcessInstancesResponse) {}
   // CancelProcessInstance menghentikan semua element instance aktif dan membatalkan job terbuka.
   rpc CancelProcessInstance(CancelProcessInstanceRequest) returns (CancelProcessInstanceResponse) {}
+  // ListProcessInstanceRecords mengembalikan record append-only instance urut sequence, berhalaman.
+  rpc ListProcessInstanceRecords(ListProcessInstanceRecordsRequest) returns (ListProcessInstanceRecordsResponse) {}
+  // ListElementInstances mengembalikan element instance urut key, berhalaman.
+  rpc ListElementInstances(ListElementInstancesRequest) returns (ListElementInstancesResponse) {}
 }
 
 message CreateProcessInstanceRequest {
@@ -62,6 +66,8 @@ message GetProcessInstanceResponse {
   repeated Variable variables = 3;
   repeated Incident incidents = 4;
   repeated Job jobs = 5;
+  // True bila element instance lebih dari 1.000 dan dipotong; pakai ListElementInstances.
+  bool element_instances_truncated = 6;
 }
 
 message ProcessInstance {
@@ -157,3 +163,42 @@ message CancelProcessInstanceRequest {
 }
 
 message CancelProcessInstanceResponse {}
+
+message ListProcessInstanceRecordsRequest {
+  string process_instance_key = 1;
+  // Default 100, maksimum 500.
+  int32 page_size = 2;
+  // Token opak dari respons sebelumnya.
+  string page_token = 3;
+}
+
+message ExecutionRecord {
+  // Urutan per instance, mulai 1, tanpa celah.
+  int32 sequence = 1;
+  string record_key = 2;
+  string value_type = 3;
+  string intent = 4;
+  string element_id = 5;
+  // Payload record dalam JSON.
+  string payload = 6;
+  google.protobuf.Timestamp timestamp = 7;
+}
+
+message ListProcessInstanceRecordsResponse {
+  repeated ExecutionRecord records = 1;
+  string next_page_token = 2;
+}
+
+message ListElementInstancesRequest {
+  string process_instance_key = 1;
+  // Hanya element instance yang belum final.
+  bool only_active = 2;
+  // Default 100, maksimum 500.
+  int32 page_size = 3;
+  string page_token = 4;
+}
+
+message ListElementInstancesResponse {
+  repeated ElementInstance element_instances = 1;
+  string next_page_token = 2;
+}

@@ -45,6 +45,12 @@ const (
 	// ProcessInstanceServiceCancelProcessInstanceProcedure is the fully-qualified name of the
 	// ProcessInstanceService's CancelProcessInstance RPC.
 	ProcessInstanceServiceCancelProcessInstanceProcedure = "/workflow.process.v1.ProcessInstanceService/CancelProcessInstance"
+	// ProcessInstanceServiceListProcessInstanceRecordsProcedure is the fully-qualified name of the
+	// ProcessInstanceService's ListProcessInstanceRecords RPC.
+	ProcessInstanceServiceListProcessInstanceRecordsProcedure = "/workflow.process.v1.ProcessInstanceService/ListProcessInstanceRecords"
+	// ProcessInstanceServiceListElementInstancesProcedure is the fully-qualified name of the
+	// ProcessInstanceService's ListElementInstances RPC.
+	ProcessInstanceServiceListElementInstancesProcedure = "/workflow.process.v1.ProcessInstanceService/ListElementInstances"
 )
 
 // ProcessInstanceServiceClient is a client for the workflow.process.v1.ProcessInstanceService
@@ -60,6 +66,10 @@ type ProcessInstanceServiceClient interface {
 	ListProcessInstances(context.Context, *connect.Request[v1.ListProcessInstancesRequest]) (*connect.Response[v1.ListProcessInstancesResponse], error)
 	// CancelProcessInstance menghentikan semua element instance aktif dan membatalkan job terbuka.
 	CancelProcessInstance(context.Context, *connect.Request[v1.CancelProcessInstanceRequest]) (*connect.Response[v1.CancelProcessInstanceResponse], error)
+	// ListProcessInstanceRecords mengembalikan record append-only instance urut sequence, berhalaman.
+	ListProcessInstanceRecords(context.Context, *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error)
+	// ListElementInstances mengembalikan element instance urut key, berhalaman.
+	ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error)
 }
 
 // NewProcessInstanceServiceClient constructs a client for the
@@ -97,15 +107,29 @@ func NewProcessInstanceServiceClient(httpClient connect.HTTPClient, baseURL stri
 			connect.WithSchema(processInstanceServiceMethods.ByName("CancelProcessInstance")),
 			connect.WithClientOptions(opts...),
 		),
+		listProcessInstanceRecords: connect.NewClient[v1.ListProcessInstanceRecordsRequest, v1.ListProcessInstanceRecordsResponse](
+			httpClient,
+			baseURL+ProcessInstanceServiceListProcessInstanceRecordsProcedure,
+			connect.WithSchema(processInstanceServiceMethods.ByName("ListProcessInstanceRecords")),
+			connect.WithClientOptions(opts...),
+		),
+		listElementInstances: connect.NewClient[v1.ListElementInstancesRequest, v1.ListElementInstancesResponse](
+			httpClient,
+			baseURL+ProcessInstanceServiceListElementInstancesProcedure,
+			connect.WithSchema(processInstanceServiceMethods.ByName("ListElementInstances")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // processInstanceServiceClient implements ProcessInstanceServiceClient.
 type processInstanceServiceClient struct {
-	createProcessInstance *connect.Client[v1.CreateProcessInstanceRequest, v1.CreateProcessInstanceResponse]
-	getProcessInstance    *connect.Client[v1.GetProcessInstanceRequest, v1.GetProcessInstanceResponse]
-	listProcessInstances  *connect.Client[v1.ListProcessInstancesRequest, v1.ListProcessInstancesResponse]
-	cancelProcessInstance *connect.Client[v1.CancelProcessInstanceRequest, v1.CancelProcessInstanceResponse]
+	createProcessInstance      *connect.Client[v1.CreateProcessInstanceRequest, v1.CreateProcessInstanceResponse]
+	getProcessInstance         *connect.Client[v1.GetProcessInstanceRequest, v1.GetProcessInstanceResponse]
+	listProcessInstances       *connect.Client[v1.ListProcessInstancesRequest, v1.ListProcessInstancesResponse]
+	cancelProcessInstance      *connect.Client[v1.CancelProcessInstanceRequest, v1.CancelProcessInstanceResponse]
+	listProcessInstanceRecords *connect.Client[v1.ListProcessInstanceRecordsRequest, v1.ListProcessInstanceRecordsResponse]
+	listElementInstances       *connect.Client[v1.ListElementInstancesRequest, v1.ListElementInstancesResponse]
 }
 
 // CreateProcessInstance calls workflow.process.v1.ProcessInstanceService.CreateProcessInstance.
@@ -128,6 +152,17 @@ func (c *processInstanceServiceClient) CancelProcessInstance(ctx context.Context
 	return c.cancelProcessInstance.CallUnary(ctx, req)
 }
 
+// ListProcessInstanceRecords calls
+// workflow.process.v1.ProcessInstanceService.ListProcessInstanceRecords.
+func (c *processInstanceServiceClient) ListProcessInstanceRecords(ctx context.Context, req *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error) {
+	return c.listProcessInstanceRecords.CallUnary(ctx, req)
+}
+
+// ListElementInstances calls workflow.process.v1.ProcessInstanceService.ListElementInstances.
+func (c *processInstanceServiceClient) ListElementInstances(ctx context.Context, req *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error) {
+	return c.listElementInstances.CallUnary(ctx, req)
+}
+
 // ProcessInstanceServiceHandler is an implementation of the
 // workflow.process.v1.ProcessInstanceService service.
 type ProcessInstanceServiceHandler interface {
@@ -141,6 +176,10 @@ type ProcessInstanceServiceHandler interface {
 	ListProcessInstances(context.Context, *connect.Request[v1.ListProcessInstancesRequest]) (*connect.Response[v1.ListProcessInstancesResponse], error)
 	// CancelProcessInstance menghentikan semua element instance aktif dan membatalkan job terbuka.
 	CancelProcessInstance(context.Context, *connect.Request[v1.CancelProcessInstanceRequest]) (*connect.Response[v1.CancelProcessInstanceResponse], error)
+	// ListProcessInstanceRecords mengembalikan record append-only instance urut sequence, berhalaman.
+	ListProcessInstanceRecords(context.Context, *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error)
+	// ListElementInstances mengembalikan element instance urut key, berhalaman.
+	ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error)
 }
 
 // NewProcessInstanceServiceHandler builds an HTTP handler from the service implementation. It
@@ -174,6 +213,18 @@ func NewProcessInstanceServiceHandler(svc ProcessInstanceServiceHandler, opts ..
 		connect.WithSchema(processInstanceServiceMethods.ByName("CancelProcessInstance")),
 		connect.WithHandlerOptions(opts...),
 	)
+	processInstanceServiceListProcessInstanceRecordsHandler := connect.NewUnaryHandler(
+		ProcessInstanceServiceListProcessInstanceRecordsProcedure,
+		svc.ListProcessInstanceRecords,
+		connect.WithSchema(processInstanceServiceMethods.ByName("ListProcessInstanceRecords")),
+		connect.WithHandlerOptions(opts...),
+	)
+	processInstanceServiceListElementInstancesHandler := connect.NewUnaryHandler(
+		ProcessInstanceServiceListElementInstancesProcedure,
+		svc.ListElementInstances,
+		connect.WithSchema(processInstanceServiceMethods.ByName("ListElementInstances")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/workflow.process.v1.ProcessInstanceService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProcessInstanceServiceCreateProcessInstanceProcedure:
@@ -184,6 +235,10 @@ func NewProcessInstanceServiceHandler(svc ProcessInstanceServiceHandler, opts ..
 			processInstanceServiceListProcessInstancesHandler.ServeHTTP(w, r)
 		case ProcessInstanceServiceCancelProcessInstanceProcedure:
 			processInstanceServiceCancelProcessInstanceHandler.ServeHTTP(w, r)
+		case ProcessInstanceServiceListProcessInstanceRecordsProcedure:
+			processInstanceServiceListProcessInstanceRecordsHandler.ServeHTTP(w, r)
+		case ProcessInstanceServiceListElementInstancesProcedure:
+			processInstanceServiceListElementInstancesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -207,4 +262,12 @@ func (UnimplementedProcessInstanceServiceHandler) ListProcessInstances(context.C
 
 func (UnimplementedProcessInstanceServiceHandler) CancelProcessInstance(context.Context, *connect.Request[v1.CancelProcessInstanceRequest]) (*connect.Response[v1.CancelProcessInstanceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.CancelProcessInstance is not implemented"))
+}
+
+func (UnimplementedProcessInstanceServiceHandler) ListProcessInstanceRecords(context.Context, *connect.Request[v1.ListProcessInstanceRecordsRequest]) (*connect.Response[v1.ListProcessInstanceRecordsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.ListProcessInstanceRecords is not implemented"))
+}
+
+func (UnimplementedProcessInstanceServiceHandler) ListElementInstances(context.Context, *connect.Request[v1.ListElementInstancesRequest]) (*connect.Response[v1.ListElementInstancesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("workflow.process.v1.ProcessInstanceService.ListElementInstances is not implemented"))
 }

@@ -12,7 +12,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file workflow/process/v1/process_instance.proto.
  */
 export const file_workflow_process_v1_process_instance: GenFile = /*@__PURE__*/
-  fileDesc("Cip3b3JrZmxvdy9wcm9jZXNzL3YxL3Byb2Nlc3NfaW5zdGFuY2UucHJvdG8SE3dvcmtmbG93LnByb2Nlc3MudjEiuAEKHENyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlcXVlc3QSIAoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgBIAEoCUgAEkEKDGJwbW5fcHJvY2VzcxgCIAEoCzIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0RlZmluaXRpb25SZWZIABIRCgl2YXJpYWJsZXMYAyABKAkSEgoKcmVxdWVzdF9pZBgEIAEoCUIMCgpkZWZpbml0aW9uIkAKFFByb2Nlc3NEZWZpbml0aW9uUmVmEhcKD2JwbW5fcHJvY2Vzc19pZBgBIAEoCRIPCgd2ZXJzaW9uGAIgASgFIsEBCh1DcmVhdGVQcm9jZXNzSW5zdGFuY2VSZXNwb25zZRIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAIgASgJEhcKD2JwbW5fcHJvY2Vzc19pZBgDIAEoCRIPCgd2ZXJzaW9uGAQgASgFEjgKBXN0YXRlGAUgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5Qcm9jZXNzSW5zdGFuY2VTdGF0ZSI5ChlHZXRQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0EhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgJIqkCChpHZXRQcm9jZXNzSW5zdGFuY2VSZXNwb25zZRI+ChBwcm9jZXNzX2luc3RhbmNlGAEgASgLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5Qcm9jZXNzSW5zdGFuY2USPwoRZWxlbWVudF9pbnN0YW5jZXMYAiADKAsyJC53b3JrZmxvdy5wcm9jZXNzLnYxLkVsZW1lbnRJbnN0YW5jZRIwCgl2YXJpYWJsZXMYAyADKAsyHS53b3JrZmxvdy5wcm9jZXNzLnYxLlZhcmlhYmxlEjAKCWluY2lkZW50cxgEIAMoCzIdLndvcmtmbG93LnByb2Nlc3MudjEuSW5jaWRlbnQSJgoEam9icxgFIAMoCzIYLndvcmtmbG93LnByb2Nlc3MudjEuSm9iIqcCCg9Qcm9jZXNzSW5zdGFuY2USHAoUcHJvY2Vzc19pbnN0YW5jZV9rZXkYASABKAkSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoCRIXCg9icG1uX3Byb2Nlc3NfaWQYAyABKAkSDwoHdmVyc2lvbhgEIAEoBRI4CgVzdGF0ZRgFIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUSFAoMaGFzX2luY2lkZW50GAYgASgIEi4KCnN0YXJ0X3RpbWUYByABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCKkAgoPRWxlbWVudEluc3RhbmNlEhwKFGVsZW1lbnRfaW5zdGFuY2Vfa2V5GAEgASgJEhYKDmZsb3dfc2NvcGVfa2V5GAIgASgJEhIKCmVsZW1lbnRfaWQYAyABKAkSGQoRYnBtbl9lbGVtZW50X3R5cGUYBCABKAkSOAoFc3RhdGUYBSABKA4yKS53b3JrZmxvdy5wcm9jZXNzLnYxLkVsZW1lbnRJbnN0YW5jZVN0YXRlEhQKDGluY2lkZW50X2tleRgGIAEoCRIuCgpzdGFydF90aW1lGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiOgoIVmFyaWFibGUSEQoJc2NvcGVfa2V5GAEgASgJEgwKBG5hbWUYAiABKAkSDQoFdmFsdWUYAyABKAkivwEKCEluY2lkZW50EhQKDGluY2lkZW50X2tleRgBIAEoCRIcChRlbGVtZW50X2luc3RhbmNlX2tleRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhIKCmVycm9yX3R5cGUYBCABKAkSFQoNZXJyb3JfbWVzc2FnZRgFIAEoCRIQCghyZXNvbHZlZBgGIAEoCBIuCgpjcmVhdGVkX2F0GAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJ2CgNKb2ISDwoHam9iX2tleRgBIAEoCRIMCgR0eXBlGAIgASgJEhIKCmVsZW1lbnRfaWQYAyABKAkSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYBCABKAkSDwoHcmV0cmllcxgFIAEoBRINCgVzdGF0ZRgGIAEoCSLTAQobTGlzdFByb2Nlc3NJbnN0YW5jZXNSZXF1ZXN0EhcKD2JwbW5fcHJvY2Vzc19pZBgBIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAIgASgJEjgKBXN0YXRlGAMgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5Qcm9jZXNzSW5zdGFuY2VTdGF0ZRIaChJvbmx5X3dpdGhfaW5jaWRlbnQYBCABKAgSEQoJcGFnZV9zaXplGAUgASgFEhIKCnBhZ2VfdG9rZW4YBiABKAkieAocTGlzdFByb2Nlc3NJbnN0YW5jZXNSZXNwb25zZRI/ChFwcm9jZXNzX2luc3RhbmNlcxgBIAMoCzIkLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlEhcKD25leHRfcGFnZV90b2tlbhgCIAEoCSJQChxDYW5jZWxQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0EhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgJEhIKCnJlcXVlc3RfaWQYAiABKAkiHwodQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2UqrgEKFFByb2Nlc3NJbnN0YW5jZVN0YXRlEiYKIlBST0NFU1NfSU5TVEFOQ0VfU1RBVEVfVU5TUEVDSUZJRUQQABIhCh1QUk9DRVNTX0lOU1RBTkNFX1NUQVRFX0FDVElWRRABEiQKIFBST0NFU1NfSU5TVEFOQ0VfU1RBVEVfQ09NUExFVEVEEAISJQohUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9URVJNSU5BVEVEEAMqpwIKFEVsZW1lbnRJbnN0YW5jZVN0YXRlEiYKIkVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfVU5TUEVDSUZJRUQQABIlCiFFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX0FDVElWQVRJTkcQARIkCiBFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX0FDVElWQVRFRBACEiUKIUVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQ09NUExFVElORxADEiQKIEVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfQ09NUExFVEVEEAQSJgoiRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9URVJNSU5BVElORxAFEiUKIUVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfVEVSTUlOQVRFRBAGMpYEChZQcm9jZXNzSW5zdGFuY2VTZXJ2aWNlEoABChVDcmVhdGVQcm9jZXNzSW5zdGFuY2USMS53b3JrZmxvdy5wcm9jZXNzLnYxLkNyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlcXVlc3QaMi53b3JrZmxvdy5wcm9jZXNzLnYxLkNyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlIgASdwoSR2V0UHJvY2Vzc0luc3RhbmNlEi4ud29ya2Zsb3cucHJvY2Vzcy52MS5HZXRQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0Gi8ud29ya2Zsb3cucHJvY2Vzcy52MS5HZXRQcm9jZXNzSW5zdGFuY2VSZXNwb25zZSIAEn0KFExpc3RQcm9jZXNzSW5zdGFuY2VzEjAud29ya2Zsb3cucHJvY2Vzcy52MS5MaXN0UHJvY2Vzc0luc3RhbmNlc1JlcXVlc3QaMS53b3JrZmxvdy5wcm9jZXNzLnYxLkxpc3RQcm9jZXNzSW5zdGFuY2VzUmVzcG9uc2UiABKAAQoVQ2FuY2VsUHJvY2Vzc0luc3RhbmNlEjEud29ya2Zsb3cucHJvY2Vzcy52MS5DYW5jZWxQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0GjIud29ya2Zsb3cucHJvY2Vzcy52MS5DYW5jZWxQcm9jZXNzSW5zdGFuY2VSZXNwb25zZSIAQlJaUGdpdGh1Yi5jb20vaW5kcjYyMi93b3JrZmxvdy1lbmdpbmUvbGlicy9nby9hcGkvZ2VuL3dvcmtmbG93L3Byb2Nlc3MvdjE7cHJvY2Vzc3YxYgZwcm90bzM", [file_google_protobuf_timestamp]);
+  fileDesc("Cip3b3JrZmxvdy9wcm9jZXNzL3YxL3Byb2Nlc3NfaW5zdGFuY2UucHJvdG8SE3dvcmtmbG93LnByb2Nlc3MudjEiuAEKHENyZWF0ZVByb2Nlc3NJbnN0YW5jZVJlcXVlc3QSIAoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgBIAEoCUgAEkEKDGJwbW5fcHJvY2VzcxgCIAEoCzIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0RlZmluaXRpb25SZWZIABIRCgl2YXJpYWJsZXMYAyABKAkSEgoKcmVxdWVzdF9pZBgEIAEoCUIMCgpkZWZpbml0aW9uIkAKFFByb2Nlc3NEZWZpbml0aW9uUmVmEhcKD2JwbW5fcHJvY2Vzc19pZBgBIAEoCRIPCgd2ZXJzaW9uGAIgASgFIsEBCh1DcmVhdGVQcm9jZXNzSW5zdGFuY2VSZXNwb25zZRIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCRIeChZwcm9jZXNzX2RlZmluaXRpb25fa2V5GAIgASgJEhcKD2JwbW5fcHJvY2Vzc19pZBgDIAEoCRIPCgd2ZXJzaW9uGAQgASgFEjgKBXN0YXRlGAUgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5Qcm9jZXNzSW5zdGFuY2VTdGF0ZSI5ChlHZXRQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0EhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgJIs4CChpHZXRQcm9jZXNzSW5zdGFuY2VSZXNwb25zZRI+ChBwcm9jZXNzX2luc3RhbmNlGAEgASgLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5Qcm9jZXNzSW5zdGFuY2USPwoRZWxlbWVudF9pbnN0YW5jZXMYAiADKAsyJC53b3JrZmxvdy5wcm9jZXNzLnYxLkVsZW1lbnRJbnN0YW5jZRIwCgl2YXJpYWJsZXMYAyADKAsyHS53b3JrZmxvdy5wcm9jZXNzLnYxLlZhcmlhYmxlEjAKCWluY2lkZW50cxgEIAMoCzIdLndvcmtmbG93LnByb2Nlc3MudjEuSW5jaWRlbnQSJgoEam9icxgFIAMoCzIYLndvcmtmbG93LnByb2Nlc3MudjEuSm9iEiMKG2VsZW1lbnRfaW5zdGFuY2VzX3RydW5jYXRlZBgGIAEoCCKnAgoPUHJvY2Vzc0luc3RhbmNlEhwKFHByb2Nlc3NfaW5zdGFuY2Vfa2V5GAEgASgJEh4KFnByb2Nlc3NfZGVmaW5pdGlvbl9rZXkYAiABKAkSFwoPYnBtbl9wcm9jZXNzX2lkGAMgASgJEg8KB3ZlcnNpb24YBCABKAUSOAoFc3RhdGUYBSABKA4yKS53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZVN0YXRlEhQKDGhhc19pbmNpZGVudBgGIAEoCBIuCgpzdGFydF90aW1lGAcgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIsCghlbmRfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAipAIKD0VsZW1lbnRJbnN0YW5jZRIcChRlbGVtZW50X2luc3RhbmNlX2tleRgBIAEoCRIWCg5mbG93X3Njb3BlX2tleRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhkKEWJwbW5fZWxlbWVudF90eXBlGAQgASgJEjgKBXN0YXRlGAUgASgOMikud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2VTdGF0ZRIUCgxpbmNpZGVudF9rZXkYBiABKAkSLgoKc3RhcnRfdGltZRgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLAoIZW5kX3RpbWUYCCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjoKCFZhcmlhYmxlEhEKCXNjb3BlX2tleRgBIAEoCRIMCgRuYW1lGAIgASgJEg0KBXZhbHVlGAMgASgJIr8BCghJbmNpZGVudBIUCgxpbmNpZGVudF9rZXkYASABKAkSHAoUZWxlbWVudF9pbnN0YW5jZV9rZXkYAiABKAkSEgoKZWxlbWVudF9pZBgDIAEoCRISCgplcnJvcl90eXBlGAQgASgJEhUKDWVycm9yX21lc3NhZ2UYBSABKAkSEAoIcmVzb2x2ZWQYBiABKAgSLgoKY3JlYXRlZF9hdBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidgoDSm9iEg8KB2pvYl9rZXkYASABKAkSDAoEdHlwZRgCIAEoCRISCgplbGVtZW50X2lkGAMgASgJEhwKFGVsZW1lbnRfaW5zdGFuY2Vfa2V5GAQgASgJEg8KB3JldHJpZXMYBSABKAUSDQoFc3RhdGUYBiABKAki0wEKG0xpc3RQcm9jZXNzSW5zdGFuY2VzUmVxdWVzdBIXCg9icG1uX3Byb2Nlc3NfaWQYASABKAkSHgoWcHJvY2Vzc19kZWZpbml0aW9uX2tleRgCIAEoCRI4CgVzdGF0ZRgDIAEoDjIpLndvcmtmbG93LnByb2Nlc3MudjEuUHJvY2Vzc0luc3RhbmNlU3RhdGUSGgoSb25seV93aXRoX2luY2lkZW50GAQgASgIEhEKCXBhZ2Vfc2l6ZRgFIAEoBRISCgpwYWdlX3Rva2VuGAYgASgJIngKHExpc3RQcm9jZXNzSW5zdGFuY2VzUmVzcG9uc2USPwoRcHJvY2Vzc19pbnN0YW5jZXMYASADKAsyJC53b3JrZmxvdy5wcm9jZXNzLnYxLlByb2Nlc3NJbnN0YW5jZRIXCg9uZXh0X3BhZ2VfdG9rZW4YAiABKAkiUAocQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCRISCgpyZXF1ZXN0X2lkGAIgASgJIh8KHUNhbmNlbFByb2Nlc3NJbnN0YW5jZVJlc3BvbnNlImgKIUxpc3RQcm9jZXNzSW5zdGFuY2VSZWNvcmRzUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCRIRCglwYWdlX3NpemUYAiABKAUSEgoKcGFnZV90b2tlbhgDIAEoCSKvAQoPRXhlY3V0aW9uUmVjb3JkEhAKCHNlcXVlbmNlGAEgASgFEhIKCnJlY29yZF9rZXkYAiABKAkSEgoKdmFsdWVfdHlwZRgDIAEoCRIOCgZpbnRlbnQYBCABKAkSEgoKZWxlbWVudF9pZBgFIAEoCRIPCgdwYXlsb2FkGAYgASgJEi0KCXRpbWVzdGFtcBgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAidAoiTGlzdFByb2Nlc3NJbnN0YW5jZVJlY29yZHNSZXNwb25zZRI1CgdyZWNvcmRzGAEgAygLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5FeGVjdXRpb25SZWNvcmQSFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJIncKG0xpc3RFbGVtZW50SW5zdGFuY2VzUmVxdWVzdBIcChRwcm9jZXNzX2luc3RhbmNlX2tleRgBIAEoCRITCgtvbmx5X2FjdGl2ZRgCIAEoCBIRCglwYWdlX3NpemUYAyABKAUSEgoKcGFnZV90b2tlbhgEIAEoCSJ4ChxMaXN0RWxlbWVudEluc3RhbmNlc1Jlc3BvbnNlEj8KEWVsZW1lbnRfaW5zdGFuY2VzGAEgAygLMiQud29ya2Zsb3cucHJvY2Vzcy52MS5FbGVtZW50SW5zdGFuY2USFwoPbmV4dF9wYWdlX3Rva2VuGAIgASgJKq4BChRQcm9jZXNzSW5zdGFuY2VTdGF0ZRImCiJQUk9DRVNTX0lOU1RBTkNFX1NUQVRFX1VOU1BFQ0lGSUVEEAASIQodUFJPQ0VTU19JTlNUQU5DRV9TVEFURV9BQ1RJVkUQARIkCiBQUk9DRVNTX0lOU1RBTkNFX1NUQVRFX0NPTVBMRVRFRBACEiUKIVBST0NFU1NfSU5TVEFOQ0VfU1RBVEVfVEVSTUlOQVRFRBADKqcCChRFbGVtZW50SW5zdGFuY2VTdGF0ZRImCiJFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX1VOU1BFQ0lGSUVEEAASJQohRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9BQ1RJVkFUSU5HEAESJAogRUxFTUVOVF9JTlNUQU5DRV9TVEFURV9BQ1RJVkFURUQQAhIlCiFFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX0NPTVBMRVRJTkcQAxIkCiBFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX0NPTVBMRVRFRBAEEiYKIkVMRU1FTlRfSU5TVEFOQ0VfU1RBVEVfVEVSTUlOQVRJTkcQBRIlCiFFTEVNRU5UX0lOU1RBTkNFX1NUQVRFX1RFUk1JTkFURUQQBjKnBgoWUHJvY2Vzc0luc3RhbmNlU2VydmljZRKAAQoVQ3JlYXRlUHJvY2Vzc0luc3RhbmNlEjEud29ya2Zsb3cucHJvY2Vzcy52MS5DcmVhdGVQcm9jZXNzSW5zdGFuY2VSZXF1ZXN0GjIud29ya2Zsb3cucHJvY2Vzcy52MS5DcmVhdGVQcm9jZXNzSW5zdGFuY2VSZXNwb25zZSIAEncKEkdldFByb2Nlc3NJbnN0YW5jZRIuLndvcmtmbG93LnByb2Nlc3MudjEuR2V0UHJvY2Vzc0luc3RhbmNlUmVxdWVzdBovLndvcmtmbG93LnByb2Nlc3MudjEuR2V0UHJvY2Vzc0luc3RhbmNlUmVzcG9uc2UiABJ9ChRMaXN0UHJvY2Vzc0luc3RhbmNlcxIwLndvcmtmbG93LnByb2Nlc3MudjEuTGlzdFByb2Nlc3NJbnN0YW5jZXNSZXF1ZXN0GjEud29ya2Zsb3cucHJvY2Vzcy52MS5MaXN0UHJvY2Vzc0luc3RhbmNlc1Jlc3BvbnNlIgASgAEKFUNhbmNlbFByb2Nlc3NJbnN0YW5jZRIxLndvcmtmbG93LnByb2Nlc3MudjEuQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVxdWVzdBoyLndvcmtmbG93LnByb2Nlc3MudjEuQ2FuY2VsUHJvY2Vzc0luc3RhbmNlUmVzcG9uc2UiABKPAQoaTGlzdFByb2Nlc3NJbnN0YW5jZVJlY29yZHMSNi53b3JrZmxvdy5wcm9jZXNzLnYxLkxpc3RQcm9jZXNzSW5zdGFuY2VSZWNvcmRzUmVxdWVzdBo3LndvcmtmbG93LnByb2Nlc3MudjEuTGlzdFByb2Nlc3NJbnN0YW5jZVJlY29yZHNSZXNwb25zZSIAEn0KFExpc3RFbGVtZW50SW5zdGFuY2VzEjAud29ya2Zsb3cucHJvY2Vzcy52MS5MaXN0RWxlbWVudEluc3RhbmNlc1JlcXVlc3QaMS53b3JrZmxvdy5wcm9jZXNzLnYxLkxpc3RFbGVtZW50SW5zdGFuY2VzUmVzcG9uc2UiAEJSWlBnaXRodWIuY29tL2luZHI2MjIvd29ya2Zsb3ctZW5naW5lL2xpYnMvZ28vYXBpL2dlbi93b3JrZmxvdy9wcm9jZXNzL3YxO3Byb2Nlc3N2MWIGcHJvdG8z", [file_google_protobuf_timestamp]);
 
 /**
  * @generated from message workflow.process.v1.CreateProcessInstanceRequest
@@ -172,6 +172,13 @@ export type GetProcessInstanceResponse = Message<"workflow.process.v1.GetProcess
    * @generated from field: repeated workflow.process.v1.Job jobs = 5;
    */
   jobs: Job[];
+
+  /**
+   * True bila element instance lebih dari 1.000 dan dipotong; pakai ListElementInstances.
+   *
+   * @generated from field: bool element_instances_truncated = 6;
+   */
+  elementInstancesTruncated: boolean;
 };
 
 /**
@@ -518,6 +525,168 @@ export const CancelProcessInstanceResponseSchema: GenMessage<CancelProcessInstan
   messageDesc(file_workflow_process_v1_process_instance, 13);
 
 /**
+ * @generated from message workflow.process.v1.ListProcessInstanceRecordsRequest
+ */
+export type ListProcessInstanceRecordsRequest = Message<"workflow.process.v1.ListProcessInstanceRecordsRequest"> & {
+  /**
+   * @generated from field: string process_instance_key = 1;
+   */
+  processInstanceKey: string;
+
+  /**
+   * Default 100, maksimum 500.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * Token opak dari respons sebelumnya.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
+};
+
+/**
+ * Describes the message workflow.process.v1.ListProcessInstanceRecordsRequest.
+ * Use `create(ListProcessInstanceRecordsRequestSchema)` to create a new message.
+ */
+export const ListProcessInstanceRecordsRequestSchema: GenMessage<ListProcessInstanceRecordsRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_process_v1_process_instance, 14);
+
+/**
+ * @generated from message workflow.process.v1.ExecutionRecord
+ */
+export type ExecutionRecord = Message<"workflow.process.v1.ExecutionRecord"> & {
+  /**
+   * Urutan per instance, mulai 1, tanpa celah.
+   *
+   * @generated from field: int32 sequence = 1;
+   */
+  sequence: number;
+
+  /**
+   * @generated from field: string record_key = 2;
+   */
+  recordKey: string;
+
+  /**
+   * @generated from field: string value_type = 3;
+   */
+  valueType: string;
+
+  /**
+   * @generated from field: string intent = 4;
+   */
+  intent: string;
+
+  /**
+   * @generated from field: string element_id = 5;
+   */
+  elementId: string;
+
+  /**
+   * Payload record dalam JSON.
+   *
+   * @generated from field: string payload = 6;
+   */
+  payload: string;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp timestamp = 7;
+   */
+  timestamp?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message workflow.process.v1.ExecutionRecord.
+ * Use `create(ExecutionRecordSchema)` to create a new message.
+ */
+export const ExecutionRecordSchema: GenMessage<ExecutionRecord> = /*@__PURE__*/
+  messageDesc(file_workflow_process_v1_process_instance, 15);
+
+/**
+ * @generated from message workflow.process.v1.ListProcessInstanceRecordsResponse
+ */
+export type ListProcessInstanceRecordsResponse = Message<"workflow.process.v1.ListProcessInstanceRecordsResponse"> & {
+  /**
+   * @generated from field: repeated workflow.process.v1.ExecutionRecord records = 1;
+   */
+  records: ExecutionRecord[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message workflow.process.v1.ListProcessInstanceRecordsResponse.
+ * Use `create(ListProcessInstanceRecordsResponseSchema)` to create a new message.
+ */
+export const ListProcessInstanceRecordsResponseSchema: GenMessage<ListProcessInstanceRecordsResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_process_v1_process_instance, 16);
+
+/**
+ * @generated from message workflow.process.v1.ListElementInstancesRequest
+ */
+export type ListElementInstancesRequest = Message<"workflow.process.v1.ListElementInstancesRequest"> & {
+  /**
+   * @generated from field: string process_instance_key = 1;
+   */
+  processInstanceKey: string;
+
+  /**
+   * Hanya element instance yang belum final.
+   *
+   * @generated from field: bool only_active = 2;
+   */
+  onlyActive: boolean;
+
+  /**
+   * Default 100, maksimum 500.
+   *
+   * @generated from field: int32 page_size = 3;
+   */
+  pageSize: number;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken: string;
+};
+
+/**
+ * Describes the message workflow.process.v1.ListElementInstancesRequest.
+ * Use `create(ListElementInstancesRequestSchema)` to create a new message.
+ */
+export const ListElementInstancesRequestSchema: GenMessage<ListElementInstancesRequest> = /*@__PURE__*/
+  messageDesc(file_workflow_process_v1_process_instance, 17);
+
+/**
+ * @generated from message workflow.process.v1.ListElementInstancesResponse
+ */
+export type ListElementInstancesResponse = Message<"workflow.process.v1.ListElementInstancesResponse"> & {
+  /**
+   * @generated from field: repeated workflow.process.v1.ElementInstance element_instances = 1;
+   */
+  elementInstances: ElementInstance[];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
+};
+
+/**
+ * Describes the message workflow.process.v1.ListElementInstancesResponse.
+ * Use `create(ListElementInstancesResponseSchema)` to create a new message.
+ */
+export const ListElementInstancesResponseSchema: GenMessage<ListElementInstancesResponse> = /*@__PURE__*/
+  messageDesc(file_workflow_process_v1_process_instance, 18);
+
+/**
  * @generated from enum workflow.process.v1.ProcessInstanceState
  */
 export enum ProcessInstanceState {
@@ -641,6 +810,26 @@ export const ProcessInstanceService: GenService<{
     methodKind: "unary";
     input: typeof CancelProcessInstanceRequestSchema;
     output: typeof CancelProcessInstanceResponseSchema;
+  },
+  /**
+   * ListProcessInstanceRecords mengembalikan record append-only instance urut sequence, berhalaman.
+   *
+   * @generated from rpc workflow.process.v1.ProcessInstanceService.ListProcessInstanceRecords
+   */
+  listProcessInstanceRecords: {
+    methodKind: "unary";
+    input: typeof ListProcessInstanceRecordsRequestSchema;
+    output: typeof ListProcessInstanceRecordsResponseSchema;
+  },
+  /**
+   * ListElementInstances mengembalikan element instance urut key, berhalaman.
+   *
+   * @generated from rpc workflow.process.v1.ProcessInstanceService.ListElementInstances
+   */
+  listElementInstances: {
+    methodKind: "unary";
+    input: typeof ListElementInstancesRequestSchema;
+    output: typeof ListElementInstancesResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_workflow_process_v1_process_instance, 0);

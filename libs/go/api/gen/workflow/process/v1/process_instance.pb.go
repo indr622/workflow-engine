@@ -421,8 +421,10 @@ type GetProcessInstanceResponse struct {
 	Variables        []*Variable        `protobuf:"bytes,3,rep,name=variables,proto3" json:"variables,omitempty"`
 	Incidents        []*Incident        `protobuf:"bytes,4,rep,name=incidents,proto3" json:"incidents,omitempty"`
 	Jobs             []*Job             `protobuf:"bytes,5,rep,name=jobs,proto3" json:"jobs,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// True bila element instance lebih dari 1.000 dan dipotong; pakai ListElementInstances.
+	ElementInstancesTruncated bool `protobuf:"varint,6,opt,name=element_instances_truncated,json=elementInstancesTruncated,proto3" json:"element_instances_truncated,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *GetProcessInstanceResponse) Reset() {
@@ -488,6 +490,13 @@ func (x *GetProcessInstanceResponse) GetJobs() []*Job {
 		return x.Jobs
 	}
 	return nil
+}
+
+func (x *GetProcessInstanceResponse) GetElementInstancesTruncated() bool {
+	if x != nil {
+		return x.ElementInstancesTruncated
+	}
+	return false
 }
 
 type ProcessInstance struct {
@@ -1159,6 +1168,336 @@ func (*CancelProcessInstanceResponse) Descriptor() ([]byte, []int) {
 	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{13}
 }
 
+type ListProcessInstanceRecordsRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ProcessInstanceKey string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	// Default 100, maksimum 500.
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Token opak dari respons sebelumnya.
+	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProcessInstanceRecordsRequest) Reset() {
+	*x = ListProcessInstanceRecordsRequest{}
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProcessInstanceRecordsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProcessInstanceRecordsRequest) ProtoMessage() {}
+
+func (x *ListProcessInstanceRecordsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProcessInstanceRecordsRequest.ProtoReflect.Descriptor instead.
+func (*ListProcessInstanceRecordsRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *ListProcessInstanceRecordsRequest) GetProcessInstanceKey() string {
+	if x != nil {
+		return x.ProcessInstanceKey
+	}
+	return ""
+}
+
+func (x *ListProcessInstanceRecordsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListProcessInstanceRecordsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ExecutionRecord struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Urutan per instance, mulai 1, tanpa celah.
+	Sequence  int32  `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	RecordKey string `protobuf:"bytes,2,opt,name=record_key,json=recordKey,proto3" json:"record_key,omitempty"`
+	ValueType string `protobuf:"bytes,3,opt,name=value_type,json=valueType,proto3" json:"value_type,omitempty"`
+	Intent    string `protobuf:"bytes,4,opt,name=intent,proto3" json:"intent,omitempty"`
+	ElementId string `protobuf:"bytes,5,opt,name=element_id,json=elementId,proto3" json:"element_id,omitempty"`
+	// Payload record dalam JSON.
+	Payload       string                 `protobuf:"bytes,6,opt,name=payload,proto3" json:"payload,omitempty"`
+	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ExecutionRecord) Reset() {
+	*x = ExecutionRecord{}
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ExecutionRecord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExecutionRecord) ProtoMessage() {}
+
+func (x *ExecutionRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExecutionRecord.ProtoReflect.Descriptor instead.
+func (*ExecutionRecord) Descriptor() ([]byte, []int) {
+	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ExecutionRecord) GetSequence() int32 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *ExecutionRecord) GetRecordKey() string {
+	if x != nil {
+		return x.RecordKey
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetValueType() string {
+	if x != nil {
+		return x.ValueType
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetIntent() string {
+	if x != nil {
+		return x.Intent
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetElementId() string {
+	if x != nil {
+		return x.ElementId
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetPayload() string {
+	if x != nil {
+		return x.Payload
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetTimestamp() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Timestamp
+	}
+	return nil
+}
+
+type ListProcessInstanceRecordsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Records       []*ExecutionRecord     `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
+	NextPageToken string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListProcessInstanceRecordsResponse) Reset() {
+	*x = ListProcessInstanceRecordsResponse{}
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListProcessInstanceRecordsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListProcessInstanceRecordsResponse) ProtoMessage() {}
+
+func (x *ListProcessInstanceRecordsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListProcessInstanceRecordsResponse.ProtoReflect.Descriptor instead.
+func (*ListProcessInstanceRecordsResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListProcessInstanceRecordsResponse) GetRecords() []*ExecutionRecord {
+	if x != nil {
+		return x.Records
+	}
+	return nil
+}
+
+func (x *ListProcessInstanceRecordsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
+type ListElementInstancesRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	ProcessInstanceKey string                 `protobuf:"bytes,1,opt,name=process_instance_key,json=processInstanceKey,proto3" json:"process_instance_key,omitempty"`
+	// Hanya element instance yang belum final.
+	OnlyActive bool `protobuf:"varint,2,opt,name=only_active,json=onlyActive,proto3" json:"only_active,omitempty"`
+	// Default 100, maksimum 500.
+	PageSize      int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListElementInstancesRequest) Reset() {
+	*x = ListElementInstancesRequest{}
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListElementInstancesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListElementInstancesRequest) ProtoMessage() {}
+
+func (x *ListElementInstancesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListElementInstancesRequest.ProtoReflect.Descriptor instead.
+func (*ListElementInstancesRequest) Descriptor() ([]byte, []int) {
+	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListElementInstancesRequest) GetProcessInstanceKey() string {
+	if x != nil {
+		return x.ProcessInstanceKey
+	}
+	return ""
+}
+
+func (x *ListElementInstancesRequest) GetOnlyActive() bool {
+	if x != nil {
+		return x.OnlyActive
+	}
+	return false
+}
+
+func (x *ListElementInstancesRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListElementInstancesRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type ListElementInstancesResponse struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ElementInstances []*ElementInstance     `protobuf:"bytes,1,rep,name=element_instances,json=elementInstances,proto3" json:"element_instances,omitempty"`
+	NextPageToken    string                 `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ListElementInstancesResponse) Reset() {
+	*x = ListElementInstancesResponse{}
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListElementInstancesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListElementInstancesResponse) ProtoMessage() {}
+
+func (x *ListElementInstancesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_workflow_process_v1_process_instance_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListElementInstancesResponse.ProtoReflect.Descriptor instead.
+func (*ListElementInstancesResponse) Descriptor() ([]byte, []int) {
+	return file_workflow_process_v1_process_instance_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *ListElementInstancesResponse) GetElementInstances() []*ElementInstance {
+	if x != nil {
+		return x.ElementInstances
+	}
+	return nil
+}
+
+func (x *ListElementInstancesResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 var File_workflow_process_v1_process_instance_proto protoreflect.FileDescriptor
 
 const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
@@ -1182,13 +1521,14 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\aversion\x18\x04 \x01(\x05R\aversion\x12?\n" +
 	"\x05state\x18\x05 \x01(\x0e2).workflow.process.v1.ProcessInstanceStateR\x05state\"M\n" +
 	"\x19GetProcessInstanceRequest\x120\n" +
-	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\"\xe8\x02\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\"\xa8\x03\n" +
 	"\x1aGetProcessInstanceResponse\x12O\n" +
 	"\x10process_instance\x18\x01 \x01(\v2$.workflow.process.v1.ProcessInstanceR\x0fprocessInstance\x12Q\n" +
 	"\x11element_instances\x18\x02 \x03(\v2$.workflow.process.v1.ElementInstanceR\x10elementInstances\x12;\n" +
 	"\tvariables\x18\x03 \x03(\v2\x1d.workflow.process.v1.VariableR\tvariables\x12;\n" +
 	"\tincidents\x18\x04 \x03(\v2\x1d.workflow.process.v1.IncidentR\tincidents\x12,\n" +
-	"\x04jobs\x18\x05 \x03(\v2\x18.workflow.process.v1.JobR\x04jobs\"\x91\x03\n" +
+	"\x04jobs\x18\x05 \x03(\v2\x18.workflow.process.v1.JobR\x04jobs\x12>\n" +
+	"\x1belement_instances_truncated\x18\x06 \x01(\bR\x19elementInstancesTruncated\"\x91\x03\n" +
 	"\x0fProcessInstance\x120\n" +
 	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x124\n" +
 	"\x16process_definition_key\x18\x02 \x01(\tR\x14processDefinitionKey\x12&\n" +
@@ -1248,7 +1588,36 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x02 \x01(\tR\trequestId\"\x1f\n" +
-	"\x1dCancelProcessInstanceResponse*\xae\x01\n" +
+	"\x1dCancelProcessInstanceResponse\"\x91\x01\n" +
+	"!ListProcessInstanceRecordsRequest\x120\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"\xf6\x01\n" +
+	"\x0fExecutionRecord\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x05R\bsequence\x12\x1d\n" +
+	"\n" +
+	"record_key\x18\x02 \x01(\tR\trecordKey\x12\x1d\n" +
+	"\n" +
+	"value_type\x18\x03 \x01(\tR\tvalueType\x12\x16\n" +
+	"\x06intent\x18\x04 \x01(\tR\x06intent\x12\x1d\n" +
+	"\n" +
+	"element_id\x18\x05 \x01(\tR\telementId\x12\x18\n" +
+	"\apayload\x18\x06 \x01(\tR\apayload\x128\n" +
+	"\ttimestamp\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\"\x8c\x01\n" +
+	"\"ListProcessInstanceRecordsResponse\x12>\n" +
+	"\arecords\x18\x01 \x03(\v2$.workflow.process.v1.ExecutionRecordR\arecords\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xac\x01\n" +
+	"\x1bListElementInstancesRequest\x120\n" +
+	"\x14process_instance_key\x18\x01 \x01(\tR\x12processInstanceKey\x12\x1f\n" +
+	"\vonly_active\x18\x02 \x01(\bR\n" +
+	"onlyActive\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"\x99\x01\n" +
+	"\x1cListElementInstancesResponse\x12Q\n" +
+	"\x11element_instances\x18\x01 \x03(\v2$.workflow.process.v1.ElementInstanceR\x10elementInstances\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken*\xae\x01\n" +
 	"\x14ProcessInstanceState\x12&\n" +
 	"\"PROCESS_INSTANCE_STATE_UNSPECIFIED\x10\x00\x12!\n" +
 	"\x1dPROCESS_INSTANCE_STATE_ACTIVE\x10\x01\x12$\n" +
@@ -1261,12 +1630,14 @@ const file_workflow_process_v1_process_instance_proto_rawDesc = "" +
 	"!ELEMENT_INSTANCE_STATE_COMPLETING\x10\x03\x12$\n" +
 	" ELEMENT_INSTANCE_STATE_COMPLETED\x10\x04\x12&\n" +
 	"\"ELEMENT_INSTANCE_STATE_TERMINATING\x10\x05\x12%\n" +
-	"!ELEMENT_INSTANCE_STATE_TERMINATED\x10\x062\x96\x04\n" +
+	"!ELEMENT_INSTANCE_STATE_TERMINATED\x10\x062\xa7\x06\n" +
 	"\x16ProcessInstanceService\x12\x80\x01\n" +
 	"\x15CreateProcessInstance\x121.workflow.process.v1.CreateProcessInstanceRequest\x1a2.workflow.process.v1.CreateProcessInstanceResponse\"\x00\x12w\n" +
 	"\x12GetProcessInstance\x12..workflow.process.v1.GetProcessInstanceRequest\x1a/.workflow.process.v1.GetProcessInstanceResponse\"\x00\x12}\n" +
 	"\x14ListProcessInstances\x120.workflow.process.v1.ListProcessInstancesRequest\x1a1.workflow.process.v1.ListProcessInstancesResponse\"\x00\x12\x80\x01\n" +
-	"\x15CancelProcessInstance\x121.workflow.process.v1.CancelProcessInstanceRequest\x1a2.workflow.process.v1.CancelProcessInstanceResponse\"\x00BRZPgithub.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1;processv1b\x06proto3"
+	"\x15CancelProcessInstance\x121.workflow.process.v1.CancelProcessInstanceRequest\x1a2.workflow.process.v1.CancelProcessInstanceResponse\"\x00\x12\x8f\x01\n" +
+	"\x1aListProcessInstanceRecords\x126.workflow.process.v1.ListProcessInstanceRecordsRequest\x1a7.workflow.process.v1.ListProcessInstanceRecordsResponse\"\x00\x12}\n" +
+	"\x14ListElementInstances\x120.workflow.process.v1.ListElementInstancesRequest\x1a1.workflow.process.v1.ListElementInstancesResponse\"\x00BRZPgithub.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1;processv1b\x06proto3"
 
 var (
 	file_workflow_process_v1_process_instance_proto_rawDescOnce sync.Once
@@ -1281,25 +1652,30 @@ func file_workflow_process_v1_process_instance_proto_rawDescGZIP() []byte {
 }
 
 var file_workflow_process_v1_process_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_workflow_process_v1_process_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_workflow_process_v1_process_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_workflow_process_v1_process_instance_proto_goTypes = []any{
-	(ProcessInstanceState)(0),             // 0: workflow.process.v1.ProcessInstanceState
-	(ElementInstanceState)(0),             // 1: workflow.process.v1.ElementInstanceState
-	(*CreateProcessInstanceRequest)(nil),  // 2: workflow.process.v1.CreateProcessInstanceRequest
-	(*ProcessDefinitionRef)(nil),          // 3: workflow.process.v1.ProcessDefinitionRef
-	(*CreateProcessInstanceResponse)(nil), // 4: workflow.process.v1.CreateProcessInstanceResponse
-	(*GetProcessInstanceRequest)(nil),     // 5: workflow.process.v1.GetProcessInstanceRequest
-	(*GetProcessInstanceResponse)(nil),    // 6: workflow.process.v1.GetProcessInstanceResponse
-	(*ProcessInstance)(nil),               // 7: workflow.process.v1.ProcessInstance
-	(*ElementInstance)(nil),               // 8: workflow.process.v1.ElementInstance
-	(*Variable)(nil),                      // 9: workflow.process.v1.Variable
-	(*Incident)(nil),                      // 10: workflow.process.v1.Incident
-	(*Job)(nil),                           // 11: workflow.process.v1.Job
-	(*ListProcessInstancesRequest)(nil),   // 12: workflow.process.v1.ListProcessInstancesRequest
-	(*ListProcessInstancesResponse)(nil),  // 13: workflow.process.v1.ListProcessInstancesResponse
-	(*CancelProcessInstanceRequest)(nil),  // 14: workflow.process.v1.CancelProcessInstanceRequest
-	(*CancelProcessInstanceResponse)(nil), // 15: workflow.process.v1.CancelProcessInstanceResponse
-	(*timestamppb.Timestamp)(nil),         // 16: google.protobuf.Timestamp
+	(ProcessInstanceState)(0),                  // 0: workflow.process.v1.ProcessInstanceState
+	(ElementInstanceState)(0),                  // 1: workflow.process.v1.ElementInstanceState
+	(*CreateProcessInstanceRequest)(nil),       // 2: workflow.process.v1.CreateProcessInstanceRequest
+	(*ProcessDefinitionRef)(nil),               // 3: workflow.process.v1.ProcessDefinitionRef
+	(*CreateProcessInstanceResponse)(nil),      // 4: workflow.process.v1.CreateProcessInstanceResponse
+	(*GetProcessInstanceRequest)(nil),          // 5: workflow.process.v1.GetProcessInstanceRequest
+	(*GetProcessInstanceResponse)(nil),         // 6: workflow.process.v1.GetProcessInstanceResponse
+	(*ProcessInstance)(nil),                    // 7: workflow.process.v1.ProcessInstance
+	(*ElementInstance)(nil),                    // 8: workflow.process.v1.ElementInstance
+	(*Variable)(nil),                           // 9: workflow.process.v1.Variable
+	(*Incident)(nil),                           // 10: workflow.process.v1.Incident
+	(*Job)(nil),                                // 11: workflow.process.v1.Job
+	(*ListProcessInstancesRequest)(nil),        // 12: workflow.process.v1.ListProcessInstancesRequest
+	(*ListProcessInstancesResponse)(nil),       // 13: workflow.process.v1.ListProcessInstancesResponse
+	(*CancelProcessInstanceRequest)(nil),       // 14: workflow.process.v1.CancelProcessInstanceRequest
+	(*CancelProcessInstanceResponse)(nil),      // 15: workflow.process.v1.CancelProcessInstanceResponse
+	(*ListProcessInstanceRecordsRequest)(nil),  // 16: workflow.process.v1.ListProcessInstanceRecordsRequest
+	(*ExecutionRecord)(nil),                    // 17: workflow.process.v1.ExecutionRecord
+	(*ListProcessInstanceRecordsResponse)(nil), // 18: workflow.process.v1.ListProcessInstanceRecordsResponse
+	(*ListElementInstancesRequest)(nil),        // 19: workflow.process.v1.ListElementInstancesRequest
+	(*ListElementInstancesResponse)(nil),       // 20: workflow.process.v1.ListElementInstancesResponse
+	(*timestamppb.Timestamp)(nil),              // 21: google.protobuf.Timestamp
 }
 var file_workflow_process_v1_process_instance_proto_depIdxs = []int32{
 	3,  // 0: workflow.process.v1.CreateProcessInstanceRequest.bpmn_process:type_name -> workflow.process.v1.ProcessDefinitionRef
@@ -1310,27 +1686,34 @@ var file_workflow_process_v1_process_instance_proto_depIdxs = []int32{
 	10, // 5: workflow.process.v1.GetProcessInstanceResponse.incidents:type_name -> workflow.process.v1.Incident
 	11, // 6: workflow.process.v1.GetProcessInstanceResponse.jobs:type_name -> workflow.process.v1.Job
 	0,  // 7: workflow.process.v1.ProcessInstance.state:type_name -> workflow.process.v1.ProcessInstanceState
-	16, // 8: workflow.process.v1.ProcessInstance.start_time:type_name -> google.protobuf.Timestamp
-	16, // 9: workflow.process.v1.ProcessInstance.end_time:type_name -> google.protobuf.Timestamp
+	21, // 8: workflow.process.v1.ProcessInstance.start_time:type_name -> google.protobuf.Timestamp
+	21, // 9: workflow.process.v1.ProcessInstance.end_time:type_name -> google.protobuf.Timestamp
 	1,  // 10: workflow.process.v1.ElementInstance.state:type_name -> workflow.process.v1.ElementInstanceState
-	16, // 11: workflow.process.v1.ElementInstance.start_time:type_name -> google.protobuf.Timestamp
-	16, // 12: workflow.process.v1.ElementInstance.end_time:type_name -> google.protobuf.Timestamp
-	16, // 13: workflow.process.v1.Incident.created_at:type_name -> google.protobuf.Timestamp
+	21, // 11: workflow.process.v1.ElementInstance.start_time:type_name -> google.protobuf.Timestamp
+	21, // 12: workflow.process.v1.ElementInstance.end_time:type_name -> google.protobuf.Timestamp
+	21, // 13: workflow.process.v1.Incident.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 14: workflow.process.v1.ListProcessInstancesRequest.state:type_name -> workflow.process.v1.ProcessInstanceState
 	7,  // 15: workflow.process.v1.ListProcessInstancesResponse.process_instances:type_name -> workflow.process.v1.ProcessInstance
-	2,  // 16: workflow.process.v1.ProcessInstanceService.CreateProcessInstance:input_type -> workflow.process.v1.CreateProcessInstanceRequest
-	5,  // 17: workflow.process.v1.ProcessInstanceService.GetProcessInstance:input_type -> workflow.process.v1.GetProcessInstanceRequest
-	12, // 18: workflow.process.v1.ProcessInstanceService.ListProcessInstances:input_type -> workflow.process.v1.ListProcessInstancesRequest
-	14, // 19: workflow.process.v1.ProcessInstanceService.CancelProcessInstance:input_type -> workflow.process.v1.CancelProcessInstanceRequest
-	4,  // 20: workflow.process.v1.ProcessInstanceService.CreateProcessInstance:output_type -> workflow.process.v1.CreateProcessInstanceResponse
-	6,  // 21: workflow.process.v1.ProcessInstanceService.GetProcessInstance:output_type -> workflow.process.v1.GetProcessInstanceResponse
-	13, // 22: workflow.process.v1.ProcessInstanceService.ListProcessInstances:output_type -> workflow.process.v1.ListProcessInstancesResponse
-	15, // 23: workflow.process.v1.ProcessInstanceService.CancelProcessInstance:output_type -> workflow.process.v1.CancelProcessInstanceResponse
-	20, // [20:24] is the sub-list for method output_type
-	16, // [16:20] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	21, // 16: workflow.process.v1.ExecutionRecord.timestamp:type_name -> google.protobuf.Timestamp
+	17, // 17: workflow.process.v1.ListProcessInstanceRecordsResponse.records:type_name -> workflow.process.v1.ExecutionRecord
+	8,  // 18: workflow.process.v1.ListElementInstancesResponse.element_instances:type_name -> workflow.process.v1.ElementInstance
+	2,  // 19: workflow.process.v1.ProcessInstanceService.CreateProcessInstance:input_type -> workflow.process.v1.CreateProcessInstanceRequest
+	5,  // 20: workflow.process.v1.ProcessInstanceService.GetProcessInstance:input_type -> workflow.process.v1.GetProcessInstanceRequest
+	12, // 21: workflow.process.v1.ProcessInstanceService.ListProcessInstances:input_type -> workflow.process.v1.ListProcessInstancesRequest
+	14, // 22: workflow.process.v1.ProcessInstanceService.CancelProcessInstance:input_type -> workflow.process.v1.CancelProcessInstanceRequest
+	16, // 23: workflow.process.v1.ProcessInstanceService.ListProcessInstanceRecords:input_type -> workflow.process.v1.ListProcessInstanceRecordsRequest
+	19, // 24: workflow.process.v1.ProcessInstanceService.ListElementInstances:input_type -> workflow.process.v1.ListElementInstancesRequest
+	4,  // 25: workflow.process.v1.ProcessInstanceService.CreateProcessInstance:output_type -> workflow.process.v1.CreateProcessInstanceResponse
+	6,  // 26: workflow.process.v1.ProcessInstanceService.GetProcessInstance:output_type -> workflow.process.v1.GetProcessInstanceResponse
+	13, // 27: workflow.process.v1.ProcessInstanceService.ListProcessInstances:output_type -> workflow.process.v1.ListProcessInstancesResponse
+	15, // 28: workflow.process.v1.ProcessInstanceService.CancelProcessInstance:output_type -> workflow.process.v1.CancelProcessInstanceResponse
+	18, // 29: workflow.process.v1.ProcessInstanceService.ListProcessInstanceRecords:output_type -> workflow.process.v1.ListProcessInstanceRecordsResponse
+	20, // 30: workflow.process.v1.ProcessInstanceService.ListElementInstances:output_type -> workflow.process.v1.ListElementInstancesResponse
+	25, // [25:31] is the sub-list for method output_type
+	19, // [19:25] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_workflow_process_v1_process_instance_proto_init() }
@@ -1348,7 +1731,7 @@ func file_workflow_process_v1_process_instance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_workflow_process_v1_process_instance_proto_rawDesc), len(file_workflow_process_v1_process_instance_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   14,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
