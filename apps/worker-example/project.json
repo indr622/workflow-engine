@@ -1,0 +1,43 @@
+{
+  "name": "worker-example",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/worker-example",
+  "tags": ["type:app", "lang:go", "scope:demo"],
+  "implicitDependencies": ["api-go", "sdk-go"],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "inputs": [
+        "{projectRoot}/**/*.go",
+        "{projectRoot}/processes/*.bpmn",
+        "!{projectRoot}/**/*_test.go",
+        "goMod",
+        "^production"
+      ],
+      "outputs": ["{workspaceRoot}/dist/apps/worker-example"],
+      "options": {
+        "command": "go build -trimpath -o dist/apps/worker-example/ ./apps/worker-example/cmd/worker",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "go run ./apps/worker-example/cmd/worker --engine-url http://localhost:8080",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod", "^production"],
+      "options": { "command": "go test ./apps/worker-example/...", "cwd": "{workspaceRoot}" }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "inputs": ["{projectRoot}/**/*.go", "goMod", "{workspaceRoot}/.golangci.yml"],
+      "options": { "command": "golangci-lint run ./apps/worker-example/...", "cwd": "{workspaceRoot}" }
+    }
+  }
+}

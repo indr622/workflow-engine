@@ -56,6 +56,19 @@ services:
       retries: 30
       start_period: 60s
 
+  # Demo worker SDK Fase 4 (make up PROFILES=demo). Engine berjalan di host (make dev-engine);
+  # worker men-deploy order-process, menjalankan 10 instance, lalu tetap melayani job.
+  worker-example:
+    build:
+      context: ../..
+      dockerfile: infra/docker/worker.Dockerfile
+    profiles: ['demo']
+    environment:
+      ENGINE_URL: ${DEMO_ENGINE_URL:-http://host.docker.internal:8080}
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    command: ['--instances', '10', '--serve']
+
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     profiles: ['observability']

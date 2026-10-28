@@ -58,7 +58,7 @@ GOLANGCI_LINT_VERSION := v2.15.0
         test-faultinject test-race fuzz bench prop parity \
         migrate-up migrate-down migrate-status migrate-new migrate-redo docker-build docker-push \
         db-backup db-backup-list db-restore \
-        deploy-local deploy-local-down clean
+        deploy-local deploy-local-down clean dev-engine demo
 
 help: ## Tampilkan daftar target
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -86,6 +86,15 @@ logs: ## Ikuti log dependensi dev
 
 dev: ## Jalankan engine dan modeler-web dalam mode dev
 	$(NX) run-many -t serve -p engine modeler-web
+
+dev-engine: ## Jalankan engine saja dari host (Postgres dari make up)
+	go run ./apps/engine/cmd/engine
+
+# Demo SDK Fase 4: deploy order-process, tiga worker, INSTANCES instance sampai COMPLETED.
+INSTANCES  ?= 10
+ENGINE_URL ?= http://localhost:8080
+demo: ## Demo worker SDK terhadap engine di ENGINE_URL (INSTANCES=10)
+	go run ./apps/worker-example/cmd/worker --engine-url $(ENGINE_URL) --instances $(INSTANCES)
 
 gen: ## Generate kode dari proto (dan sqlc bila sudah dikonfigurasi)
 	$(NX) run proto:generate --skip-nx-cache
