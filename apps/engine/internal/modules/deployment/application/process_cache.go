@@ -27,6 +27,10 @@ type ProcessCache struct {
 type cacheEntry struct {
 	key  string
 	proc *bpmn.Process
+	// pd terisi setelah model pertama kali dimuat lewat repository; Put dari deploy hanya
+	// membawa model, metadata dilengkapi saat GetByKey pertama.
+	pd    domain.ProcessDefinition
+	hasPD bool
 }
 
 // NewProcessCache membuat cache dengan kapasitas tertentu (default 256).
@@ -65,6 +69,28 @@ func (c *ProcessCache) get(key string) (*bpmn.Process, bool) {
 	return el.Value.(*cacheEntry).proc, true
 }
 
+// getFull mengembalikan metadata dan model bila keduanya sudah di cache.
+func (c *ProcessCache) getFull(key string) (domain.ProcessDefinition, *bpmn.Process, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	el, ok := c.items[key]
+	if !ok || !el.Value.(*cacheEntry).hasPD {
+		return domain.ProcessDefinition{}, nil, false
+	}
+	c.order.MoveToFront(el)
+	e := el.Value.(*cacheEntry)
+	return e.pd, e.proc, true
+}
+
+func (c *ProcessCache) remember(pd domain.ProcessDefinition) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if el, ok := c.items[pd.Key]; ok {
+		e := el.Value.(*cacheEntry)
+		e.pd, e.hasPD = pd, true
+	}
+}
+
 // Len mengembalikan jumlah model di cache.
 func (c *ProcessCache) Len() int {
 	c.mu.Lock()
@@ -73,7 +99,12 @@ func (c *ProcessCache) Len() int {
 }
 
 // GetByKey mengembalikan metadata dan model; parse dari XML tersimpan bila belum di cache.
+// Saat cache hit (metadata dan model), tidak ada akses database: aman dipanggil dari dalam
+// transaksi pemanggil tanpa meminta koneksi kedua dari pool.
 func (c *ProcessCache) GetByKey(ctx context.Context, key string) (api.ProcessDefinition, *bpmn.Process, error) {
+	if pd, proc, ok := c.getFull(key); ok {
+		return toAPI(pd), proc, nil
+	}
 	pd, content, err := c.repo.GetByKey(ctx, key)
 	if err != nil {
 		return api.ProcessDefinition{}, nil, mapNotFound(err)
@@ -92,8 +123,19 @@ func (c *ProcessCache) GetLatest(ctx context.Context, bpmnProcessID string) (api
 	return toAPI(pd), proc, err
 }
 
+// GetByVersion mengembalikan versi tertentu proses beserta modelnya.
+func (c *ProcessCache) GetByVersion(ctx context.Context, bpmnProcessID string, version int32) (api.ProcessDefinition, *bpmn.Process, error) {
+	pd, content, err := c.repo.GetByVersion(ctx, domain.DefaultTenant, bpmnProcessID, version)
+	if err != nil {
+		return api.ProcessDefinition{}, nil, mapNotFound(err)
+	}
+	proc, err := c.load(pd, content)
+	return toAPI(pd), proc, err
+}
+
 func (c *ProcessCache) load(pd domain.ProcessDefinition, content []byte) (*bpmn.Process, error) {
 	if proc, ok := c.get(pd.Key); ok {
+		c.remember(pd)
 		return proc, nil
 	}
 	defs, err := bpmn.Parse(bytes.NewReader(content))
@@ -105,6 +147,7 @@ func (c *ProcessCache) load(pd domain.ProcessDefinition, content []byte) (*bpmn.
 		return nil, fmt.Errorf("stored definition %s has no process %q", pd.Key, pd.BpmnProcessID)
 	}
 	c.Put(pd.Key, proc)
+	c.remember(pd)
 	return proc, nil
 }
 

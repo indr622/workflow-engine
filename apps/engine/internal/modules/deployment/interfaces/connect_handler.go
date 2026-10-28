@@ -16,6 +16,7 @@ import (
 
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/domain"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
 )
 
 // MaxRequestBytes adalah batas ukuran request Connect untuk service ini.
@@ -75,6 +76,9 @@ func (h *Handler) ValidateResource(_ context.Context, req *connect.Request[deplo
 
 // GetProcessDefinition mengimplementasikan RPC GetProcessDefinition.
 func (h *Handler) GetProcessDefinition(ctx context.Context, req *connect.Request[deploymentv1.GetProcessDefinitionRequest]) (*connect.Response[deploymentv1.GetProcessDefinitionResponse], error) {
+	if !keygen.Valid(req.Msg.GetProcessDefinitionKey()) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("process_definition_key must be a canonical uuid"))
+	}
 	pd, content, err := h.queries.GetProcessDefinition(ctx, req.Msg.GetProcessDefinitionKey())
 	if err != nil {
 		return nil, toConnectError(err)

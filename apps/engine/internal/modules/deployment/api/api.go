@@ -29,4 +29,5 @@ type ProcessDefinition struct {
 type ProcessDefinitions interface {
 	GetByKey(ctx context.Context, key string) (ProcessDefinition, *bpmn.Process, error)
 	GetLatest(ctx context.Context, bpmnProcessID string) (ProcessDefinition, *bpmn.Process, error)
+	GetByVersion(ctx context.Context, bpmnProcessID string, version int32) (ProcessDefinition, *bpmn.Process, error)
 }

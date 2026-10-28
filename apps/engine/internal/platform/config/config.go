@@ -16,6 +16,10 @@ type Config struct {
 	LogLevel        string        `env:"ENGINE_LOG_LEVEL" envDefault:"info"`
 	ShutdownTimeout time.Duration `env:"ENGINE_SHUTDOWN_TIMEOUT" envDefault:"15s"`
 	CORSOrigins     []string      `env:"ENGINE_CORS_ORIGINS" envSeparator:"," envDefault:"http://localhost:4200"`
+	// MaxRecordsPerCommand membatasi record satu command; loop tanpa wait state menjadi incident.
+	MaxRecordsPerCommand int `env:"ENGINE_MAX_RECORDS_PER_COMMAND" envDefault:"10000"`
+	// MaxVariablesBytes membatasi dokumen variabel per request (1 MiB).
+	MaxVariablesBytes int `env:"ENGINE_MAX_VARIABLES_BYTES" envDefault:"1048576"`
 }
 
 // Load membaca konfigurasi dari environment.

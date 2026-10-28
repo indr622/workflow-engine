@@ -47,6 +47,14 @@ func (r *memoryRepository) GetLatest(_ context.Context, _, id string) (domain.Pr
 	}
 	return pd, r.content[pd.Key], nil
 }
+func (r *memoryRepository) GetByVersion(_ context.Context, _, id string, version int32) (domain.ProcessDefinition, []byte, error) {
+	for _, d := range r.defs {
+		if d.BpmnProcessID == id && d.Version == version {
+			return d, r.content[d.Key], nil
+		}
+	}
+	return domain.ProcessDefinition{}, nil, domain.ErrNotFound
+}
 func (r *memoryRepository) List(context.Context, domain.ListQuery) ([]domain.ProcessDefinition, error) {
 	return r.defs, nil
 }

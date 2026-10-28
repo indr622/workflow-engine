@@ -1,0 +1,271 @@
+// Package interfaces berisi adapter masuk modul execution: handler Connect untuk
+// ProcessInstanceService dan JobService.
+package interfaces
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
+	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	deploymentapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/api"
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/api"
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
+	"github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
+	"github.com/indr622/workflow-engine/apps/engine/internal/platform/keygen"
+	jobv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1"
+	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/job/v1/jobv1connect"
+	processv1 "github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1"
+	"github.com/indr622/workflow-engine/libs/go/api/gen/workflow/process/v1/processv1connect"
+)
+
+// MaxRequestBytes adalah batas ukuran request; dokumen variabel dibatasi terpisah oleh application.
+const MaxRequestBytes = 2 << 20
+
+// Handler mengekspos use case execution lewat Connect RPC.
+type Handler struct {
+	instances api.ProcessInstances
+	jobs      api.Jobs
+	queries   *application.Queries
+}
+
+var (
+	_ processv1connect.ProcessInstanceServiceHandler = (*Handler)(nil)
+	_ jobv1connect.JobServiceHandler                 = (*Handler)(nil)
+)
+
+// NewHandler membuat handler.
+func NewHandler(instances api.ProcessInstances, jobs api.Jobs, queries *application.Queries) *Handler {
+	return &Handler{instances: instances, jobs: jobs, queries: queries}
+}
+
+// Register memasang kedua service ke mux.
+func (h *Handler) Register(mux *http.ServeMux) {
+	path, handler := processv1connect.NewProcessInstanceServiceHandler(h, connect.WithReadMaxBytes(MaxRequestBytes))
+	mux.Handle(path, handler)
+	path, handler = jobv1connect.NewJobServiceHandler(h, connect.WithReadMaxBytes(MaxRequestBytes))
+	mux.Handle(path, handler)
+}
+
+// CreateProcessInstance mengimplementasikan RPC CreateProcessInstance.
+func (h *Handler) CreateProcessInstance(ctx context.Context, req *connect.Request[processv1.CreateProcessInstanceRequest]) (*connect.Response[processv1.CreateProcessInstanceResponse], error) {
+	in := api.CreateInstanceRequest{Variables: []byte(req.Msg.GetVariables())}
+	switch d := req.Msg.GetDefinition().(type) {
+	case *processv1.CreateProcessInstanceRequest_ProcessDefinitionKey:
+		if err := requireKey("process_definition_key", d.ProcessDefinitionKey); err != nil {
+			return nil, err
+		}
+		in.DefinitionKey = d.ProcessDefinitionKey
+	case *processv1.CreateProcessInstanceRequest_BpmnProcess:
+		if d.BpmnProcess.GetBpmnProcessId() == "" || d.BpmnProcess.GetVersion() < 0 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("bpmn_process needs a bpmn_process_id and a version >= 0"))
+		}
+		in.BpmnProcessID, in.Version = d.BpmnProcess.GetBpmnProcessId(), d.BpmnProcess.GetVersion()
+	default:
+		return nil, connect.NewError(connect.CodeInvalidArgument, application.ErrDefinitionRequired)
+	}
+	res, err := h.instances.CreateProcessInstance(ctx, in)
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	return connect.NewResponse(&processv1.CreateProcessInstanceResponse{
+		ProcessInstanceKey: res.ProcessInstanceKey, ProcessDefinitionKey: res.ProcessDefinitionKey,
+		BpmnProcessId: res.BpmnProcessID, Version: res.Version, State: instanceState(res.State),
+	}), nil
+}
+
+// GetProcessInstance mengimplementasikan RPC GetProcessInstance.
+func (h *Handler) GetProcessInstance(ctx context.Context, req *connect.Request[processv1.GetProcessInstanceRequest]) (*connect.Response[processv1.GetProcessInstanceResponse], error) {
+	if err := requireKey("process_instance_key", req.Msg.GetProcessInstanceKey()); err != nil {
+		return nil, err
+	}
+	d, err := h.queries.GetInstance(ctx, req.Msg.GetProcessInstanceKey())
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	out := &processv1.GetProcessInstanceResponse{ProcessInstance: toProtoInstance(d.Instance)}
+	for _, e := range d.Elements {
+		out.ElementInstances = append(out.ElementInstances, &processv1.ElementInstance{
+			ElementInstanceKey: e.Key, FlowScopeKey: e.FlowScopeKey, ElementId: e.ElementID, BpmnElementType: e.BpmnElementType,
+			State: elementState(e.State), IncidentKey: e.IncidentKey, StartTime: timestamppb.New(e.StartTime), EndTime: optTimestamp(e.EndTime),
+		})
+	}
+	for _, v := range d.Variables {
+		out.Variables = append(out.Variables, &processv1.Variable{ScopeKey: v.ScopeKey, Name: v.Name, Value: string(v.Value)})
+	}
+	for _, inc := range d.Incidents {
+		out.Incidents = append(out.Incidents, &processv1.Incident{
+			IncidentKey: inc.Key, ElementInstanceKey: inc.ElementInstanceKey, ElementId: inc.ElementID, ErrorType: inc.ErrorType,
+			ErrorMessage: inc.ErrorMessage, Resolved: inc.Resolved, CreatedAt: timestamppb.New(inc.CreatedAt),
+		})
+	}
+	for _, j := range d.Jobs {
+		out.Jobs = append(out.Jobs, &processv1.Job{
+			JobKey: j.Key, Type: j.Type, ElementId: j.ElementID, ElementInstanceKey: j.ElementInstanceKey, Retries: j.Retries, State: j.State,
+		})
+	}
+	return connect.NewResponse(out), nil
+}
+
+// ListProcessInstances mengimplementasikan RPC ListProcessInstances.
+func (h *Handler) ListProcessInstances(ctx context.Context, req *connect.Request[processv1.ListProcessInstancesRequest]) (*connect.Response[processv1.ListProcessInstancesResponse], error) {
+	m := req.Msg
+	if err := optionalKey("process_definition_key", m.GetProcessDefinitionKey()); err != nil {
+		return nil, err
+	}
+	if err := optionalKey("page_token", m.GetPageToken()); err != nil {
+		return nil, err
+	}
+	items, next, err := h.queries.ListInstances(ctx, application.InstanceFilter{
+		BpmnProcessID: m.GetBpmnProcessId(), ProcessDefinitionKey: m.GetProcessDefinitionKey(),
+		State: stateFilter(m.GetState()), OnlyWithIncident: m.GetOnlyWithIncident(),
+		AfterKey: m.GetPageToken(), Limit: m.GetPageSize(),
+	})
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	out := &processv1.ListProcessInstancesResponse{NextPageToken: next}
+	for _, it := range items {
+		out.ProcessInstances = append(out.ProcessInstances, toProtoInstance(it))
+	}
+	return connect.NewResponse(out), nil
+}
+
+// CancelProcessInstance mengimplementasikan RPC CancelProcessInstance.
+func (h *Handler) CancelProcessInstance(ctx context.Context, req *connect.Request[processv1.CancelProcessInstanceRequest]) (*connect.Response[processv1.CancelProcessInstanceResponse], error) {
+	if err := requireKey("process_instance_key", req.Msg.GetProcessInstanceKey()); err != nil {
+		return nil, err
+	}
+	if err := h.instances.CancelProcessInstance(ctx, req.Msg.GetProcessInstanceKey()); err != nil {
+		return nil, toConnectError(err)
+	}
+	return connect.NewResponse(&processv1.CancelProcessInstanceResponse{}), nil
+}
+
+// ListJobs mengimplementasikan RPC ListJobs.
+func (h *Handler) ListJobs(ctx context.Context, req *connect.Request[jobv1.ListJobsRequest]) (*connect.Response[jobv1.ListJobsResponse], error) {
+	m := req.Msg
+	if err := optionalKey("process_instance_key", m.GetProcessInstanceKey()); err != nil {
+		return nil, err
+	}
+	if err := optionalKey("page_token", m.GetPageToken()); err != nil {
+		return nil, err
+	}
+	items, next, err := h.queries.ListJobs(ctx, application.JobFilter{
+		Type: m.GetType(), ProcessInstanceKey: m.GetProcessInstanceKey(), OnlyOpen: m.GetOnlyOpen(),
+		AfterKey: m.GetPageToken(), Limit: m.GetPageSize(),
+	})
+	if err != nil {
+		return nil, toConnectError(err)
+	}
+	out := &jobv1.ListJobsResponse{NextPageToken: next}
+	for _, j := range items {
+		headers := make(map[string]string, len(j.CustomHeaders))
+		for _, hd := range j.CustomHeaders {
+			headers[hd.Key] = hd.Value
+		}
+		out.Jobs = append(out.Jobs, &jobv1.JobInfo{
+			JobKey: j.Key, Type: j.Type, ProcessInstanceKey: j.ProcessInstanceKey, ElementInstanceKey: j.ElementInstanceKey,
+			ElementId: j.ElementID, BpmnProcessId: j.BpmnProcessID, Retries: j.Retries, CustomHeaders: headers,
+			State: j.State, ProcessDefinitionKey: j.ProcessDefinitionKey,
+		})
+	}
+	return connect.NewResponse(out), nil
+}
+
+// CompleteJob mengimplementasikan RPC CompleteJob.
+func (h *Handler) CompleteJob(ctx context.Context, req *connect.Request[jobv1.CompleteJobRequest]) (*connect.Response[jobv1.CompleteJobResponse], error) {
+	if err := requireKey("job_key", req.Msg.GetJobKey()); err != nil {
+		return nil, err
+	}
+	if err := h.jobs.CompleteJob(ctx, req.Msg.GetJobKey(), []byte(req.Msg.GetVariables())); err != nil {
+		return nil, toConnectError(err)
+	}
+	return connect.NewResponse(&jobv1.CompleteJobResponse{}), nil
+}
+
+func requireKey(field, key string) error {
+	if !keygen.Valid(key) {
+		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("%s must be a canonical uuid", field))
+	}
+	return nil
+}
+
+func optionalKey(field, key string) error {
+	if key == "" {
+		return nil
+	}
+	return requireKey(field, key)
+}
+
+func toProtoInstance(s application.InstanceSummary) *processv1.ProcessInstance {
+	return &processv1.ProcessInstance{
+		ProcessInstanceKey: s.Key, ProcessDefinitionKey: s.ProcessDefinitionKey, BpmnProcessId: s.BpmnProcessID,
+		Version: s.Version, State: instanceState(s.State), HasIncident: s.HasIncident,
+		StartTime: timestamppb.New(s.StartTime), EndTime: optTimestamp(s.EndTime),
+	}
+}
+
+func instanceState(s string) processv1.ProcessInstanceState {
+	switch domain.InstanceStatus(s) {
+	case domain.InstanceActive:
+		return processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_ACTIVE
+	case domain.InstanceCompleted:
+		return processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_COMPLETED
+	case domain.InstanceTerminated:
+		return processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_TERMINATED
+	default:
+		return processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_UNSPECIFIED
+	}
+}
+
+func stateFilter(s processv1.ProcessInstanceState) string {
+	switch s {
+	case processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_ACTIVE:
+		return string(domain.InstanceActive)
+	case processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_COMPLETED:
+		return string(domain.InstanceCompleted)
+	case processv1.ProcessInstanceState_PROCESS_INSTANCE_STATE_TERMINATED:
+		return string(domain.InstanceTerminated)
+	default:
+		return ""
+	}
+}
+
+var elementStates = map[domain.ElementState]processv1.ElementInstanceState{
+	domain.ElementActivating:  processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_ACTIVATING,
+	domain.ElementActivated:   processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_ACTIVATED,
+	domain.ElementCompleting:  processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_COMPLETING,
+	domain.ElementCompleted:   processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_COMPLETED,
+	domain.ElementTerminating: processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_TERMINATING,
+	domain.ElementTerminated:  processv1.ElementInstanceState_ELEMENT_INSTANCE_STATE_TERMINATED,
+}
+
+func elementState(s string) processv1.ElementInstanceState {
+	return elementStates[domain.ElementState(s)]
+}
+
+func optTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
+}
+
+// toConnectError memetakan error domain dan application ke kode Connect.
+func toConnectError(err error) error {
+	switch {
+	case errors.Is(err, domain.ErrInstanceNotFound), errors.Is(err, domain.ErrJobNotFound), errors.Is(err, deploymentapi.ErrNotFound):
+		return connect.NewError(connect.CodeNotFound, err)
+	case errors.Is(err, domain.ErrInvalidVariables), errors.Is(err, application.ErrDefinitionRequired):
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	case errors.Is(err, domain.ErrInstanceNotActive), errors.Is(err, domain.ErrJobNotActive), errors.Is(err, domain.ErrNoNoneStartEvent):
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
+}

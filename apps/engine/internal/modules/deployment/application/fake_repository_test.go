@@ -56,6 +56,17 @@ func (r *fakeRepository) GetLatest(_ context.Context, tenantID, processID string
 	return pd, r.content[pd.Key], nil
 }
 
+func (r *fakeRepository) GetByVersion(_ context.Context, tenantID, processID string, version int32) (domain.ProcessDefinition, []byte, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, d := range r.definitions {
+		if d.TenantID == tenantID && d.BpmnProcessID == processID && d.Version == version {
+			return d, r.content[d.Key], nil
+		}
+	}
+	return domain.ProcessDefinition{}, nil, domain.ErrNotFound
+}
+
 func (r *fakeRepository) List(_ context.Context, q domain.ListQuery) ([]domain.ProcessDefinition, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

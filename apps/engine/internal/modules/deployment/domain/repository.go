@@ -10,6 +10,8 @@ type Repository interface {
 	GetByKey(ctx context.Context, key string) (ProcessDefinition, []byte, error)
 	// GetLatest mengembalikan versi terbaru beserta konten resource.
 	GetLatest(ctx context.Context, tenantID, bpmnProcessID string) (ProcessDefinition, []byte, error)
+	// GetByVersion mengembalikan versi tertentu beserta konten resource.
+	GetByVersion(ctx context.Context, tenantID, bpmnProcessID string, version int32) (ProcessDefinition, []byte, error)
 	// List mengembalikan halaman definition sesuai query.
 	List(ctx context.Context, q ListQuery) ([]ProcessDefinition, error)
 }

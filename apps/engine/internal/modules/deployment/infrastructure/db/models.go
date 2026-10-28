@@ -22,10 +22,61 @@ type DeploymentResource struct {
 	Checksum      []byte
 }
 
+type ElementInstance struct {
+	Key                string
+	ProcessInstanceKey string
+	FlowScopeKey       pgtype.UUID
+	ElementID          string
+	BpmnElementType    string
+	State              string
+	IncidentKey        pgtype.UUID
+	StartTime          pgtype.Timestamptz
+	EndTime            pgtype.Timestamptz
+}
+
 type EngineMetadatum struct {
 	Key       string
 	Value     string
 	UpdatedAt pgtype.Timestamptz
+}
+
+type ExecutionRecord struct {
+	ProcessInstanceKey string
+	Sequence           int32
+	RecordKey          string
+	ValueType          string
+	Intent             string
+	ElementID          *string
+	Payload            []byte
+	CreatedAt          pgtype.Timestamptz
+}
+
+type Incident struct {
+	Key                string
+	ProcessInstanceKey string
+	ElementInstanceKey string
+	ElementID          string
+	ErrorType          string
+	ErrorMessage       string
+	State              string
+	CreatedAt          pgtype.Timestamptz
+	ResolvedAt         pgtype.Timestamptz
+}
+
+type Job struct {
+	Key                      string
+	ProcessInstanceKey       string
+	ElementInstanceKey       string
+	ElementID                string
+	BpmnProcessID            string
+	ProcessDefinitionKey     string
+	ProcessDefinitionVersion int32
+	Type                     string
+	Retries                  int32
+	CustomHeaders            []byte
+	State                    string
+	CreatedAt                pgtype.Timestamptz
+	UpdatedAt                pgtype.Timestamptz
 }
 
 type ProcessDefinition struct {
@@ -39,4 +90,34 @@ type ProcessDefinition struct {
 	Checksum      []byte
 	DeploymentKey string
 	CreatedAt     pgtype.Timestamptz
+}
+
+type ProcessInstance struct {
+	Key                      string
+	TenantID                 string
+	ProcessDefinitionKey     string
+	BpmnProcessID            string
+	ProcessDefinitionVersion int32
+	State                    string
+	HasIncident              bool
+	Version                  int64
+	StartTime                pgtype.Timestamptz
+	EndTime                  pgtype.Timestamptz
+}
+
+type TakenSequenceFlow struct {
+	ProcessInstanceKey string
+	FlowScopeKey       string
+	GatewayID          string
+	SequenceFlowID     string
+	Count              int32
+}
+
+type Variable struct {
+	Key                string
+	ProcessInstanceKey string
+	ScopeKey           string
+	Name               string
+	Value              string
+	UpdatedAt          pgtype.Timestamptz
 }

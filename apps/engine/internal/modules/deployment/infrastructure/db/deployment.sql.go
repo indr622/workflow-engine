@@ -161,6 +161,53 @@ func (q *Queries) GetProcessDefinitionByKey(ctx context.Context, key string) (Ge
 	return i, err
 }
 
+const getProcessDefinitionByVersion = `-- name: GetProcessDefinitionByVersion :one
+SELECT pd.key, pd.tenant_id, pd.bpmn_process_id, pd.version, pd.version_tag, pd.name,
+       pd.checksum, pd.deployment_key, pd.created_at, r.resource_name, r.content
+FROM process_definition pd
+JOIN deployment_resource r ON r.id = pd.resource_id
+WHERE pd.tenant_id = $1 AND pd.bpmn_process_id = $2 AND pd.version = $3
+`
+
+type GetProcessDefinitionByVersionParams struct {
+	TenantID      string
+	BpmnProcessID string
+	Version       int32
+}
+
+type GetProcessDefinitionByVersionRow struct {
+	Key           string
+	TenantID      string
+	BpmnProcessID string
+	Version       int32
+	VersionTag    string
+	Name          string
+	Checksum      []byte
+	DeploymentKey string
+	CreatedAt     pgtype.Timestamptz
+	ResourceName  string
+	Content       []byte
+}
+
+func (q *Queries) GetProcessDefinitionByVersion(ctx context.Context, arg GetProcessDefinitionByVersionParams) (GetProcessDefinitionByVersionRow, error) {
+	row := q.db.QueryRow(ctx, getProcessDefinitionByVersion, arg.TenantID, arg.BpmnProcessID, arg.Version)
+	var i GetProcessDefinitionByVersionRow
+	err := row.Scan(
+		&i.Key,
+		&i.TenantID,
+		&i.BpmnProcessID,
+		&i.Version,
+		&i.VersionTag,
+		&i.Name,
+		&i.Checksum,
+		&i.DeploymentKey,
+		&i.CreatedAt,
+		&i.ResourceName,
+		&i.Content,
+	)
+	return i, err
+}
+
 const insertDeployment = `-- name: InsertDeployment :exec
 INSERT INTO deployment (key, tenant_id) VALUES ($1, $2)
 `

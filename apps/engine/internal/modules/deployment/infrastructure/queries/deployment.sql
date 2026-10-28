@@ -39,6 +39,13 @@ WHERE pd.tenant_id = $1 AND pd.bpmn_process_id = $2
 ORDER BY pd.version DESC
 LIMIT 1;
 
+-- name: GetProcessDefinitionByVersion :one
+SELECT pd.key, pd.tenant_id, pd.bpmn_process_id, pd.version, pd.version_tag, pd.name,
+       pd.checksum, pd.deployment_key, pd.created_at, r.resource_name, r.content
+FROM process_definition pd
+JOIN deployment_resource r ON r.id = pd.resource_id
+WHERE pd.tenant_id = $1 AND pd.bpmn_process_id = $2 AND pd.version = $3;
+
 -- name: ListProcessDefinitions :many
 -- Keyset pagination: urut bpmn_process_id naik, version turun.
 SELECT pd.key, pd.tenant_id, pd.bpmn_process_id, pd.version, pd.version_tag, pd.name,

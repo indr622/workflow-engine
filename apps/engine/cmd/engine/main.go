@@ -17,6 +17,10 @@ import (
 	deploymentapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/application"
 	deploymentinfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/infrastructure"
 	deploymentifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/deployment/interfaces"
+	executionapp "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/application"
+	executiondomain "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/domain"
+	executioninfra "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/infrastructure"
+	executionifc "github.com/indr622/workflow-engine/apps/engine/internal/modules/execution/interfaces"
 	healthapi "github.com/indr622/workflow-engine/apps/engine/internal/modules/health/api"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/application"
 	"github.com/indr622/workflow-engine/apps/engine/internal/modules/health/infrastructure"
@@ -31,6 +35,11 @@ import (
 
 // Pastikan use case health memenuhi kontrak publik modulnya.
 var _ healthapi.Checker = (*application.CheckHealth)(nil)
+
+// systemClock memenuhi port Clock domain execution dengan jam sistem (UTC).
+type systemClock struct{}
+
+func (systemClock) Now() time.Time { return time.Now().UTC() }
 
 // version diisi saat build lewat -ldflags "-X main.version=...".
 var version = "dev"
@@ -103,7 +112,15 @@ func run() error {
 	processCache := deploymentapp.NewProcessCache(deploymentRepo, 256)
 	deployResource := deploymentapp.NewDeployResource(deploymentRepo, bus, processCache, nil, log)
 	deploymentifc.NewHandler(deployResource, deploymentapp.NewQueries(deploymentRepo)).Register(mux)
-	var _ deploymentapi.ProcessDefinitions = processCache // dipakai modul execution di Fase 2
+	var _ deploymentapi.ProcessDefinitions = processCache
+
+	// Modul execution: hanya bergantung pada deployment lewat api.ProcessDefinitions.
+	executionRepo := executioninfra.NewPostgresRepository(pool)
+	processor := executiondomain.NewProcessor(executiondomain.NewFeelEvaluator(), systemClock{},
+		executiondomain.Limits{MaxRecordsPerCommand: cfg.MaxRecordsPerCommand})
+	commands := executionapp.NewCommands(executionRepo, processCache, processor,
+		executioninfra.NewKeyGenerator(keys), bus, log, executionapp.Config{MaxVariablesBytes: cfg.MaxVariablesBytes})
+	executionifc.NewHandler(commands, commands, executionapp.NewQueries(executionRepo)).Register(mux)
 
 	srv := httpserver.New(cfg.HTTPAddr, httpserver.CORS(cfg.CORSOrigins, mux), log)
 	return srv.Run(ctx, cfg.ShutdownTimeout)

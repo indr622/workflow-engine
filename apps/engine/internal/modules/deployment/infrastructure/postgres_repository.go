@@ -69,6 +69,19 @@ func (r *PostgresRepository) GetLatest(ctx context.Context, tenantID, bpmnProces
 	return pd, row.Content, err
 }
 
+// GetByVersion mengembalikan versi tertentu proses dan konten resource.
+func (r *PostgresRepository) GetByVersion(ctx context.Context, tenantID, bpmnProcessID string, version int32) (domain.ProcessDefinition, []byte, error) {
+	row, err := r.q.GetProcessDefinitionByVersion(ctx, db.GetProcessDefinitionByVersionParams{
+		TenantID: tenantID, BpmnProcessID: bpmnProcessID, Version: version,
+	})
+	if err != nil {
+		return domain.ProcessDefinition{}, nil, mapErr(err)
+	}
+	pd, err := toDomain(row.Key, row.TenantID, row.BpmnProcessID, row.Version, row.VersionTag, row.Name,
+		row.Checksum, row.DeploymentKey, row.CreatedAt, row.ResourceName)
+	return pd, row.Content, err
+}
+
 // List mengembalikan halaman definition dengan keyset pagination.
 func (r *PostgresRepository) List(ctx context.Context, q domain.ListQuery) ([]domain.ProcessDefinition, error) {
 	var out []domain.ProcessDefinition
